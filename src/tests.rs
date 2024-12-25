@@ -497,6 +497,21 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
         assert_eq!(original_apoapsis.to_bits(), compact_apoapsis.to_bits(), "{compact_message}");
         assert_eq!(original_apoapsis.to_bits(), reexpanded_apoapsis.to_bits(), "{reexpanded_message}");
     }
+    {
+        for i in 0..31 {
+            let true_anomaly = i as f64 * 0.1;
+
+            let original_ecc_anom = orbit.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
+            let compact_ecc_anom = compact_orbit.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
+            let reexpanded_ecc_anom = reexpanded_orbit.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
+
+            let compact_message = format!("{compact_message} (true anom -> ecc anom)");
+            let reexpanded_message = format!("{reexpanded_message} (true anom -> ecc anom)");
+
+            assert_eq!(original_ecc_anom.to_bits(), compact_ecc_anom.to_bits(), "{compact_message}");
+            assert_eq!(original_ecc_anom.to_bits(), reexpanded_ecc_anom.to_bits(), "{reexpanded_message}");
+        }
+    }
 }
 
 #[test]
@@ -929,6 +944,117 @@ fn test_hyperbolic_eccentric_anomaly() {
         situation_at_max_deviation.orbit_type,
         situation_at_max_deviation.iteration_num,
     );
+}
+
+fn test_true_anom_to_ecc_anom_base(what: &str, orbit: &impl OrbitTrait) {
+    let message = format!("True -> Ecc -> True anomaly conversion for {what}");
+
+    for i in -100..100 {
+        let true_anomaly = i as f64 * 0.1;
+
+        let ecc_anom = orbit.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
+        let reconverted_true_anomaly = orbit.get_true_anomaly_at_eccentric_anomaly(ecc_anom);
+
+        assert_almost_eq(ecc_anom, reconverted_true_anomaly, message.as_str());
+    }
+}
+
+#[test]
+fn test_true_anom_to_ecc_anom() {
+    let orbits = [
+        (
+            "Unit orbit",
+            Orbit::new(
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            )
+        ),
+        (
+            "Mildly eccentric orbit",
+            Orbit::new(
+                0.39,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            )
+        ),
+        (
+            "Very eccentric orbit",
+            Orbit::new(
+                0.99,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            )
+        ),
+        (
+            "Just below parabolic orbit",
+            Orbit::new(
+                JUST_BELOW_ONE,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            )
+        ),
+        (
+            "Parabolic trajectory",
+            Orbit::new(
+                1.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            )
+        ),
+        (
+            "Barely hyperbolic trajectory",
+            Orbit::new(
+                1.01,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            )
+        ),
+        (
+            "Very hyperbolic trajectory",
+            Orbit::new(
+                9.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            )
+        ),
+        (
+            "Extremely hyperbolic trajectory",
+            Orbit::new(
+                100.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            )
+        ),
+    ];
+
+    for (what, orbit) in orbits.iter() {
+        test_true_anom_to_ecc_anom_base(what, orbit);
+    }
 }
 
 #[test]

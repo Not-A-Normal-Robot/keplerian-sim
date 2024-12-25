@@ -375,6 +375,12 @@ pub trait OrbitTrait {
     /// and so **may result in infinities when combined with other functions**. 
     fn get_true_anomaly_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> f64;
 
+    /// Gets the eccentric anomaly at a given true anomaly in the orbit.
+    /// 
+    /// 
+    fn get_eccentric_anomaly_at_true_anomaly(&self, true_anomaly: f64) -> f64;
+    
+
     /// Gets the true anomaly at a given mean anomaly in the orbit.
     /// 
     /// The true anomaly is derived from the eccentric anomaly, which
@@ -464,6 +470,108 @@ pub trait OrbitTrait {
     /// ```
     fn get_position_at_angle(&self, angle: f64) -> Vec3 {
         let (x, y) = self.get_flat_position_at_angle(angle);
+        self.tilt_flat_position(x, y)
+    }
+
+    /// Gets the speed at a given angle (true anomaly) in the orbit.
+    /// 
+    /// The speed is derived from the vis-viva equation, and so is
+    /// a lot faster than the velocity calculation.
+    /// 
+    /// This function assumes the gravitational parameter GM is 1.  
+    /// If it is not 1, you can multiply the result by the square root of GM.
+    /// 
+    /// The angle is expressed in radians, and ranges from 0 to tau.
+    /// Anything out of range will get wrapped around.
+    /// 
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// 
+    /// let mut orbit = Orbit::new_default();
+    /// orbit.set_periapsis(100.0);
+    /// orbit.set_eccentricity(0.5);
+    /// 
+    /// let speed_periapsis = orbit.get_speed_at_angle(0.0);
+    /// let speed_apoapsis = orbit.get_speed_at_angle(std::f64::consts::PI);
+    /// 
+    /// assert!(speed_periapsis > speed_apoapsis);
+    /// ```
+    fn get_speed_at_angle(&self, angle: f64) -> f64 {
+        // v^2 = GM (2/r - 1/a)
+        // assuming GM = 1:
+        // v^2 = 2/r - 1/a
+        // v = sqrt(2/r - 1/a)
+
+        let r = self.get_altitude_at_angle(angle);
+        let a = self.get_semi_major_axis();
+
+        return (2.0 / r - a.recip()).sqrt();
+    }
+
+    /// Gets the velocity at a given angle (true anomaly) in the orbit if
+    /// it had an inclination and longitude of ascending node of 0.
+    /// 
+    /// This ignores "orbital tilting" parameters, namely the inclination and
+    /// the longitude of ascending node.
+    /// 
+    /// The velocity is derived from the eccentric anomaly, which uses numerical
+    /// methods and so is not very performant.  
+    /// It is recommended to cache this value if you can.
+    /// 
+    /// Alternatively, if you only want to know the speed, use
+    /// [`get_speed_at_angle`][OrbitTrait::get_speed_at_angle] instead.  
+    /// It does not require numerical methods and therefore is a lot faster.
+    /// 
+    /// The angle is expressed in radians, and ranges from 0 to tau.  
+    /// Anything out of range will get wrapped around.
+    /// 
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// 
+    /// let mut orbit = Orbit::new_default();
+    /// orbit.set_periapsis(100.0);
+    /// orbit.set_eccentricity(0.5);
+    /// 
+    /// let vel_periapsis = orbit.get_flat_velocity_at_angle(0.0);
+    /// let vel_apoapsis = orbit.get_flat_velocity_at_angle(std::f64::consts::PI);
+    /// ```
+    fn get_flat_velocity_at_angle(&self, angle: f64) -> Vec2 {
+        // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+        // Equation 8:
+        //                                   [      -sin E       ]
+        // vector_o'(t) = sqrt(GM * a) / r * [ sqrt(1-e^2) cos E ]
+        //                                   [         0         ]
+
+        todo!("Depends on implementing angle -> eccentric anomaly code first");
+    }
+
+    /// Gets the velocity at a given angle (true anomaly) in the orbit.
+    /// 
+    /// The velocity is derived from the eccentric anomaly, which uses numerical
+    /// methods and so is not very performant.  
+    /// It is recommended to cache this value if you can.
+    /// 
+    /// Alternatively, if you only want to know the speed, use
+    /// [`get_speed_at_angle`][OrbitTrait::get_speed_at_angle] instead.  
+    /// It does not require numerical methods and therefore is a lot faster.
+    /// 
+    /// The angle is expressed in radians, and ranges from 0 to tau.
+    /// 
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// 
+    /// let mut orbit = Orbit::new_default();
+    /// orbit.set_periapsis(100.0);
+    /// orbit.set_eccentricity(0.5);
+    /// 
+    /// let vel_periapsis = orbit.get_velocity_at_angle(0.0);
+    /// let vel_apoapsis = orbit.get_velocity_at_angle(std::f64::consts::PI);
+    /// ```
+    fn get_velocity_at_angle(&self, angle: f64) -> Vec3 {
+        let (x, y) = self.get_flat_velocity_at_angle(angle);
         self.tilt_flat_position(x, y)
     }
 

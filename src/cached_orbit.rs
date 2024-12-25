@@ -661,6 +661,35 @@ impl OrbitTrait for Orbit {
         }
     }
 
+    fn get_eccentric_anomaly_at_true_anomaly(&self, true_anomaly: f64) -> f64 {
+        let e = self.eccentricity;
+
+        if e < 1.0 {
+            // let v = true_anomaly,
+            //   e = eccentricity,
+            //   E = eccentric anomaly
+            //
+            // https://en.wikipedia.org/wiki/True_anomaly#From_the_eccentric_anomaly:
+            // tan(v / 2) = sqrt((1 + e)/(1 - e)) * tan(E / 2)
+            // 1 = sqrt((1 + e)/(1 - e)) * tan(E / 2) / tan(v / 2)
+            // 1 / tan(E / 2) = sqrt((1 + e)/(1 - e)) / tan(v / 2)
+            // tan(E / 2) = tan(v / 2) / sqrt((1 + e)/(1 - e))
+            // E / 2 = atan(tan(v / 2) / sqrt((1 + e)/(1 - e)))
+            // E = 2 * atan(tan(v / 2) / sqrt((1 + e)/(1 - e)))
+
+            return 2.0 * (
+                (true_anomaly * 0.5).tan() /
+                ((1.0 + e) / (1.0 - e)).sqrt()
+            ).atan();
+        } else if e == 1.0 {
+            // TODO: Paraboolic trueAnom -> E
+            todo!("Parabolic trueAnom -> E");
+        } else {
+            // TODO: Hyperbolic trueAnom -> E
+            todo!("Hyperbolic trueAnom -> E");
+        }
+    }
+
     fn get_semi_latus_rectum(&self) -> f64 {
         if self.eccentricity == 1.0 {
             return 2.0 * self.periapsis;
