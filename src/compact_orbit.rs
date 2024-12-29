@@ -618,9 +618,12 @@ impl OrbitTrait for CompactOrbit {
     }
 
     fn get_true_anomaly_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> f64 {
+        // TODO: PARABOLA SUPPORT: This does not play well with parabolic trajectories.
+        // Implement Barker's Equation for parabolas.
         if self.eccentricity < 1.0 {
             // https://en.wikipedia.org/wiki/True_anomaly#From_the_eccentric_anomaly
             let eccentricity = self.eccentricity;
+            let eccentric_anomaly = eccentric_anomaly.rem_euclid(TAU);
             let (s, c) = eccentric_anomaly.sin_cos();
             let beta = eccentricity / (1.0 + (1.0 - eccentricity * eccentricity).sqrt());
     
@@ -645,7 +648,10 @@ impl OrbitTrait for CompactOrbit {
     }
 
     fn get_eccentric_anomaly_at_true_anomaly(&self, true_anomaly: f64) -> f64 {
+        // TODO: PARABOLA SUPPORT: This does not play well with parabolic trajectories.
+        // Implement inverse of Barker's Equation for parabolas.
         let e = self.eccentricity;
+        let true_anomaly = true_anomaly.rem_euclid(TAU);
 
         if e < 1.0 {
             // let v = true_anomaly,
@@ -659,17 +665,29 @@ impl OrbitTrait for CompactOrbit {
             // tan(E / 2) = tan(v / 2) / sqrt((1 + e)/(1 - e))
             // E / 2 = atan(tan(v / 2) / sqrt((1 + e)/(1 - e)))
             // E = 2 * atan(tan(v / 2) / sqrt((1 + e)/(1 - e)))
+            // E = 2 * atan(tan(v / 2) * sqrt((1 - e)/(1 + e)))
 
             return 2.0 * (
-                (true_anomaly * 0.5).tan() /
-                ((1.0 + e) / (1.0 - e)).sqrt()
+                (true_anomaly * 0.5).tan() *
+                ((1.0 - e) / (1.0 + e)).sqrt()
             ).atan();
-        } else if e == 1.0 {
-            // TODO: Paraboolic trueAnom -> E
-            todo!("Parabolic trueAnom -> E");
         } else {
-            // TODO: Hyperbolic trueAnom -> E
-            todo!("Hyperbolic trueAnom -> E");
+            // From the presentation "Spacecraft Dynamics and Control"  
+            // by Matthew M. Peet  
+            // https://control.asu.edu/Classes/MAE462/462Lecture05.pdf  
+            // Slide 25 of 27  
+            // Section "The Method for Hyperbolic Orbits"  
+            //
+            // tan(f/2) = sqrt((e+1)/(e-1))*tanh(H/2)
+            // 1 / tanh(H/2) = sqrt((e+1)/(e-1)) / tan(f/2)
+            // tanh(H/2) = tan(f/2) / sqrt((e+1)/(e-1))
+            // tanh(H/2) = tan(f/2) * sqrt((e-1)/(e+1))
+            // H/2 = atanh(tan(f/2) * sqrt((e-1)/(e+1)))
+            // H = 2 atanh(tan(f/2) * sqrt((e-1)/(e+1)))
+            return 2.0 * (
+                (true_anomaly * 0.5).tan() *
+                ((e - 1.0) / (e + 1.0)).sqrt()
+            ).atanh();
         }
     }
 
