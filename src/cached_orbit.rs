@@ -36,6 +36,9 @@ use core::f64::consts::{PI, TAU};
 ///
 ///     // Mean anomaly at epoch
 ///     0.0,
+/// 
+///     // Gravitational parameter of the parent body
+///     1.0,
 /// );
 ///
 /// let orbit = Orbit::with_apoapsis(
@@ -58,6 +61,9 @@ use core::f64::consts::{PI, TAU};
 ///
 ///     // Mean anomaly at epoch
 ///     0.0,
+/// 
+///     // Gravitational parameter of the parent body
+///     1.0,
 /// );
 /// ```
 /// See [Orbit::new] and [Orbit::with_apoapsis] for more information.

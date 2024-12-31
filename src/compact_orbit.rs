@@ -37,6 +37,9 @@ use crate::{
 ///
 ///     // Mean anomaly at epoch
 ///     0.0,
+/// 
+///     // Gravitational parameter of the parent body
+///     1.0,
 /// );
 ///
 /// let orbit = CompactOrbit::with_apoapsis(
@@ -59,6 +62,9 @@ use crate::{
 ///
 ///     // Mean anomaly at epoch
 ///     0.0,
+/// 
+///     // Gravitational parameter of the parent body
+///     1.0,
 /// );
 /// ```
 /// See [Orbit::new] and [Orbit::with_apoapsis] for more information.
