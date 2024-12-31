@@ -401,6 +401,9 @@ pub trait OrbitTrait {
         )
     }
 
+    // TODO: Add GM considerations
+    // Once we consider GM for get_mean_anomaly_at_time, all the rest of the functions
+    // will follow automatically.
     /// Gets the mean anomaly at a given time in the orbit.
     /// 
     /// The mean anomaly is the fraction of an elliptical orbit's period
@@ -538,14 +541,12 @@ pub trait OrbitTrait {
     /// let vel_apoapsis = orbit.get_flat_velocity_at_angle(std::f64::consts::PI);
     /// ```
     fn get_flat_velocity_at_angle(&self, angle: f64) -> Vec2 {
-        // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
-        // Equation 8:
-        //                                   [      -sin E       ]
-        // vector_o'(t) = sqrt(GM * a) / r * [ sqrt(1-e^2) cos E ]
-        //                                   [         0         ]
+        let eccentric_anomaly = self.get_eccentric_anomaly_at_true_anomaly(angle);
 
-        todo!("Depends on implementing angle -> eccentric anomaly code first");
+        return self.get_flat_velocity_at_eccentric_anomaly(eccentric_anomaly);
     }
+
+    fn get_flat_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> Vec2;
 
     /// Gets the velocity at a given angle (true anomaly) in the orbit.
     /// 
@@ -852,6 +853,45 @@ pub trait OrbitTrait {
     /// 
     /// In simple terms, this modifies the "offset" of the orbit progression.
     fn set_mean_anomaly_at_epoch(&mut self, mean_anomaly: f64);
+
+    /// Gets the gravitational parameter of the parent body.
+    /// 
+    /// The gravitational parameter mu of the parent body equals a certain
+    /// gravitational constant G times the mass of the parent body M.
+    /// 
+    /// In other words, mu = GM.
+    fn get_gravitational_parameter(&self) -> f64;
+
+    /// Sets the gravitational parameter of the parent body.
+    /// 
+    /// The gravitational parameter mu of the parent body equals a certain
+    /// gravitational constant G times the mass of the parent body M.
+    /// 
+    /// In other words, mu = GM.
+    fn set_gravitational_parameter(&mut self, gravitational_parameter: f64, mode: MuSetterMode);
+}
+
+/// A mode to describe how the gravitational parameter setter should behave.
+/// 
+/// This is used to describe how the setter should behave when setting the
+/// gravitational parameter of the parent body.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum MuSetterMode {
+    /// Keep all the other orbital parameters the same.
+    /// 
+    /// **This will change the position and velocity of the orbiting body abruptly,
+    /// if you use the time-based functions.**
+    KeepElements,
+    /// Keep the overall shape of the orbit, but modify the mean anomaly at epoch
+    /// such that the position at the given time t is the same.
+    /// 
+    /// **This will change the velocity of the orbiting body abruptly, if you use
+    /// the time-based functions.**
+    KeepPositionAtTime(f64),
+    /// Keep the position and velocity of the orbit at a certain time t the same.
+    /// 
+    /// **This will change the orbit's overall trajectory.**
+    KeepPositionAndVelocityAtTime(f64),
 }
 
 /// An error to describe why setting the periapsis of an orbit failed.

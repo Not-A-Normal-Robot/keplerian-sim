@@ -1,7 +1,7 @@
 use core::f64::consts::{PI, TAU};
 
 use crate::{
-    keplers_equation, keplers_equation_derivative, keplers_equation_second_derivative, sinhcosh, solve_monotone_cubic, ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait
+    keplers_equation, keplers_equation_derivative, keplers_equation_second_derivative, sinhcosh, solve_monotone_cubic, ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait, Vec2
 };
 
 /// A minimal struct representing a Keplerian orbit.
@@ -123,6 +123,14 @@ pub struct CompactOrbit {
     /// 
     /// In simple terms, this modifies the "offset" of the orbit progression.
     pub mean_anomaly: f64,
+
+    /// The gravitational parameter of the parent body.
+    /// 
+    /// This is a constant value that represents the mass of the parent body
+    /// multiplied by the gravitational constant.
+    /// 
+    /// In other words, mu = GM.
+    pub mu: f64,
 }
 
 // Initialization and cache management
@@ -143,12 +151,12 @@ impl CompactOrbit {
     pub fn new(
         eccentricity: f64, periapsis: f64,
         inclination: f64, arg_pe: f64, long_asc_node: f64,
-        mean_anomaly: f64
+        mean_anomaly: f64, mu: f64
     ) -> CompactOrbit {
         return CompactOrbit {
             eccentricity, periapsis,
             inclination, arg_pe, long_asc_node,
-            mean_anomaly,
+            mean_anomaly, mu
         };
     }
 
@@ -170,17 +178,19 @@ impl CompactOrbit {
     pub fn with_apoapsis(
         apoapsis: f64, periapsis: f64,
         inclination: f64, arg_pe: f64, long_asc_node: f64,
-        mean_anomaly: f64
+        mean_anomaly: f64, mu: f64
     ) -> CompactOrbit {
         let eccentricity = (apoapsis - periapsis ) / (apoapsis + periapsis);
-        return CompactOrbit::new(eccentricity, periapsis, inclination, arg_pe, long_asc_node, mean_anomaly);
+        return CompactOrbit::new(eccentricity, periapsis, inclination, arg_pe, long_asc_node, mean_anomaly, mu);
     }
 
     /// Creates a unit orbit.
     /// 
     /// The unit orbit is a perfect circle of radius 1 and no "tilt".
+    /// 
+    /// It also uses a gravitational parameter of 1.
     pub fn new_default() -> CompactOrbit {
-        return Self::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0);
+        return Self::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
     }
 }
 
@@ -724,6 +734,46 @@ impl OrbitTrait for CompactOrbit {
     fn set_arg_pe               (&mut self, value: f64) { self.arg_pe        = value }
     fn set_long_asc_node        (&mut self, value: f64) { self.long_asc_node = value }
     fn set_mean_anomaly_at_epoch(&mut self, value: f64) { self.mean_anomaly  = value }
+    
+    fn get_gravitational_parameter(&self) -> f64 {
+        return self.mu;
+    }
+    
+    fn set_gravitational_parameter(&mut self, gravitational_parameter: f64, mode: crate::MuSetterMode) {
+        match mode {
+            crate::MuSetterMode::KeepElements => {
+                self.mu = gravitational_parameter;
+            },
+            crate::MuSetterMode::KeepPositionAtTime(t) => todo!(),
+            crate::MuSetterMode::KeepPositionAndVelocityAtTime(t) => todo!(),
+        }
+        todo!()
+    }
+    
+    fn get_flat_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> Vec2 {
+        // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+        // Equation 8:
+        //                                   [      -sin E       ]
+        // vector_o'(t) = sqrt(GM * a) / r * [ sqrt(1-e^2) cos E ]
+        //                                   [         0         ]
+
+        // let multiplier = (self.get_semi_major_axis() * self.get_gravitational_parameter()).sqrt()
+        //     / self.get_altitude_at_angle(angle);
+
+        // let (sin, cos) = eccentric_anomaly.sin_cos();
+
+        // let vec = (
+        //     -sin,
+        //     (1.0 - self.get_eccentricity().powi(2)).sqrt() * cos
+        // )
+        todo!()
+    }
+}
+
+impl Default for CompactOrbit {
+    fn default() -> Self {
+        return Self::new_default();
+    }
 }
 
 impl From<Orbit> for CompactOrbit {
@@ -734,7 +784,8 @@ impl From<Orbit> for CompactOrbit {
             inclination: cached.get_inclination(),
             arg_pe: cached.get_arg_pe(),
             long_asc_node: cached.get_long_asc_node(),
-            mean_anomaly: cached.get_mean_anomaly_at_epoch()
+            mean_anomaly: cached.get_mean_anomaly_at_epoch(),
+            mu: cached.get_gravitational_parameter(),
         };
     }
 }

@@ -82,6 +82,8 @@ pub struct Orbit {
 
     /// The mean anomaly at orbit epoch, in radians.
     mean_anomaly: f64,
+    /// The gravitational parameter of the parent body.
+    mu: f64,
     cache: OrbitCachedCalculations,
 }
 #[derive(Clone, Debug, PartialEq)]
@@ -118,10 +120,11 @@ impl Orbit {
     /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
     /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
     /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
+    /// - `mu`: The gravitational parameter of the parent body.
     pub fn new(
         eccentricity: f64, periapsis: f64,
         inclination: f64, arg_pe: f64, long_asc_node: f64,
-        mean_anomaly: f64
+        mean_anomaly: f64, mu: f64
     ) -> Orbit {
         let cache = Self::get_cached_calculations(
             eccentricity, periapsis,
@@ -130,7 +133,7 @@ impl Orbit {
         return Orbit {
             eccentricity, periapsis,
             inclination, arg_pe, long_asc_node,
-            mean_anomaly,
+            mean_anomaly, mu,
             cache
         };
     }
@@ -150,20 +153,21 @@ impl Orbit {
     /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
     /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
     /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
+    /// - `mu`: The gravitational parameter of the parent body.
     pub fn with_apoapsis(
         apoapsis: f64, periapsis: f64,
         inclination: f64, arg_pe: f64, long_asc_node: f64,
-        mean_anomaly: f64
+        mean_anomaly: f64, mu: f64
     ) -> Orbit {
         let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
-        return Self::new(eccentricity, periapsis, inclination, arg_pe, long_asc_node, mean_anomaly);
+        return Self::new(eccentricity, periapsis, inclination, arg_pe, long_asc_node, mean_anomaly, mu);
     }
 
     /// Creates a unit orbit.
     /// 
     /// The unit orbit is a perfect circle of radius 1 and no "tilt".
     pub fn new_default() -> Orbit {
-        return Self::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0);
+        return Self::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
     }
 
     fn update_cache(&mut self) {
@@ -740,6 +744,18 @@ impl OrbitTrait for Orbit {
     fn set_arg_pe               (&mut self, value: f64) { self.arg_pe        = value; self.update_cache(); }
     fn set_long_asc_node        (&mut self, value: f64) { self.long_asc_node = value; self.update_cache(); }
     fn set_mean_anomaly_at_epoch(&mut self, value: f64) { self.mean_anomaly  = value; self.update_cache(); }
+    
+    fn get_flat_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> crate::Vec2 {
+        todo!()
+    }
+    
+    fn get_gravitational_parameter(&self) -> f64 {
+        todo!()
+    }
+    
+    fn set_gravitational_parameter(&mut self, gravitational_parameter: f64, mode: crate::MuSetterMode) {
+        todo!()
+    }
 }
 
 impl From<CompactOrbit> for Orbit {
@@ -750,7 +766,8 @@ impl From<CompactOrbit> for Orbit {
             compact.inclination,
             compact.arg_pe,
             compact.long_asc_node,
-            compact.mean_anomaly
+            compact.mean_anomaly,
+            compact.mu
         );
     }
 }
