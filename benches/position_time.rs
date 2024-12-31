@@ -1,6 +1,6 @@
-use keplerian_sim::{Orbit, CompactOrbit, OrbitTrait};
-use std::hint::black_box;
 use criterion::{criterion_group, criterion_main, Criterion};
+use keplerian_sim::{CompactOrbit, Orbit, OrbitTrait};
+use std::hint::black_box;
 
 const POLL_ANGLES: usize = 1024;
 const MULTIPLIER: f64 = 1.0 / POLL_ANGLES as f64;
@@ -20,18 +20,19 @@ fn criterion_benchmark(c: &mut Criterion) {
         0.00005_f64.to_radians(),
         114.20783_f64.to_radians(),
         -11.26064_f64.to_radians(),
-        358.617_f64.to_radians()
+        358.617_f64.to_radians(),
+        1.0,
     );
 
-    c.bench_function("pos time poll cached", |b| b.iter(||
-        poll_pos(black_box(&orbit))
-    ));
+    c.bench_function("pos time poll cached", |b| {
+        b.iter(|| poll_pos(black_box(&orbit)))
+    });
 
     let compact: CompactOrbit = orbit.into();
 
-    c.bench_function("pos time poll compact", |b| b.iter(||
-        poll_pos(black_box(&compact))
-    ));
+    c.bench_function("pos time poll compact", |b| {
+        b.iter(|| poll_pos(black_box(&compact)))
+    });
 
     let orbit = Orbit::new(
         2.0,
@@ -39,18 +40,19 @@ fn criterion_benchmark(c: &mut Criterion) {
         0.00005_f64.to_radians(),
         114.20783_f64.to_radians(),
         -11.26064_f64.to_radians(),
-        358.617_f64.to_radians()
+        358.617_f64.to_radians(),
+        1.0,
     );
 
-    c.bench_function("pos time poll hyp cached", |b| b.iter(||
-        poll_pos(black_box(&orbit))
-    ));
+    c.bench_function("pos time poll hyp cached", |b| {
+        b.iter(|| poll_pos(black_box(&orbit)))
+    });
 
     let compact: CompactOrbit = orbit.into();
 
-    c.bench_function("pos time poll hyp compact", |b| b.iter(||
-        poll_pos(black_box(&compact))
-    ));
+    c.bench_function("pos time poll hyp compact", |b| {
+        b.iter(|| poll_pos(black_box(&compact)))
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);

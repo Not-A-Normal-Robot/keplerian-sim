@@ -1,7 +1,4 @@
-use keplerian_sim::{
-    Universe, body_presets,
-    OrbitTrait
-};
+use keplerian_sim::{body_presets, OrbitTrait, Universe};
 
 const SIMULATION_TICKS: u128 = 1_000_000;
 fn main() {
@@ -15,7 +12,7 @@ fn main() {
 
 fn generate_solar_system<'a>() -> Universe {
     let mut universe = Universe::new_default();
-    
+
     let sun = body_presets::stars::the_sun(false);
     let sun_idx = universe.add_body(sun, None);
 
@@ -24,7 +21,7 @@ fn generate_solar_system<'a>() -> Universe {
 
     let venus = body_presets::planets::venus(true);
     universe.add_body(venus, Some(sun_idx));
-    
+
     let earth = body_presets::planets::earth(true);
     let earth_idx = universe.add_body(earth, Some(sun_idx));
 
@@ -80,7 +77,10 @@ fn generate_solar_system<'a>() -> Universe {
 }
 
 fn describe_universe(universe: &Universe) {
-    println!("Simulation universe with {} bodies", universe.get_bodies().len());
+    println!(
+        "Simulation universe with {} bodies",
+        universe.get_bodies().len()
+    );
     for (i, body) in universe.get_bodies().iter().enumerate() {
         println!("    {}: {:?}", i, body.name);
         println!("      Mass: {}", body.mass);
@@ -92,9 +92,14 @@ fn describe_universe(universe: &Universe) {
             println!("        Eccentricity: {}", orbit.get_eccentricity());
             println!("        Inclination: {}", orbit.get_inclination());
             println!("        Argument of periapsis: {}", orbit.get_arg_pe());
-            println!("        Longitude of ascending node: {}", orbit.get_long_asc_node());
-            println!("        Mean anomaly at epoch: {}", orbit.get_mean_anomaly_at_epoch());
-
+            println!(
+                "        Longitude of ascending node: {}",
+                orbit.get_long_asc_node()
+            );
+            println!(
+                "        Mean anomaly at epoch: {}",
+                orbit.get_mean_anomaly_at_epoch()
+            );
         }
     }
 }

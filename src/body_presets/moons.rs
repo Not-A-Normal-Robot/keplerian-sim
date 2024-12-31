@@ -1,10 +1,10 @@
 //! This module contains presets for common moons, also known as
 //! natural satellites.
-//! 
+//!
 //! A natural satellite is, in the most common usage, an astronomical body
 //! that orbits a planet, dwarf planet, or small Solar System body
 //! (or sometimes another natural satellite).
-//! 
+//!
 //! \- [Wikipedia](https://en.wikipedia.org/wiki/Natural_satellite)
 
 use crate::{Body, Orbit};
@@ -23,16 +23,14 @@ pub fn luna(include_orbit: bool) -> Body {
             5.145_f64.to_radians(),
             0.0,
             0.0,
-            0.0
+            0.0,
+            1.0,
         ))
-    } else { None };
+    } else {
+        None
+    };
 
-    return Body::new(
-        "Luna".to_string(),
-        7.342e22,
-        1.7371e6,
-        orbit
-    );
+    return Body::new("Luna".to_string(), 7.342e22, 1.7371e6, orbit);
 }
 
 pub use luna as the_moon;
@@ -51,9 +49,12 @@ pub fn weywot(include_orbit: bool) -> Body {
             335_f64.to_radians(),
             1_f64.to_radians(),
             // I couldn't find the mean anomaly
-            0.0
+            0.0,
+            1.0,
         ))
-    } else { None };
+    } else {
+        None
+    };
 
     return Body::new(
         "Weywot".to_string(),
@@ -71,7 +72,7 @@ pub fn weywot(include_orbit: bool) -> Body {
         // (approximately)
         7.12e18,
         1e5,
-        orbit
+        orbit,
     );
 }
 
@@ -88,16 +89,14 @@ pub fn charon(include_orbit: bool) -> Body {
             0.0,
             223.046_f64.to_radians(),
             // Could not find number for mean anomaly
-            0.0
+            0.0,
+            1.0,
         ))
-    } else { None };
+    } else {
+        None
+    };
 
-    return Body::new(
-        "Charon".to_string(),
-        1.5897e21,
-        6.06e5,
-        orbit
-    );
+    return Body::new("Charon".to_string(), 1.5897e21, 6.06e5, orbit);
 }
 
 /// Returns (136199) Eris I Dysnomia, the moon of the dwarf planet Eris.
@@ -112,9 +111,12 @@ pub fn dysnomia(include_orbit: bool) -> Body {
             180.83_f64.to_radians(),
             126.17_f64.to_radians(),
             // Could not find mean anomaly number
-            0.0
+            0.0,
+            1.0,
         ))
-    } else { None };
+    } else {
+        None
+    };
 
     return Body::new(
         "Dysnomia".to_string(),
@@ -122,6 +124,6 @@ pub fn dysnomia(include_orbit: bool) -> Body {
         // it's plus or minus 5.7e19 kg
         8.2e19,
         6.15e5 / 2.0,
-        orbit
+        orbit,
     );
 }

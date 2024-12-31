@@ -1,6 +1,6 @@
-use keplerian_sim::{OrbitTrait, Orbit};
-use std::fs;
 use core::f64::NAN;
+use keplerian_sim::{Orbit, OrbitTrait};
+use std::fs;
 
 const SIMULATION_TICKS: usize = 10_000;
 const CSV_PATH: &str = "out/output-orbit-dump.csv";
@@ -24,7 +24,7 @@ struct OrbitLog<'a> {
     x: f64,
     y: f64,
     z: f64,
-    
+
     flat_x: f64,
     flat_y: f64,
 
@@ -43,193 +43,96 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 5.145_f64.to_radians(),
                 0.0,
                 0.0,
-                0.0
+                0.0,
+                1.0,
             ),
             time_mult: 1.0,
             time_offset: 0.0,
         },
         OrbitWrapper {
             name: "Eccentricity 0.85",
-            orbit: Orbit::new(
-                0.85,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
+            orbit: Orbit::new(0.85, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 1.0,
             time_offset: 0.0,
         },
         OrbitWrapper {
             name: "Eccentricity 0.99",
-            orbit: Orbit::new(
-                0.99,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
+            orbit: Orbit::new(0.99, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 1.0,
             time_offset: 0.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1",
-            orbit: Orbit::new(
-                1.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
+            orbit: Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.001",
-            orbit: Orbit::new(
-                1.001,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
+            orbit: Orbit::new(1.001, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.002",
-            orbit: Orbit::new(
-                1.002,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
+            orbit: Orbit::new(1.002, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.005",
-            orbit: Orbit::new(
-                1.005,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
+            orbit: Orbit::new(1.005, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.01",
-            orbit: Orbit::new(
-                1.01,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
+            orbit: Orbit::new(1.01, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.02",
-            orbit: Orbit::new(
-                1.02,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
+            orbit: Orbit::new(1.02, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.1",
-            orbit: Orbit::new(
-                1.1,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
+            orbit: Orbit::new(1.1, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.5",
-            orbit: Orbit::new(
-                1.5,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
+            orbit: Orbit::new(1.5, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 2.5",
-            orbit: Orbit::new(
-                2.5,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
+            orbit: Orbit::new(2.5, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 12",
-            orbit: Orbit::new(
-                12.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
+            orbit: Orbit::new(12.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 50.0,
             time_offset: -25.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1000",
-            orbit: Orbit::new(
-                1000.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
+            orbit: Orbit::new(1000.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 1000.0,
             time_offset: -500.0,
         },
         OrbitWrapper {
             name: "Escape trajectory",
-            orbit: Orbit::new(
-                2.0,
-                1.496e11,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
+            orbit: Orbit::new(2.0, 1.496e11, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 100.0,
             time_offset: -5.0,
-        }
+        },
     ];
 
     let mut logs: Vec<OrbitLog> = Vec::with_capacity(orbits.len() * SIMULATION_TICKS);
@@ -237,8 +140,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(">> Begin simulations.");
 
     for named_orbit in orbits {
-        let (name, orbit) =
-            (named_orbit.name, named_orbit.orbit);
+        let (name, orbit) = (named_orbit.name, named_orbit.orbit);
 
         println!("Simulating orbit {name} for {SIMULATION_TICKS} ticks");
 
@@ -254,8 +156,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let (flat_x, flat_y) = orbit.get_flat_position_at_angle(angle);
             let (x, y, z) = orbit.get_position_at_angle(angle);
 
-            let expected_speed =
-                (2.0 / altitude - 1.0 / orbit.get_semi_major_axis()).sqrt();
+            let expected_speed = (2.0 / altitude - 1.0 / orbit.get_semi_major_axis()).sqrt();
 
             logs.push(OrbitLog {
                 name,

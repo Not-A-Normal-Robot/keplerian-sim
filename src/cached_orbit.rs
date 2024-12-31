@@ -1,60 +1,61 @@
 use crate::{
-    keplers_equation, keplers_equation_derivative, keplers_equation_second_derivative, sinhcosh, solve_monotone_cubic, ApoapsisSetterError, CompactOrbit, Matrix3x2, OrbitTrait
+    keplers_equation, keplers_equation_derivative, keplers_equation_second_derivative, sinhcosh,
+    solve_monotone_cubic, ApoapsisSetterError, CompactOrbit, Matrix3x2, OrbitTrait,
 };
 use core::f64::consts::{PI, TAU};
 
 /// A struct representing a Keplerian orbit with some cached values.
-/// 
+///
 /// This struct consumes significantly more memory because of the cache.  
 /// However, this will speed up orbital calculations.  
 /// If memory efficiency is your goal, you may consider using the `CompactOrbit` struct instead.  
-/// 
+///
 /// # Example
 /// ```
 /// use keplerian_sim::{Orbit, OrbitTrait};
-/// 
+///
 /// let orbit = Orbit::new(
 ///     // Initialize using eccentricity, periapsis, inclination,
 ///     // argument of periapsis, longitude of ascending node,
 ///     // and mean anomaly at epoch
-/// 
+///
 ///     // Eccentricity
 ///     0.0,
-/// 
+///
 ///     // Periapsis
 ///     1.0,
-/// 
+///
 ///     // Inclination
 ///     0.0,
-/// 
+///
 ///     // Argument of periapsis
 ///     0.0,
-/// 
+///
 ///     // Longitude of ascending node
 ///     0.0,
-/// 
+///
 ///     // Mean anomaly at epoch
 ///     0.0,
 /// );
-/// 
+///
 /// let orbit = Orbit::with_apoapsis(
 ///     // Initialize using apoapsis in place of eccentricity
 ///     
 ///     // Apoapsis
 ///     2.0,
-/// 
+///
 ///     // Periapsis
 ///     1.0,
-/// 
+///
 ///     // Inclination
 ///     0.0,
-/// 
+///
 ///     // Argument of periapsis
 ///     0.0,
-/// 
+///
 ///     // Longitude of ascending node
 ///     0.0,
-/// 
+///
 ///     // Mean anomaly at epoch
 ///     0.0,
 /// );
@@ -108,11 +109,11 @@ struct OrbitCachedCalculations {
 // Initialization and cache management
 impl Orbit {
     /// Creates a new orbit with the given parameters.
-    /// 
+    ///
     /// Note: This function uses eccentricity instead of apoapsis.  
     /// If you want to provide an apoapsis instead, consider using the
     /// [`Orbit::with_apoapsis`] function instead.
-    /// 
+    ///
     /// ### Parameters
     /// - `eccentricity`: The eccentricity of the orbit.
     /// - `periapsis`: The periapsis of the orbit, in meters.
@@ -122,30 +123,41 @@ impl Orbit {
     /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
     /// - `mu`: The gravitational parameter of the parent body.
     pub fn new(
-        eccentricity: f64, periapsis: f64,
-        inclination: f64, arg_pe: f64, long_asc_node: f64,
-        mean_anomaly: f64, mu: f64
+        eccentricity: f64,
+        periapsis: f64,
+        inclination: f64,
+        arg_pe: f64,
+        long_asc_node: f64,
+        mean_anomaly: f64,
+        mu: f64,
     ) -> Orbit {
         let cache = Self::get_cached_calculations(
-            eccentricity, periapsis,
-            inclination, arg_pe, long_asc_node
+            eccentricity,
+            periapsis,
+            inclination,
+            arg_pe,
+            long_asc_node,
         );
         return Orbit {
-            eccentricity, periapsis,
-            inclination, arg_pe, long_asc_node,
-            mean_anomaly, mu,
-            cache
+            eccentricity,
+            periapsis,
+            inclination,
+            arg_pe,
+            long_asc_node,
+            mean_anomaly,
+            mu,
+            cache,
         };
     }
 
     /// Creates a new orbit with the given parameters.
-    /// 
+    ///
     /// Note: This function uses apoapsis instead of eccentricity.  
     /// Because of this, it's not recommended to initialize
     /// parabolic or hyperbolic 'orbits' with this function.  
     /// If you're looking to initialize a parabolic or hyperbolic
     /// trajectory, consider using the [`Orbit::new`] function instead.
-    /// 
+    ///
     /// ### Parameters
     /// - `apoapsis`: The apoapsis of the orbit, in meters.
     /// - `periapsis`: The periapsis of the orbit, in meters.
@@ -155,16 +167,28 @@ impl Orbit {
     /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
     /// - `mu`: The gravitational parameter of the parent body.
     pub fn with_apoapsis(
-        apoapsis: f64, periapsis: f64,
-        inclination: f64, arg_pe: f64, long_asc_node: f64,
-        mean_anomaly: f64, mu: f64
+        apoapsis: f64,
+        periapsis: f64,
+        inclination: f64,
+        arg_pe: f64,
+        long_asc_node: f64,
+        mean_anomaly: f64,
+        mu: f64,
     ) -> Orbit {
         let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
-        return Self::new(eccentricity, periapsis, inclination, arg_pe, long_asc_node, mean_anomaly, mu);
+        return Self::new(
+            eccentricity,
+            periapsis,
+            inclination,
+            arg_pe,
+            long_asc_node,
+            mean_anomaly,
+            mu,
+        );
     }
 
     /// Creates a unit orbit.
-    /// 
+    ///
     /// The unit orbit is a perfect circle of radius 1 and no "tilt".
     pub fn new_default() -> Orbit {
         return Self::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
@@ -176,19 +200,22 @@ impl Orbit {
             self.periapsis,
             self.inclination,
             self.arg_pe,
-            self.long_asc_node
+            self.long_asc_node,
         );
     }
 
     fn get_cached_calculations(
-        eccentricity: f64, periapsis: f64,
-        inclination: f64, arg_pe: f64, long_asc_node: f64
+        eccentricity: f64,
+        periapsis: f64,
+        inclination: f64,
+        arg_pe: f64,
+        long_asc_node: f64,
     ) -> OrbitCachedCalculations {
         let semi_major_axis = periapsis / (1.0 - eccentricity);
-        let semi_minor_axis =
-            semi_major_axis * (1.0 - eccentricity * eccentricity).abs().sqrt();
+        let semi_minor_axis = semi_major_axis * (1.0 - eccentricity * eccentricity).abs().sqrt();
         let linear_eccentricity = semi_major_axis * eccentricity;
-        let transformation_matrix = Self::get_transformation_matrix(inclination, arg_pe, long_asc_node);
+        let transformation_matrix =
+            Self::get_transformation_matrix(inclination, arg_pe, long_asc_node);
         let beta = eccentricity / (1.0 + (1.0 - eccentricity * eccentricity).sqrt());
 
         return OrbitCachedCalculations {
@@ -196,11 +223,15 @@ impl Orbit {
             semi_minor_axis,
             linear_eccentricity,
             transformation_matrix,
-            beta
+            beta,
         };
     }
 
-    fn get_transformation_matrix(inclination: f64, arg_pe: f64, long_asc_node: f64) -> Matrix3x2<f64> {
+    fn get_transformation_matrix(
+        inclination: f64,
+        arg_pe: f64,
+        long_asc_node: f64,
+    ) -> Matrix3x2<f64> {
         let mut matrix = Matrix3x2::<f64>::filled_with(0.0);
         {
             let (sin_inc, cos_inc) = inclination.sin_cos();
@@ -210,7 +241,7 @@ impl Orbit {
             // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
             matrix.e11 = cos_arg_pe * cos_lan - sin_arg_pe * cos_inc * sin_lan;
             matrix.e12 = -(sin_arg_pe * cos_lan + cos_arg_pe * cos_inc * sin_lan);
-            
+
             matrix.e21 = cos_arg_pe * sin_lan + sin_arg_pe * cos_inc * cos_lan;
             matrix.e22 = cos_arg_pe * cos_inc * cos_lan - sin_arg_pe * sin_lan;
 
@@ -222,25 +253,25 @@ impl Orbit {
 }
 
 /// A constant used to get the initial seed for the eccentric anomaly.
-/// 
+///
 /// It's very arbitrary, but according to some testing, a value just
 /// below 1 works better than exactly 1.
-/// 
+///
 /// Source:
 /// "Two fast and accurate routines for solving the elliptic Kepler
 /// equation for all values of the eccentricity and mean anomaly"
 /// by Daniele Tommasini and David N. Olivieri,
 /// section 2.1.2, 'The "rational seed"'
-/// 
+///
 /// https://doi.org/10.1051/0004-6361/202141423
 const B: f64 = 0.999999;
 
 /// A constant used for the Laguerre method.
-/// 
+///
 /// The paper "An improved algorithm due to
 /// laguerre for the solution of Kepler's equation."
 /// says:
-/// 
+///
 /// > Similar experimentation has been done with values of n both greater and smaller
 /// than n = 5. The speed of convergence seems to be very insensitive to the choice of n.
 /// No value of n was found to yield consistently better convergence properties than the
@@ -249,11 +280,11 @@ const B: f64 = 0.999999;
 const N_U32: u32 = 5;
 
 /// A constant used for the Laguerre method.
-/// 
+///
 /// The paper "An improved algorithm due to
 /// laguerre for the solution of Kepler's equation."
 /// says:
-/// 
+///
 /// > Similar experimentation has been done with values of n both greater and smaller
 /// than n = 5. The speed of convergence seems to be very insensitive to the choice of n.
 /// No value of n was found to yield consistently better convergence properties than the
@@ -262,7 +293,7 @@ const N_U32: u32 = 5;
 const N_F64: f64 = 5.0;
 
 /// The maximum number of iterations for the numerical approach algorithms.
-/// 
+///
 /// This is used to prevent infinite loops in case the method fails to converge.
 const NUMERIC_MAX_ITERS: u32 = 1000;
 
@@ -304,17 +335,14 @@ impl Orbit {
         // M = mean anomaly
         // pi = the constant PI
         // b = the constant B
-        let mut eccentric_anomaly =
-            mean_anomaly +
-            (4.0 * self.eccentricity * B * mean_anomaly * (PI - mean_anomaly)) /
-            (
-                8.0 * self.eccentricity * mean_anomaly +
-                4.0 * self.eccentricity * (self.eccentricity - PI) +
-                PI_SQUARED
-            );
+        let mut eccentric_anomaly = mean_anomaly
+            + (4.0 * self.eccentricity * B * mean_anomaly * (PI - mean_anomaly))
+                / (8.0 * self.eccentricity * mean_anomaly
+                    + 4.0 * self.eccentricity * (self.eccentricity - PI)
+                    + PI_SQUARED);
 
         // Laguerre's method
-        // 
+        //
         // i = 2, 3, ..., n
         //
         // D = sqrt((n-1)^2(f'(x_i))^2 - n(n-1)f(x_i)f''(x_i))
@@ -328,7 +356,10 @@ impl Orbit {
 
             let n = N_F64;
             let n_minus_1 = n - 1.0;
-            let d = ((n_minus_1 * n_minus_1) * fp * fp - n * n_minus_1 * f * fpp).abs().sqrt().copysign(fp);
+            let d = ((n_minus_1 * n_minus_1) * fp * fp - n * n_minus_1 * f * fpp)
+                .abs()
+                .sqrt()
+                .copysign(fp);
 
             let denominator = n * f / (fp + d.max(1e-30));
             eccentric_anomaly -= denominator;
@@ -343,7 +374,7 @@ impl Orbit {
     }
 
     /// Get an initial guess for the hyperbolic eccentric anomaly of an orbit.
-    /// 
+    ///
     /// From the paper:  
     /// "A new method for solving the hyperbolic Kepler equation"  
     /// by Baisheng Wu et al.  
@@ -362,138 +393,136 @@ impl Orbit {
         //   The [mean anomaly] interval [0, e_c sinh(5) - 5) can
         //   be separated into fifteen subintervals corresponding to
         //   those intervals of F in [0, 5), see Eq. (4).
-        return sign * if mean_anomaly < self.eccentricity * SINH_5 - 5.0 {
-            // We use the Pade approximation of sinh of order
-            // [3 / 2], in `crate::generated_sinh_approximator`.
-            // We can then rearrange the equation to a cubic
-            // equation in terms of (F - a) and solve it.
-            //
-            // To quote the paper:
-            //   Replacing sinh(F) in [the hyperbolic Kepler
-            //   equation] with its piecewise Pade approximation
-            //   defined in Eq. (4) [`crate::generated_sinh_approximator`]
-            //   yields:
-            //     e_c P(F) - F = M_h                          (6)
-            // 
-            //   Eq. (6) can be written as a cubic equation in u = F - a, as
-            //     (e_c p_3 - q_2)u^3 +
-            //     (e_c p_2 - (M_h + a)q_2 - q_1) u^2 +
-            //     (e_c p_1 - (M_h + a)q_1 - 1)u +
-            //     e_c s - M_h - a = 0                         (7)
-            //   
-            //   Solving Eq. (7) and picking the real root F = F_0 in the
-            //   corresponding subinterval results in an initial approximate
-            //   solution to [the hyperbolic Kepler equation].
-            //
-            // For context:
-            // - `e_c` is eccentricity
-            // - `p_*`, `q_*`, `a`, and `s` is derived from the Pade approximation
-            //   arguments, which can be retrieved using the
-            //   `generated_sinh_approximator::get_sinh_approx_params` function
-            // - `M_h` is the mean anomaly
-            // - `F` is the eccentric anomaly
-
-            use crate::generated_sinh_approximator::get_sinh_approx_params;
-            let params = get_sinh_approx_params(mean_anomaly);
-
-            // We first get the value of each coefficient in the cubic equation:
-            // Au^3 + Bu^2 + Cu + D = 0
-            let mean_anom_plus_a = mean_anomaly + params.a;
-            let coeff_a = self.eccentricity * params.p_3 - params.q_2;
-            let coeff_b = self.eccentricity * params.p_2 - mean_anom_plus_a * params.q_2 - params.q_1;
-            let coeff_c = self.eccentricity * params.p_1 - mean_anom_plus_a * params.q_1 - 1.0;
-            let coeff_d = self.eccentricity * params.s - mean_anomaly - params.a;
-
-            // Then we solve it to get the value of u = F - a
-            let u = solve_monotone_cubic(coeff_a, coeff_b, coeff_c, coeff_d);
-            
-            u + params.a
-        } else {
-            // Equation 13
-            // A *very* rough guess, with an error that may exceed 1%.
-            let rough_guess = (2.0 * mean_anomaly / self.eccentricity).ln();
-
-            /*
-            A fourth-order Schröder iteration of the second kind
-            is performed to create a better guess.
-            ...Apparently it's not a well-known thing, but the aforementioned paper
-            referenced this other paper about Schröder iterations:
-            https://doi.org/10.1016/j.cam.2019.02.035
-            
-            To do the Schröder iteration, we need to compute a delta value
-            to be added to the rough guess. Part of Equation 15 from the paper is below.
-            
-            delta = (
-                    6 * [e_c^2 / (4 * M_h) + F_a] / (e_c * c_a - 1) +
-                    3 * [e_c * s_a / (e_c * c_a - 1)]{[e_c^2 / (4 * M_h) + F_a] / (e_c * c_a - 1)}^2
-                ) / (
-                    6 +
-                    6 * [e_c * s_a / (e_c * c_a - 1)]{[e_c^2 / (4 * M_h) + F_a] / (e_c * c_a - 1)} +
-                    [e_c * c_a / (e_c * c_a - 1)]{[e_c^2 / (4 * M_h) + F_a] / (e_c * c_a - 1)}^2
-                )
-            ...where:
-            e_c = eccentricity
-            F_a = rough guess
-            c_a = cosh(F_a) = 0.5 * [2 * M_h / e_c + e_c / (2 * M_h)],
-            s_a = sinh(F_a) = 0.5 * [2 * M_h / e_c - e_c / (2 * M_h)]
-            
-            Although the equation may look intimidating, there are a lot of repeated values.
-            We can simplify the equation by extracting the repeated values.
-            
-            Let:
-                alpha = e_c^2 / (4 * M_h) + F_a
-                beta  = 1 / (e_c * c_a - 1)
-                gamma = alpha * beta
-            
-            The equation gets simplified into:
-            
-            delta = (
-                    6 * gamma +
-                    3 * e_c * s_a * beta * gamma^2
-                ) / (
-                    6 +
-                    6 * e_c * s_a * beta * gamma +
-                    e_c * c_a * beta * gamma^2
-                )
-
-            Then we can refine the rough guess into the initial guess:
-            F_0 = F_a + delta
-            */
-
-            let (c_a, s_a) = {
-                // c_a and s_a has a lot of repeated values, so we can
-                // optimize by calculating them together.
-                // c_a, s_a = 0.5 * [2 * M_h / e_c +- e_c / (2 * M_h)]
+        return sign
+            * if mean_anomaly < self.eccentricity * SINH_5 - 5.0 {
+                // We use the Pade approximation of sinh of order
+                // [3 / 2], in `crate::generated_sinh_approximator`.
+                // We can then rearrange the equation to a cubic
+                // equation in terms of (F - a) and solve it.
                 //
-                // define "left"  = 2 * M_h / e_c
-                // define "right" = e_c / (2 * M_h)
+                // To quote the paper:
+                //   Replacing sinh(F) in [the hyperbolic Kepler
+                //   equation] with its piecewise Pade approximation
+                //   defined in Eq. (4) [`crate::generated_sinh_approximator`]
+                //   yields:
+                //     e_c P(F) - F = M_h                          (6)
+                //
+                //   Eq. (6) can be written as a cubic equation in u = F - a, as
+                //     (e_c p_3 - q_2)u^3 +
+                //     (e_c p_2 - (M_h + a)q_2 - q_1) u^2 +
+                //     (e_c p_1 - (M_h + a)q_1 - 1)u +
+                //     e_c s - M_h - a = 0                         (7)
+                //
+                //   Solving Eq. (7) and picking the real root F = F_0 in the
+                //   corresponding subinterval results in an initial approximate
+                //   solution to [the hyperbolic Kepler equation].
+                //
+                // For context:
+                // - `e_c` is eccentricity
+                // - `p_*`, `q_*`, `a`, and `s` is derived from the Pade approximation
+                //   arguments, which can be retrieved using the
+                //   `generated_sinh_approximator::get_sinh_approx_params` function
+                // - `M_h` is the mean anomaly
+                // - `F` is the eccentric anomaly
 
-                let left = 2.0 * mean_anomaly / self.eccentricity;
-                let right = self.eccentricity / (2.0 * mean_anomaly);
+                use crate::generated_sinh_approximator::get_sinh_approx_params;
+                let params = get_sinh_approx_params(mean_anomaly);
 
-                (0.5 * (left + right), 0.5 * (left - right))
+                // We first get the value of each coefficient in the cubic equation:
+                // Au^3 + Bu^2 + Cu + D = 0
+                let mean_anom_plus_a = mean_anomaly + params.a;
+                let coeff_a = self.eccentricity * params.p_3 - params.q_2;
+                let coeff_b =
+                    self.eccentricity * params.p_2 - mean_anom_plus_a * params.q_2 - params.q_1;
+                let coeff_c = self.eccentricity * params.p_1 - mean_anom_plus_a * params.q_1 - 1.0;
+                let coeff_d = self.eccentricity * params.s - mean_anomaly - params.a;
+
+                // Then we solve it to get the value of u = F - a
+                let u = solve_monotone_cubic(coeff_a, coeff_b, coeff_c, coeff_d);
+
+                u + params.a
+            } else {
+                // Equation 13
+                // A *very* rough guess, with an error that may exceed 1%.
+                let rough_guess = (2.0 * mean_anomaly / self.eccentricity).ln();
+
+                /*
+                A fourth-order Schröder iteration of the second kind
+                is performed to create a better guess.
+                ...Apparently it's not a well-known thing, but the aforementioned paper
+                referenced this other paper about Schröder iterations:
+                https://doi.org/10.1016/j.cam.2019.02.035
+
+                To do the Schröder iteration, we need to compute a delta value
+                to be added to the rough guess. Part of Equation 15 from the paper is below.
+
+                delta = (
+                        6 * [e_c^2 / (4 * M_h) + F_a] / (e_c * c_a - 1) +
+                        3 * [e_c * s_a / (e_c * c_a - 1)]{[e_c^2 / (4 * M_h) + F_a] / (e_c * c_a - 1)}^2
+                    ) / (
+                        6 +
+                        6 * [e_c * s_a / (e_c * c_a - 1)]{[e_c^2 / (4 * M_h) + F_a] / (e_c * c_a - 1)} +
+                        [e_c * c_a / (e_c * c_a - 1)]{[e_c^2 / (4 * M_h) + F_a] / (e_c * c_a - 1)}^2
+                    )
+                ...where:
+                e_c = eccentricity
+                F_a = rough guess
+                c_a = cosh(F_a) = 0.5 * [2 * M_h / e_c + e_c / (2 * M_h)],
+                s_a = sinh(F_a) = 0.5 * [2 * M_h / e_c - e_c / (2 * M_h)]
+
+                Although the equation may look intimidating, there are a lot of repeated values.
+                We can simplify the equation by extracting the repeated values.
+
+                Let:
+                    alpha = e_c^2 / (4 * M_h) + F_a
+                    beta  = 1 / (e_c * c_a - 1)
+                    gamma = alpha * beta
+
+                The equation gets simplified into:
+
+                delta = (
+                        6 * gamma +
+                        3 * e_c * s_a * beta * gamma^2
+                    ) / (
+                        6 +
+                        6 * e_c * s_a * beta * gamma +
+                        e_c * c_a * beta * gamma^2
+                    )
+
+                Then we can refine the rough guess into the initial guess:
+                F_0 = F_a + delta
+                */
+
+                let (c_a, s_a) = {
+                    // c_a and s_a has a lot of repeated values, so we can
+                    // optimize by calculating them together.
+                    // c_a, s_a = 0.5 * [2 * M_h / e_c +- e_c / (2 * M_h)]
+                    //
+                    // define "left"  = 2 * M_h / e_c
+                    // define "right" = e_c / (2 * M_h)
+
+                    let left = 2.0 * mean_anomaly / self.eccentricity;
+                    let right = self.eccentricity / (2.0 * mean_anomaly);
+
+                    (0.5 * (left + right), 0.5 * (left - right))
+                };
+
+                let alpha =
+                    self.eccentricity * self.eccentricity / (4.0 * mean_anomaly) + rough_guess;
+
+                let beta = (self.eccentricity * c_a - 1.0).recip();
+
+                let gamma = alpha * beta;
+                let gamma_sq = gamma * gamma;
+
+                let delta = (6.0 * alpha * beta
+                    + 3.0 * (self.eccentricity * s_a * beta) * gamma_sq)
+                    / (6.0
+                        + 6.0 * (self.eccentricity * s_a * beta) * gamma
+                        + (self.eccentricity * c_a * beta) * gamma_sq);
+
+                rough_guess + delta
             };
-
-            let alpha =
-                self.eccentricity * self.eccentricity /
-                (4.0 * mean_anomaly) + rough_guess;
-            
-            let beta = (self.eccentricity * c_a - 1.0).recip();
-
-            let gamma = alpha * beta;
-            let gamma_sq = gamma * gamma;
-
-            let delta = (
-                6.0 * alpha * beta +
-                3.0 * (self.eccentricity * s_a * beta) * gamma_sq
-            ) / (
-                6.0 +
-                6.0 * (self.eccentricity * s_a * beta) * gamma +
-                (self.eccentricity * c_a * beta) * gamma_sq
-            );
-
-            rough_guess + delta
-        };
     }
 
     /// From the paper:  
@@ -534,7 +563,7 @@ impl Orbit {
         let r = 1 / h'
 
         F_1^(4) = F_0 - (
-            (6hr - 3h^2 h'' r^3) / 
+            (6hr - 3h^2 h'' r^3) /
             (6 - 6h h'' r^2 + h^2 h''' r^3)
         )
 
@@ -558,13 +587,14 @@ impl Orbit {
             let r_sq = r * r;
             let r_cub = r_sq * r;
 
-            let denominator =
-                6.0 - 6.0 * h * hpp * r_sq + h_sq * hppp * r_cub;
-            
+            let denominator = 6.0 - 6.0 * h * hpp * r_sq + h_sq * hppp * r_cub;
+
             if denominator.abs() < 1e-30 || !denominator.is_finite() {
                 // dangerously close to div-by-zero, break out
                 #[cfg(debug_assertions)]
-                eprintln!("Hyperbolic eccentric anomaly solver: denominator is too small or not finite");
+                eprintln!(
+                    "Hyperbolic eccentric anomaly solver: denominator is too small or not finite"
+                );
                 break;
             }
 
@@ -647,24 +677,23 @@ impl OrbitTrait for Orbit {
             let beta = self.cache.beta;
             let eccentric_anomaly = eccentric_anomaly.rem_euclid(TAU);
             let (s, c) = eccentric_anomaly.sin_cos();
-    
-            return eccentric_anomaly + 2.0 * 
-                (beta * s / (1.0 - beta * c)).atan();
+
+            return eccentric_anomaly + 2.0 * (beta * s / (1.0 - beta * c)).atan();
         } else {
-            // From the presentation "Spacecraft Dynamics and Control"  
-            // by Matthew M. Peet  
-            // https://control.asu.edu/Classes/MAE462/462Lecture05.pdf  
-            // Slide 25 of 27  
-            // Section "The Method for Hyperbolic Orbits"  
+            // From the presentation "Spacecraft Dynamics and Control"
+            // by Matthew M. Peet
+            // https://control.asu.edu/Classes/MAE462/462Lecture05.pdf
+            // Slide 25 of 27
+            // Section "The Method for Hyperbolic Orbits"
             //
             // tan(f/2) = sqrt((e+1)/(e-1))*tanh(H/2)
             // f/2 = atan(sqrt((e+1)/(e-1))*tanh(H/2))
             // f = 2atan(sqrt((e+1)/(e-1))*tanh(H/2))
-            
-            return 2.0 * (
-                ((self.eccentricity + 1.0) / (self.eccentricity - 1.0)).sqrt() *
-                (eccentric_anomaly * 0.5).tanh()
-            ).atan();
+
+            return 2.0
+                * (((self.eccentricity + 1.0) / (self.eccentricity - 1.0)).sqrt()
+                    * (eccentric_anomaly * 0.5).tanh())
+                .atan();
         }
     }
 
@@ -688,16 +717,13 @@ impl OrbitTrait for Orbit {
             // E = 2 * atan(tan(v / 2) / sqrt((1 + e)/(1 - e)))
             // E = 2 * atan(tan(v / 2) * sqrt((1 - e)/(1 + e)))
 
-            return 2.0 * (
-                (true_anomaly * 0.5).tan() *
-                ((1.0 - e) / (1.0 + e)).sqrt()
-            ).atan();
+            return 2.0 * ((true_anomaly * 0.5).tan() * ((1.0 - e) / (1.0 + e)).sqrt()).atan();
         } else {
-            // From the presentation "Spacecraft Dynamics and Control"  
-            // by Matthew M. Peet  
-            // https://control.asu.edu/Classes/MAE462/462Lecture05.pdf  
-            // Slide 25 of 27  
-            // Section "The Method for Hyperbolic Orbits"  
+            // From the presentation "Spacecraft Dynamics and Control"
+            // by Matthew M. Peet
+            // https://control.asu.edu/Classes/MAE462/462Lecture05.pdf
+            // Slide 25 of 27
+            // Section "The Method for Hyperbolic Orbits"
             //
             // tan(f/2) = sqrt((e+1)/(e-1))*tanh(H/2)
             // 1 / tanh(H/2) = sqrt((e+1)/(e-1)) / tan(f/2)
@@ -705,10 +731,7 @@ impl OrbitTrait for Orbit {
             // tanh(H/2) = tan(f/2) * sqrt((e-1)/(e+1))
             // H/2 = atanh(tan(f/2) * sqrt((e-1)/(e+1)))
             // H = 2 atanh(tan(f/2) * sqrt((e-1)/(e+1)))
-            return 2.0 * (
-                (true_anomaly * 0.5).tan() *
-                ((e - 1.0) / (e + 1.0)).sqrt()
-            ).atanh();
+            return 2.0 * ((true_anomaly * 0.5).tan() * ((e - 1.0) / (e + 1.0)).sqrt()).atanh();
         }
     }
 
@@ -717,43 +740,74 @@ impl OrbitTrait for Orbit {
             return 2.0 * self.periapsis;
         }
 
-        return self.cache.semi_major_axis *
-            (1.0 - self.eccentricity * self.eccentricity);
+        return self.cache.semi_major_axis * (1.0 - self.eccentricity * self.eccentricity);
     }
 
     fn get_altitude_at_angle(&self, true_anomaly: f64) -> f64 {
-        return (
-            self.get_semi_latus_rectum() /
-            (1.0 + self.eccentricity * true_anomaly.cos())
-        ).abs();
+        return (self.get_semi_latus_rectum() / (1.0 + self.eccentricity * true_anomaly.cos()))
+            .abs();
     }
 
     fn get_mean_anomaly_at_time(&self, t: f64) -> f64 {
         return t * TAU + self.mean_anomaly;
     }
 
-    fn get_eccentricity         (&self) -> f64 { self.eccentricity }
-    fn get_periapsis            (&self) -> f64 { self.periapsis }
-    fn get_inclination          (&self) -> f64 { self.inclination }
-    fn get_arg_pe               (&self) -> f64 { self.arg_pe }
-    fn get_long_asc_node        (&self) -> f64 { self.long_asc_node }
-    fn get_mean_anomaly_at_epoch(&self) -> f64 { self.mean_anomaly }
-    fn set_eccentricity         (&mut self, value: f64) { self.eccentricity  = value; self.update_cache(); }
-    fn set_periapsis            (&mut self, value: f64) { self.periapsis     = value; self.update_cache(); }
-    fn set_inclination          (&mut self, value: f64) { self.inclination   = value; self.update_cache(); }
-    fn set_arg_pe               (&mut self, value: f64) { self.arg_pe        = value; self.update_cache(); }
-    fn set_long_asc_node        (&mut self, value: f64) { self.long_asc_node = value; self.update_cache(); }
-    fn set_mean_anomaly_at_epoch(&mut self, value: f64) { self.mean_anomaly  = value; self.update_cache(); }
-    
+    fn get_eccentricity(&self) -> f64 {
+        self.eccentricity
+    }
+    fn get_periapsis(&self) -> f64 {
+        self.periapsis
+    }
+    fn get_inclination(&self) -> f64 {
+        self.inclination
+    }
+    fn get_arg_pe(&self) -> f64 {
+        self.arg_pe
+    }
+    fn get_long_asc_node(&self) -> f64 {
+        self.long_asc_node
+    }
+    fn get_mean_anomaly_at_epoch(&self) -> f64 {
+        self.mean_anomaly
+    }
+    fn set_eccentricity(&mut self, value: f64) {
+        self.eccentricity = value;
+        self.update_cache();
+    }
+    fn set_periapsis(&mut self, value: f64) {
+        self.periapsis = value;
+        self.update_cache();
+    }
+    fn set_inclination(&mut self, value: f64) {
+        self.inclination = value;
+        self.update_cache();
+    }
+    fn set_arg_pe(&mut self, value: f64) {
+        self.arg_pe = value;
+        self.update_cache();
+    }
+    fn set_long_asc_node(&mut self, value: f64) {
+        self.long_asc_node = value;
+        self.update_cache();
+    }
+    fn set_mean_anomaly_at_epoch(&mut self, value: f64) {
+        self.mean_anomaly = value;
+        self.update_cache();
+    }
+
     fn get_flat_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> crate::Vec2 {
         todo!()
     }
-    
+
     fn get_gravitational_parameter(&self) -> f64 {
         todo!()
     }
-    
-    fn set_gravitational_parameter(&mut self, gravitational_parameter: f64, mode: crate::MuSetterMode) {
+
+    fn set_gravitational_parameter(
+        &mut self,
+        gravitational_parameter: f64,
+        mode: crate::MuSetterMode,
+    ) {
         todo!()
     }
 }
@@ -767,7 +821,7 @@ impl From<CompactOrbit> for Orbit {
             compact.arg_pe,
             compact.long_asc_node,
             compact.mean_anomaly,
-            compact.mu
+            compact.mu,
         );
     }
 }

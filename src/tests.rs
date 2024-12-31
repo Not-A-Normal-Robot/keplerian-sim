@@ -17,16 +17,12 @@ fn assert_almost_eq(a: f64, b: f64, what: &str) {
         "Almost-eq assertion failed for '{what}'!\n\
         {a} and {b} has distance {dist}, which is more than max of {ALMOST_EQ_TOLERANCE}"
     );
-    
+
     assert!(dist < ALMOST_EQ_TOLERANCE, "{msg}");
 }
 
 fn vec3_len(v: Vec3) -> f64 {
-    return (
-        v.0 * v.0 +
-        v.1 * v.1 +
-        v.2 * v.2
-    ).sqrt();
+    return (v.0 * v.0 + v.1 * v.1 + v.2 * v.2).sqrt();
 }
 
 fn assert_eq_vec3(a: Vec3, b: Vec3, what: &str) {
@@ -107,40 +103,39 @@ fn poll_eccentric_anomaly(orbit: &impl OrbitTrait) -> Vec<f64> {
 }
 
 fn unit_orbit() -> Orbit {
-    return Orbit::new(
-        0.0,
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-    );
+    return Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
 }
 
 #[test]
 fn unit_orbit_angle_3d() {
     let orbit = unit_orbit();
 
-    assert_orbit_positions_3d(&orbit, &[
-        ("unit orbit 1", 0.0 * PI, (1.0, 0.0, 0.0)),
-        ("unit orbit 2", 0.5 * PI, (0.0, 1.0, 0.0)),
-        ("unit orbit 3", 1.0 * PI, (-1.0, 0.0, 0.0)),
-        ("unit orbit 4", 1.5 * PI, (0.0, -1.0, 0.0)),
-        ("unit orbit 5", 2.0 * PI, (1.0, 0.0, 0.0)),
-    ]);
+    assert_orbit_positions_3d(
+        &orbit,
+        &[
+            ("unit orbit 1", 0.0 * PI, (1.0, 0.0, 0.0)),
+            ("unit orbit 2", 0.5 * PI, (0.0, 1.0, 0.0)),
+            ("unit orbit 3", 1.0 * PI, (-1.0, 0.0, 0.0)),
+            ("unit orbit 4", 1.5 * PI, (0.0, -1.0, 0.0)),
+            ("unit orbit 5", 2.0 * PI, (1.0, 0.0, 0.0)),
+        ],
+    );
 }
 
 #[test]
 fn unit_orbit_angle_2d() {
     let orbit = unit_orbit();
 
-    assert_orbit_positions_2d(&orbit, &[
-        ("unit orbit 1", 0.0 * PI, (1.0, 0.0)),
-        ("unit orbit 2", 0.5 * PI, (0.0, 1.0)),
-        ("unit orbit 3", 1.0 * PI, (-1.0, 0.0)),
-        ("unit orbit 4", 1.5 * PI, (0.0, -1.0)),
-        ("unit orbit 5", 2.0 * PI, (1.0, 0.0)),
-    ]);
+    assert_orbit_positions_2d(
+        &orbit,
+        &[
+            ("unit orbit 1", 0.0 * PI, (1.0, 0.0)),
+            ("unit orbit 2", 0.5 * PI, (0.0, 1.0)),
+            ("unit orbit 3", 1.0 * PI, (-1.0, 0.0)),
+            ("unit orbit 4", 1.5 * PI, (0.0, -1.0)),
+            ("unit orbit 5", 2.0 * PI, (1.0, 0.0)),
+        ],
+    );
 }
 
 #[test]
@@ -149,12 +144,7 @@ fn unit_orbit_transformation() {
     // Since inclination is zero, it should not do anything.
     let orbit = unit_orbit();
 
-    let tests = [
-        (1.0, 1.0),
-        (1.0, 0.0),
-        (0.0, 1.0),
-        (0.0, 0.0),
-    ];
+    let tests = [(1.0, 1.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)];
 
     for point in tests {
         let transformed = orbit.tilt_flat_position(point.0, point.1);
@@ -173,7 +163,8 @@ fn tilted_equidistant() {
         2.848915582093,
         1.9520945821,
         2.1834987325,
-        0.69482153021
+        0.69482153021,
+        1.0,
     );
 
     // Test for equidistance
@@ -188,20 +179,13 @@ fn tilted_equidistant() {
 
 #[test]
 fn tilted_90deg() {
-    let orbit = Orbit::new(
-        0.0,
-        1.0,
-        PI / 2.0,
-        0.0,
-        0.0,
-        0.0
-    );
+    let orbit = Orbit::new(0.0, 1.0, PI / 2.0, 0.0, 0.0, 0.0, 1.0);
 
     // Transform test
     let tests = [
         // Before and after transformation
-        (("Vector 1"), (1.0, 0.0),  (1.0, 0.0, 0.0)),
-        (("Vector 2"), (0.0, 1.0),  (0.0, 0.0, 1.0)),
+        (("Vector 1"), (1.0, 0.0), (1.0, 0.0, 0.0)),
+        (("Vector 2"), (0.0, 1.0), (0.0, 0.0, 1.0)),
         (("Vector 3"), (-1.0, 0.0), (-1.0, 0.0, 0.0)),
         (("Vector 4"), (0.0, -1.0), (0.0, 0.0, -1.0)),
     ];
@@ -215,15 +199,8 @@ fn tilted_90deg() {
 
 #[test]
 fn apoapsis_of_two() {
-    let orbit = Orbit::with_apoapsis(
-        2.0,
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-    );
-    
+    let orbit = Orbit::with_apoapsis(2.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+
     let point_at_apoapsis = orbit.get_position_at_angle(PI);
     let point_at_periapsis = orbit.get_position_at_angle(0.0);
 
@@ -233,14 +210,7 @@ fn apoapsis_of_two() {
 
 #[test]
 fn huge_apoapsis() {
-    let orbit = Orbit::with_apoapsis(
-        10000.0,
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-    );
+    let orbit = Orbit::with_apoapsis(10000.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
 
     let point_at_apoapsis = orbit.get_position_at_angle(PI);
     let point_at_periapsis = orbit.get_position_at_angle(0.0);
@@ -260,7 +230,8 @@ fn almost_parabolic() {
         0.0,
         0.0,
         0.0,
-        0.0
+        0.0,
+        1.0,
     );
 
     let eccentric_anomalies = poll_eccentric_anomaly(&orbit);
@@ -292,47 +263,58 @@ fn almost_parabolic() {
 
     let position_at_periapsis = orbit.get_position_at_angle(TAU);
 
-    assert_almost_eq_vec3(
-        position_at_periapsis,
-        (1.0, 0.0, 0.0),
-        "Periapsis"
-    );
+    assert_almost_eq_vec3(position_at_periapsis, (1.0, 0.0, 0.0), "Periapsis");
 
     let position_at_apoapsis = orbit.get_position_at_angle(PI);
 
-    assert!(position_at_apoapsis.0.abs() > 1e12, "Apoapsis is not far enough");
+    assert!(
+        position_at_apoapsis.0.abs() > 1e12,
+        "Apoapsis is not far enough"
+    );
 }
 
 #[test]
 fn parabolic() {
-    let orbit = Orbit::new(
-        1.0,
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0
-    );
+    let orbit = Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
 
     let point_near_infinity = orbit.get_position_at_angle(PI - 1e-7);
     let point_at_periapsis = orbit.get_position_at_angle(0.0);
 
-    assert!(vec3_len(point_near_infinity) > 1e9, "Point near infinity is not far enough");
-    assert!(point_near_infinity.1.abs() > 0.0, "Y coord near infinity should move a little");
-    assert_almost_eq(point_near_infinity.2, 0.0, "Point near infinity should be flat");
+    assert!(
+        vec3_len(point_near_infinity) > 1e9,
+        "Point near infinity is not far enough"
+    );
+    assert!(
+        point_near_infinity.1.abs() > 0.0,
+        "Y coord near infinity should move a little"
+    );
+    assert_almost_eq(
+        point_near_infinity.2,
+        0.0,
+        "Point near infinity should be flat",
+    );
     assert_almost_eq_vec3(point_at_periapsis, (1.0, 0.0, 0.0), "Pe");
 
     let point_at_asymptote = orbit.get_position_at_angle(PI);
 
-    assert!(point_at_asymptote.0.is_nan(), "X at asymptote should be undefined");
-    assert!(point_at_asymptote.1.is_nan(), "Y at asymptote should be undefined");
-    assert!(point_at_asymptote.2.is_nan(), "Z at asymptote should be undefined");
+    assert!(
+        point_at_asymptote.0.is_nan(),
+        "X at asymptote should be undefined"
+    );
+    assert!(
+        point_at_asymptote.1.is_nan(),
+        "Y at asymptote should be undefined"
+    );
+    assert!(
+        point_at_asymptote.2.is_nan(),
+        "Z at asymptote should be undefined"
+    );
 }
 
 fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
     let compact_orbit = CompactOrbit::from(orbit.clone());
     let reexpanded_orbit = Orbit::from(compact_orbit.clone());
-    
+
     let compact_message = format!("Original / Compact ({what})");
     let reexpanded_message = format!("Compact /  Reexpanded ({what})");
 
@@ -345,8 +327,16 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
         let reexpanded_message = format!("{reexpanded_message} (transform)");
 
         for i in 0..original_transforms.len() {
-            assert_eq_vec3(original_transforms[i], compact_transforms[i], &compact_message);
-            assert_eq_vec3(original_transforms[i], reexpanded_transforms[i], &reexpanded_message);
+            assert_eq_vec3(
+                original_transforms[i],
+                compact_transforms[i],
+                &compact_message,
+            );
+            assert_eq_vec3(
+                original_transforms[i],
+                reexpanded_transforms[i],
+                &reexpanded_message,
+            );
         }
     }
     {
@@ -355,8 +345,14 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
         let reexpanded_ecc = poll_eccentric_anomaly(&reexpanded_orbit);
 
         for i in 0..original_ecc.len() {
-            assert_eq!(original_ecc[i], compact_ecc[i], "{compact_message} (eccentric anomaly)");
-            assert_eq!(original_ecc[i], reexpanded_ecc[i], "{reexpanded_message} (eccentric anomaly)");
+            assert_eq!(
+                original_ecc[i], compact_ecc[i],
+                "{compact_message} (eccentric anomaly)"
+            );
+            assert_eq!(
+                original_ecc[i], reexpanded_ecc[i],
+                "{reexpanded_message} (eccentric anomaly)"
+            );
         }
     }
     {
@@ -394,8 +390,16 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
         };
 
         for i in 0..original_true.len() {
-            assert_eq!(original_true[i].to_bits(), compact_true[i].to_bits(), "{compact_message} (true anomaly) (i={i})");
-            assert_eq!(original_true[i].to_bits(), reexpanded_true[i].to_bits(), "{reexpanded_message} (true anomaly) (i={i})");
+            assert_eq!(
+                original_true[i].to_bits(),
+                compact_true[i].to_bits(),
+                "{compact_message} (true anomaly) (i={i})"
+            );
+            assert_eq!(
+                original_true[i].to_bits(),
+                reexpanded_true[i].to_bits(),
+                "{reexpanded_message} (true anomaly) (i={i})"
+            );
         }
     }
     {
@@ -403,8 +407,14 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
         let compact_eccentricity = compact_orbit.eccentricity;
         let reexpanded_eccentricity = reexpanded_orbit.get_eccentricity();
 
-        assert_eq!(original_eccentricity, compact_eccentricity, "{compact_message} (eccentricity)");
-        assert_eq!(original_eccentricity, reexpanded_eccentricity, "{reexpanded_message} (eccentricity)");
+        assert_eq!(
+            original_eccentricity, compact_eccentricity,
+            "{compact_message} (eccentricity)"
+        );
+        assert_eq!(
+            original_eccentricity, reexpanded_eccentricity,
+            "{reexpanded_message} (eccentricity)"
+        );
     }
     {
         let original_flat = poll_flat(&orbit);
@@ -428,8 +438,16 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
         let reexpanded_message = format!("{reexpanded_message} (position)");
 
         for i in 0..original_positions.len() {
-            assert_eq_vec3(original_positions[i], compact_positions[i], &compact_message);
-            assert_eq_vec3(original_positions[i], reexpanded_positions[i], &reexpanded_message);
+            assert_eq_vec3(
+                original_positions[i],
+                compact_positions[i],
+                &compact_message,
+            );
+            assert_eq_vec3(
+                original_positions[i],
+                reexpanded_positions[i],
+                &reexpanded_message,
+            );
         }
     }
     {
@@ -471,8 +489,16 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
         let reexpanded_message = format!("{reexpanded_message} (altitude)");
 
         for i in 0..original_altitudes.len() {
-            assert_eq!(original_altitudes[i].to_bits(), compact_altitudes[i].to_bits(), "{compact_message}");
-            assert_eq!(original_altitudes[i].to_bits(), reexpanded_altitudes[i].to_bits(), "{reexpanded_message}");
+            assert_eq!(
+                original_altitudes[i].to_bits(),
+                compact_altitudes[i].to_bits(),
+                "{compact_message}"
+            );
+            assert_eq!(
+                original_altitudes[i].to_bits(),
+                reexpanded_altitudes[i].to_bits(),
+                "{reexpanded_message}"
+            );
         }
     }
     {
@@ -483,8 +509,16 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
         let compact_message = format!("{compact_message} (semi-latus rectum)");
         let reexpanded_message = format!("{reexpanded_message} (semi-latus rectum)");
 
-        assert_eq!(original_slr.to_bits(), compact_slr.to_bits(), "{compact_message}");
-        assert_eq!(original_slr.to_bits(), reexpanded_slr.to_bits(), "{reexpanded_message}");
+        assert_eq!(
+            original_slr.to_bits(),
+            compact_slr.to_bits(),
+            "{compact_message}"
+        );
+        assert_eq!(
+            original_slr.to_bits(),
+            reexpanded_slr.to_bits(),
+            "{reexpanded_message}"
+        );
     }
     {
         let original_apoapsis = orbit.get_apoapsis();
@@ -494,22 +528,40 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
         let compact_message = format!("{compact_message} (apoapsis getter)");
         let reexpanded_message = format!("{reexpanded_message} (apoapsis getter)");
 
-        assert_eq!(original_apoapsis.to_bits(), compact_apoapsis.to_bits(), "{compact_message}");
-        assert_eq!(original_apoapsis.to_bits(), reexpanded_apoapsis.to_bits(), "{reexpanded_message}");
+        assert_eq!(
+            original_apoapsis.to_bits(),
+            compact_apoapsis.to_bits(),
+            "{compact_message}"
+        );
+        assert_eq!(
+            original_apoapsis.to_bits(),
+            reexpanded_apoapsis.to_bits(),
+            "{reexpanded_message}"
+        );
     }
     {
         for i in 0..31 {
             let true_anomaly = i as f64 * 0.1;
 
             let original_ecc_anom = orbit.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
-            let compact_ecc_anom = compact_orbit.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
-            let reexpanded_ecc_anom = reexpanded_orbit.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
+            let compact_ecc_anom =
+                compact_orbit.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
+            let reexpanded_ecc_anom =
+                reexpanded_orbit.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
 
             let compact_message = format!("{compact_message} (true anom -> ecc anom)");
             let reexpanded_message = format!("{reexpanded_message} (true anom -> ecc anom)");
 
-            assert_eq!(original_ecc_anom.to_bits(), compact_ecc_anom.to_bits(), "{compact_message}");
-            assert_eq!(original_ecc_anom.to_bits(), reexpanded_ecc_anom.to_bits(), "{reexpanded_message}");
+            assert_eq!(
+                original_ecc_anom.to_bits(),
+                compact_ecc_anom.to_bits(),
+                "{compact_message}"
+            );
+            assert_eq!(
+                original_ecc_anom.to_bits(),
+                reexpanded_ecc_anom.to_bits(),
+                "{reexpanded_message}"
+            );
         }
     }
 }
@@ -517,93 +569,34 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
 #[test]
 fn orbit_conversions() {
     let orbits = [
-        (
-            "Unit orbit",
-            Orbit::new(
-                0.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
-        ),
+        ("Unit orbit", Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0)),
         (
             "Mildly eccentric orbit",
-            Orbit::new(
-                0.39,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
+            Orbit::new(0.39, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
         ),
         (
             "Very eccentric orbit",
-            Orbit::new(
-                0.99,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
+            Orbit::new(0.99, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
         ),
         (
             "Just below parabolic orbit",
-            Orbit::new(
-                JUST_BELOW_ONE,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
+            Orbit::new(JUST_BELOW_ONE, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
         ),
         (
             "Parabolic trajectory",
-            Orbit::new(
-                1.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
+            Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
         ),
         (
             "Barely hyperbolic trajectory",
-            Orbit::new(
-                1.01,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
+            Orbit::new(1.01, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
         ),
         (
             "Very hyperbolic trajectory",
-            Orbit::new(
-                9.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
+            Orbit::new(9.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
         ),
         (
             "Extremely hyperbolic trajectory",
-            Orbit::new(
-                100.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
+            Orbit::new(100.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
         ),
         (
             "Tilted orbit",
@@ -613,8 +606,9 @@ fn orbit_conversions() {
                 2.848915582093,
                 1.9520945821,
                 2.1834987325,
-                0.69482153021
-            )
+                0.69482153021,
+                1.0,
+            ),
         ),
         (
             "Tilted eccentric",
@@ -624,8 +618,9 @@ fn orbit_conversions() {
                 2.848915582093,
                 1.9520945821,
                 2.1834987325,
-                0.69482153021
-            )
+                0.69482153021,
+                1.0,
+            ),
         ),
         (
             "Tilted near-parabolic",
@@ -635,8 +630,9 @@ fn orbit_conversions() {
                 2.848915582093,
                 1.9520945821,
                 2.1834987325,
-                0.69482153021
-            )
+                0.69482153021,
+                1.0,
+            ),
         ),
         (
             "Tilted parabolic",
@@ -646,8 +642,9 @@ fn orbit_conversions() {
                 2.848915582093,
                 1.9520945821,
                 2.1834987325,
-                0.69482153021
-            )
+                0.69482153021,
+                1.0,
+            ),
         ),
         (
             "Tilted hyperbolic",
@@ -657,8 +654,9 @@ fn orbit_conversions() {
                 2.848915582093,
                 1.9520945821,
                 2.1834987325,
-                0.69482153021
-            )
+                0.69482153021,
+                1.0,
+            ),
         ),
     ];
 
@@ -687,9 +685,8 @@ fn test_sinh_approx_lt5() {
     let mut diff_data = Vec::with_capacity(ITERATIONS);
     let mut err_data = Vec::with_capacity(ITERATIONS);
 
-    let iterator = 
-        (0..ITERATIONS).map(|i| i as f64 * GRANULARITY);
-    
+    let iterator = (0..ITERATIONS).map(|i| i as f64 * GRANULARITY);
+
     for x in iterator {
         let approx = sinh_approx_lt5(x);
         let real = x.sinh();
@@ -719,7 +716,7 @@ fn test_sinh_approx_lt5() {
     }
 
     let res = fs::write(OUTPUT_CSV_PATH, csv);
-    
+
     if let Err(e) = res {
         println!("Failed to write CSV: {e}");
     }
@@ -748,13 +745,16 @@ fn test_sinh_approx_lt5() {
     }
 }
 
-
-fn keplers_equation_hyperbolic(mean_anomaly: f64, eccentric_anomaly: f64, eccentricity: f64) -> f64 {
+fn keplers_equation_hyperbolic(
+    mean_anomaly: f64,
+    eccentric_anomaly: f64,
+    eccentricity: f64,
+) -> f64 {
     return eccentricity * eccentric_anomaly.sinh() - eccentric_anomaly - mean_anomaly;
 }
 
 /// Use binary search to get the real hyperbolic eccentric anomaly instead of Newton's method.
-/// 
+///
 /// We can do this because the hyperbolic KE is a monotonic function.
 fn slowly_get_real_hyperbolic_eccentric_anomaly(orbit: &Orbit, mean_anomaly: f64) -> f64 {
     use keplers_equation_hyperbolic as ke;
@@ -777,7 +777,7 @@ fn slowly_get_real_hyperbolic_eccentric_anomaly(orbit: &Orbit, mean_anomaly: f64
 
         loop {
             let high_value = ke(mean_anomaly, high, eccentricity);
-            
+
             if high_value > 0.0 {
                 break;
             }
@@ -805,24 +805,28 @@ fn slowly_get_real_hyperbolic_eccentric_anomaly(orbit: &Orbit, mean_anomaly: f64
 
         if midpoint == 0.0 || midpoint == low || midpoint == high {
             if midvalue.abs() > 1e-6 {
-                panic!("Binary search failed to converge to a solution.\n\
+                panic!(
+                    "Binary search failed to converge to a solution.\n\
                 ... Orbit: {orbit:?}\n\
                 ... Mean anomaly: {mean_anomaly}\n\
                 ... Low bound: {low}\n\
                 ... High bound: {high}\n\
                 ... Midpoint: {midpoint}\n\
-                ... Value: {midvalue}");
+                ... Value: {midvalue}"
+                );
             }
 
             return midpoint;
         }
 
         if iters > max_expected_iters {
-            panic!("Too many iterations. There might be a error in the binary search algorithm.\n\
+            panic!(
+                "Too many iterations. There might be a error in the binary search algorithm.\n\
             ... Orbit: {orbit:?}\n\
             ... Mean anomaly: {mean_anomaly}\n\
             ... Low bound: {low}\n\
-            ... High bound: {high}");
+            ... High bound: {high}"
+            );
         }
     }
 }
@@ -832,36 +836,15 @@ fn test_hyperbolic_eccentric_anomaly() {
     let orbits = [
         (
             "Normal parabolic",
-            Orbit::new(
-                1.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
+            Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
         ),
         (
             "Normal hyperbolic",
-            Orbit::new(
-                1.5,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
+            Orbit::new(1.5, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
         ),
         (
             "Extreme hyperbolic",
-            Orbit::new(
-                100.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
+            Orbit::new(100.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
         ),
     ];
 
@@ -889,21 +872,14 @@ fn test_hyperbolic_eccentric_anomaly() {
         println!("Testing orbit type: {}", what);
         for i in 0..ORBIT_POLL_ANGLES {
             let angle =
-                (i as f64 - 0.5 * ORBIT_POLL_ANGLES as f64) * TAU /
-                (ORBIT_POLL_ANGLES as f64);
-            
-            let angle = 4.0 * angle.powi(3); // Test a wider range of angles
-            
-            let ecc_anom =
-                orbit.get_eccentric_anomaly(
-                    angle
-                );
+                (i as f64 - 0.5 * ORBIT_POLL_ANGLES as f64) * TAU / (ORBIT_POLL_ANGLES as f64);
 
-            let expected = slowly_get_real_hyperbolic_eccentric_anomaly(
-                orbit,
-                angle
-            );
-                
+            let angle = 4.0 * angle.powi(3); // Test a wider range of angles
+
+            let ecc_anom = orbit.get_eccentric_anomaly(angle);
+
+            let expected = slowly_get_real_hyperbolic_eccentric_anomaly(orbit, angle);
+
             let deviation = (ecc_anom - expected).abs();
 
             if deviation > situation_at_max_deviation.deviation {
@@ -954,56 +930,29 @@ fn test_true_anom_to_ecc_anom_base(what: &str, orbit: &impl OrbitTrait) {
         let reconverted_true_anomaly = orbit.get_true_anomaly_at_eccentric_anomaly(ecc_anom);
 
         let message = format!("True -> Ecc -> True anomaly conversion for {what}, at iter {i} and angle {true_anomaly}");
-        assert_almost_eq(true_anomaly.rem_euclid(TAU), reconverted_true_anomaly.rem_euclid(TAU), message.as_str());
+        assert_almost_eq(
+            true_anomaly.rem_euclid(TAU),
+            reconverted_true_anomaly.rem_euclid(TAU),
+            message.as_str(),
+        );
     }
 }
 
 #[test]
 fn test_true_anom_to_ecc_anom() {
     let orbits = [
-        (
-            "Unit orbit",
-            Orbit::new(
-                0.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
-        ),
+        ("Unit orbit", Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0)),
         (
             "Mildly eccentric orbit",
-            Orbit::new(
-                0.39,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
+            Orbit::new(0.39, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
         ),
         (
             "Very eccentric orbit",
-            Orbit::new(
-                0.99,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
+            Orbit::new(0.99, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
         ),
         (
             "Just below parabolic orbit",
-            Orbit::new(
-                JUST_BELOW_ONE,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
+            Orbit::new(JUST_BELOW_ONE, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
         ),
         // TODO: Post-Parabolic Support: Uncomment this when parabolic support is properly implemented
         // (
@@ -1014,41 +963,20 @@ fn test_true_anom_to_ecc_anom() {
         //         0.0,
         //         0.0,
         //         0.0,
-        //         0.0
+        //         0.0,1.0
         //     )
         // ),
         (
             "Barely hyperbolic trajectory",
-            Orbit::new(
-                1.01,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
+            Orbit::new(1.01, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
         ),
         (
             "Very hyperbolic trajectory",
-            Orbit::new(
-                9.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
+            Orbit::new(9.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
         ),
         (
             "Extremely hyperbolic trajectory",
-            Orbit::new(
-                100.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            )
+            Orbit::new(100.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
         ),
     ];
 
@@ -1062,107 +990,52 @@ fn test_semi_latus_rectum() {
     let orbits = [
         (
             "Circular",
-            Orbit::new(
-                0.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            ),
+            Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             1.0,
         ),
         (
             "Large Circular",
-            Orbit::new(
-                0.0,
-                192.168001001,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
+            Orbit::new(0.0, 192.168001001, 0.0, 0.0, 0.0, 0.0, 1.0),
             192.168001001,
         ),
         (
             "Elliptic",
-            Orbit::new(
-                0.5,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
-            1.5
+            Orbit::new(0.5, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
+            1.5,
         ),
         (
             "Large Elliptic",
-            Orbit::new(
-                0.5,
-                100.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
-            150.0
+            Orbit::new(0.5, 100.0, 0.0, 0.0, 0.0, 0.0, 1.0),
+            150.0,
         ),
         (
             "Parabolic",
-            Orbit::new(
-                1.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
-            2.0
+            Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
+            2.0,
         ),
         (
             "Large Parabolic",
-            Orbit::new(
-                1.0,
-                100.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
-            200.0
+            Orbit::new(1.0, 100.0, 0.0, 0.0, 0.0, 0.0, 1.0),
+            200.0,
         ),
         (
             "Hyperbolic",
-            Orbit::new(
-                2.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
-            3.0
+            Orbit::new(2.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
+            3.0,
         ),
         (
             "Large Hyperbolic",
-            Orbit::new(
-                2.0,
-                100.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ),
-            300.0
+            Orbit::new(2.0, 100.0, 0.0, 0.0, 0.0, 0.0, 1.0),
+            300.0,
         ),
     ];
 
     for (kind, orbit, expected) in orbits {
         let semi_latus_rectum = orbit.get_semi_latus_rectum();
         assert_almost_eq(
-            semi_latus_rectum, expected,
-            &format!("Semi-latus rectum of {} orbit", kind)
+            semi_latus_rectum,
+            expected,
+            &format!("Semi-latus rectum of {} orbit", kind),
         );
     }
 }
@@ -1178,8 +1051,9 @@ fn test_altitude() {
                 1.4755776307550952,
                 0.3267764431411045,
                 0.6031097400880272,
-                0.7494917839241119
-            ) 
+                0.7494917839241119,
+                1.0,
+            ),
         ),
         (
             "Elliptic",
@@ -1189,8 +1063,9 @@ fn test_altitude() {
                 0.6401863568023209,
                 3.0362713144982374,
                 1.918498022946511,
-                5.8051565948396
-            )
+                5.8051565948396,
+                1.0,
+            ),
         ),
         (
             "Parabolic",
@@ -1200,8 +1075,9 @@ fn test_altitude() {
                 5.118096184019639,
                 3.981150762118136,
                 3.3940481449565048,
-                3.736718306390939
-            )
+                3.736718306390939,
+                1.0,
+            ),
         ),
         (
             "Hyperbolic",
@@ -1211,44 +1087,38 @@ fn test_altitude() {
                 5.182279515397755,
                 6.212669269522696,
                 1.990603413825992,
-                6.145132647429473
-            )
-        )
+                6.145132647429473,
+                1.0,
+            ),
+        ),
     ];
 
     for (kind, orbit) in orbits {
         for i in 0..ORBIT_POLL_ANGLES {
             let angle = (i as f64) * TAU / (ORBIT_POLL_ANGLES as f64);
-    
+
             let pos = orbit.get_position_at_angle(angle);
             let flat_pos = orbit.get_flat_position_at_angle(angle);
             let altitude = orbit.get_altitude_at_angle(angle);
 
-            let pos_alt = (
-                pos.0.powi(2) +
-                pos.1.powi(2) +
-                pos.2.powi(2)
-            ).sqrt();
+            let pos_alt = (pos.0.powi(2) + pos.1.powi(2) + pos.2.powi(2)).sqrt();
 
-            let pos_flat = (
-                flat_pos.0.powi(2) +
-                flat_pos.1.powi(2)
-            ).sqrt();
+            let pos_flat = (flat_pos.0.powi(2) + flat_pos.1.powi(2)).sqrt();
 
-            if !altitude.is_finite() { continue; }
+            if !altitude.is_finite() {
+                continue;
+            }
 
             assert_almost_eq(
-                pos_alt, altitude,
-                &format!(
-                    "Dist of tilted point (orbit {kind}, angle {angle})",
-                )
+                pos_alt,
+                altitude,
+                &format!("Dist of tilted point (orbit {kind}, angle {angle})",),
             );
 
             assert_almost_eq(
-                pos_flat, altitude,
-                &format!(
-                    "Dist of flat point (orbit {kind}, angle {angle})",
-                )
+                pos_flat,
+                altitude,
+                &format!("Dist of flat point (orbit {kind}, angle {angle})",),
             );
         }
     }
@@ -1263,7 +1133,10 @@ mod monotone_cubic_solver {
         // Monotonic increasing, one real root
         let root = solve_monotone_cubic(1.0, 3.0, 3.0, 1.0);
         let expected = -1.0; // Root is exactly -1
-        assert!((root - expected).abs() < 1e-6, "Expected root close to -1, got {root}");
+        assert!(
+            (root - expected).abs() < 1e-6,
+            "Expected root close to -1, got {root}"
+        );
     }
 
     #[test]
@@ -1271,7 +1144,10 @@ mod monotone_cubic_solver {
         // x^3 = 0
         // Real root: x = 0
         let root = solve_monotone_cubic(1.0, 0.0, 0.0, 0.0);
-        assert!((root - 0.0).abs() < 1e-6, "Expected root close to 0, got {root}");
+        assert!(
+            (root - 0.0).abs() < 1e-6,
+            "Expected root close to 0, got {root}"
+        );
     }
 
     #[test]
@@ -1280,10 +1156,12 @@ mod monotone_cubic_solver {
         // Should handle large coefficients accurately
         let root = solve_monotone_cubic(1000.0, -3000.0, 3000.0, -1000.0);
         let expected = 1.0; // Root is exactly 1
-        assert!((root - expected).abs() < 1e-6, "Expected root close to 1, got {root}");
+        assert!(
+            (root - expected).abs() < 1e-6,
+            "Expected root close to 1, got {root}"
+        );
     }
 }
-
 
 mod sinh_approx {
     use crate::generated_sinh_approximator::sinh_approx_lt5;
@@ -1311,9 +1189,10 @@ mod sinh_approx {
         eprintln!("Real sinh call: {:?}", base_duration);
         eprintln!("Approximation: {:?}", approx_duration);
         let speed_factor = base_duration.as_nanos() as f64 / approx_duration.as_nanos() as f64;
-        eprintln!(
-            "\nThe approximation is {speed_factor}x the speed of the real sinh call.",
+        eprintln!("\nThe approximation is {speed_factor}x the speed of the real sinh call.",);
+        assert!(
+            speed_factor > 1.0,
+            "The approximation is slower than the real sinh call."
         );
-        assert!(speed_factor > 1.0, "The approximation is slower than the real sinh call.");
     }
 }

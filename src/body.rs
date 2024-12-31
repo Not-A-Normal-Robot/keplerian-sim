@@ -1,5 +1,5 @@
 use crate::{Orbit, OrbitTrait};
-use core::f64::consts::TAU as TAU;
+use core::f64::consts::TAU;
 
 /// A struct representing a celestial body.
 #[derive(Clone, Debug, PartialEq)]
@@ -22,29 +22,29 @@ pub struct Body {
 
 impl Body {
     /// Creates a new `Body` instance.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `name` - The name of the celestial body.
     /// * `mass` - The mass of the celestial body, in kilograms.
     /// * `radius` - The radius of the celestial body, in meters.
     /// * `orbit` - An optional orbit for the celestial body.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A new `Body` instance.
-    pub fn new(
-        name: String, mass: f64, radius: f64,
-        orbit: Option<Orbit>
-    ) -> Body {
+    pub fn new(name: String, mass: f64, radius: f64, orbit: Option<Orbit>) -> Body {
         return Body {
-            name, mass, radius, orbit,
-            progress: 0.0
+            name,
+            mass,
+            radius,
+            orbit,
+            progress: 0.0,
         };
     }
 
     /// Creates a default `Body` instance.
-    /// 
+    ///
     /// Currently, this function returns the Earth.  
     /// However, do not rely on this behavior, as it may change in the future.
     pub fn new_default() -> Body {
@@ -80,15 +80,12 @@ impl Body {
     /// Progresses this body's orbit, given a time step and the gravitational
     /// acceleration towards the parent body.
     pub fn progress_orbit(&mut self, dt: f64, g: f64) -> Result<(), String> {
-        let orbit = self.orbit
-            .as_ref()
-            .ok_or("Body is not in orbit")?;
+        let orbit = self.orbit.as_ref().ok_or("Body is not in orbit")?;
 
         if orbit.get_eccentricity() >= 1.0 {
             self.progress += dt * g.sqrt();
         } else {
-            let period = self.get_orbital_period(g)
-                .unwrap();
+            let period = self.get_orbital_period(g).unwrap();
             self.progress += dt / period;
             self.progress = self.progress.rem_euclid(1.0);
         }
@@ -96,11 +93,11 @@ impl Body {
         return Ok(());
     }
     /// Gets the relative position of this body, in meters.
-    /// 
+    ///
     /// The position is relative to the parent body, if there is one.  
     /// If the body is not orbiting anything, this function will return
     /// (0, 0, 0).
-    /// 
+    ///
     /// Each coordinate is in meters.
     pub fn get_relative_position(&self) -> (f64, f64, f64) {
         let orbit = self.orbit.as_ref();
