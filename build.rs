@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, process::Command};
 
 fn main() {
     assert_eq!(PIECEWISE_VALUES.len(), PIECEWISE_CUTOFFS.len());
@@ -6,6 +6,9 @@ fn main() {
     let code = generate_sinh_approximator();
 
     fs::write(SINH_APPROXIMATOR_FILE_PATH, code).expect("Failed to write generated code to file");
+
+    // Format the auto-generated code... Not sure how else to do this.
+    let _ = Command::new("cargo").arg("fmt").output();
 }
 
 const SINH_APPROXIMATOR_FILE_PATH: &str = "src/generated_sinh_approximator.rs";
