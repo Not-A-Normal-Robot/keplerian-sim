@@ -35,6 +35,9 @@ use crate::{ApoapsisSetterError, CompactOrbit, Matrix3x2, OrbitTrait};
 ///
 ///     // Mean anomaly at epoch
 ///     0.0,
+///
+///     // Mass of the parent body
+///     1.0
 /// );
 ///
 /// let orbit = Orbit::with_apoapsis(
@@ -57,6 +60,9 @@ use crate::{ApoapsisSetterError, CompactOrbit, Matrix3x2, OrbitTrait};
 ///
 ///     // Mean anomaly at epoch
 ///     0.0,
+///
+///     // Mass of the parent body
+///     1.0
 /// );
 /// ```
 /// See [Orbit::new] and [Orbit::with_apoapsis] for more information.
@@ -83,6 +89,10 @@ pub struct Orbit {
 
     /// The mean anomaly at orbit epoch, in radians.
     mean_anomaly: f64,
+
+    /// The mass of the parent body, in kilograms.
+    parent_mass: f64,
+
     cache: OrbitCachedCalculations,
 }
 
@@ -108,79 +118,6 @@ struct OrbitCachedCalculations {
 }
 // Initialization and cache management
 impl Orbit {
-    /// Creates a new orbit with the given parameters.
-    ///
-    /// Note: This function uses eccentricity instead of apoapsis.  
-    /// If you want to provide an apoapsis instead, consider using the
-    /// [`Orbit::with_apoapsis`] function instead.
-    ///
-    /// ### Parameters
-    /// - `eccentricity`: The eccentricity of the orbit.
-    /// - `periapsis`: The periapsis of the orbit, in meters.
-    /// - `inclination`: The inclination of the orbit, in radians.
-    /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
-    /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
-    /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
-    pub fn new(
-        eccentricity: f64,
-        periapsis: f64,
-        inclination: f64,
-        arg_pe: f64,
-        long_asc_node: f64,
-        mean_anomaly: f64,
-    ) -> Orbit {
-        let cache = Self::get_cached_calculations(
-            eccentricity,
-            periapsis,
-            inclination,
-            arg_pe,
-            long_asc_node,
-        );
-        Orbit {
-            eccentricity,
-            periapsis,
-            inclination,
-            arg_pe,
-            long_asc_node,
-            mean_anomaly,
-            cache,
-        }
-    }
-
-    /// Creates a new orbit with the given parameters.
-    ///
-    /// Note: This function uses apoapsis instead of eccentricity.  
-    /// Because of this, it's not recommended to initialize
-    /// parabolic or hyperbolic 'orbits' with this function.  
-    /// If you're looking to initialize a parabolic or hyperbolic
-    /// trajectory, consider using the [`Orbit::new`] function instead.
-    ///
-    /// ### Parameters
-    /// - `apoapsis`: The apoapsis of the orbit, in meters.
-    /// - `periapsis`: The periapsis of the orbit, in meters.
-    /// - `inclination`: The inclination of the orbit, in radians.
-    /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
-    /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
-    /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
-    pub fn with_apoapsis(
-        apoapsis: f64,
-        periapsis: f64,
-        inclination: f64,
-        arg_pe: f64,
-        long_asc_node: f64,
-        mean_anomaly: f64,
-    ) -> Orbit {
-        let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
-        Self::new(
-            eccentricity,
-            periapsis,
-            inclination,
-            arg_pe,
-            long_asc_node,
-            mean_anomaly,
-        )
-    }
-
     fn update_cache(&mut self) {
         self.cache = Self::get_cached_calculations(
             self.eccentricity,
@@ -235,8 +172,60 @@ impl Orbit {
     }
 }
 
-// The actual orbit position calculations
 impl OrbitTrait for Orbit {
+    fn new(
+        eccentricity: f64,
+        periapsis: f64,
+        inclination: f64,
+        arg_pe: f64,
+        long_asc_node: f64,
+        mean_anomaly: f64,
+        parent_mass: f64,
+    ) -> Self {
+        let cache = Self::get_cached_calculations(
+            eccentricity,
+            periapsis,
+            inclination,
+            arg_pe,
+            long_asc_node,
+        );
+        Self {
+            eccentricity,
+            periapsis,
+            inclination,
+            arg_pe,
+            long_asc_node,
+            mean_anomaly,
+            parent_mass,
+            cache,
+        }
+    }
+
+    fn with_apoapsis(
+        apoapsis: f64,
+        periapsis: f64,
+        inclination: f64,
+        arg_pe: f64,
+        long_asc_node: f64,
+        mean_anomaly: f64,
+        parent_mass: f64,
+    ) -> Self {
+        let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
+        Self::new(
+            eccentricity,
+            periapsis,
+            inclination,
+            arg_pe,
+            long_asc_node,
+            mean_anomaly,
+            parent_mass,
+        )
+    }
+
+    fn get_parent_mass(&self) -> f64 {
+        self.parent_mass
+    }
+
     fn get_semi_major_axis(&self) -> f64 {
         self.cache.semi_major_axis
     }
@@ -341,6 +330,7 @@ impl From<CompactOrbit> for Orbit {
             compact.arg_pe,
             compact.long_asc_node,
             compact.mean_anomaly,
+            compact.parent_mass,
         )
     }
 }
@@ -350,6 +340,6 @@ impl Default for Orbit {
     ///
     /// The unit orbit is a perfect circle of radius 1 and no "tilt".
     fn default() -> Orbit {
-        Self::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0)
+        Self::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
     }
 }

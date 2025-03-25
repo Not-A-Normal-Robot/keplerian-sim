@@ -1,6 +1,6 @@
 use core::f64::NAN;
 use glam::{DVec2, DVec3};
-use keplerian_sim::{Orbit, OrbitTrait};
+use keplerian_sim::{body_presets::MASS_EARTH, Orbit, OrbitTrait};
 use std::fs;
 
 const SIMULATION_TICKS: usize = 10_000;
@@ -34,91 +34,99 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let orbits = [
         OrbitWrapper {
             name: "The Moon",
-            orbit: Orbit::with_apoapsis(405400.0, 362600.0, 5.145_f64.to_radians(), 0.0, 0.0, 0.0),
+            orbit: Orbit::with_apoapsis(
+                405400.0,
+                362600.0,
+                5.145_f64.to_radians(),
+                0.0,
+                0.0,
+                0.0,
+                MASS_EARTH,
+            ),
             time_mult: 1.0,
             time_offset: 0.0,
         },
         OrbitWrapper {
             name: "Eccentricity 0.85",
-            orbit: Orbit::new(0.85, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(0.85, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 1.0,
             time_offset: 0.0,
         },
         OrbitWrapper {
             name: "Eccentricity 0.99",
-            orbit: Orbit::new(0.99, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(0.99, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 1.0,
             time_offset: 0.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1",
-            orbit: Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.001",
-            orbit: Orbit::new(1.001, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1.001, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.002",
-            orbit: Orbit::new(1.002, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1.002, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.005",
-            orbit: Orbit::new(1.005, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1.005, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.01",
-            orbit: Orbit::new(1.01, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1.01, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.02",
-            orbit: Orbit::new(1.02, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1.02, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.1",
-            orbit: Orbit::new(1.1, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1.1, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.5",
-            orbit: Orbit::new(1.5, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1.5, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 2.5",
-            orbit: Orbit::new(2.5, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(2.5, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 12",
-            orbit: Orbit::new(12.0, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(12.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 50.0,
             time_offset: -25.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1000",
-            orbit: Orbit::new(1000.0, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1000.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 1000.0,
             time_offset: -500.0,
         },
         OrbitWrapper {
             name: "Escape trajectory",
-            orbit: Orbit::new(2.0, 1.496e11, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(2.0, 1.496e11, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 100.0,
             time_offset: -5.0,
         },

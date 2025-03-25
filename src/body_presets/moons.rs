@@ -7,7 +7,7 @@
 //!
 //! \- [Wikipedia](https://en.wikipedia.org/wiki/Natural_satellite)
 
-use crate::{Body, Orbit};
+use crate::{Body, Orbit, OrbitTrait};
 
 /// Returns the Moon, the only natural satellite of Earth.
 /// `include_orbit`: Whether to include the orbit of the Moon around the Earth.
@@ -24,6 +24,7 @@ pub fn luna(include_orbit: bool) -> Body {
             0.0,
             0.0,
             0.0,
+            MASS_EARTH,
         ))
     } else {
         None
@@ -33,6 +34,8 @@ pub fn luna(include_orbit: bool) -> Body {
 }
 
 pub use luna as the_moon;
+
+use super::{MASS_EARTH, MASS_ERIS, MASS_PLUTO, MASS_QUAOAR};
 
 /// Returns (50000) Quaoar I, a.k.a. Weywot, the moon of the dwarf planet Quaoar.
 /// `include_orbit`: Whether to include the orbit of Weywot around Quaoar.
@@ -49,6 +52,7 @@ pub fn weywot(include_orbit: bool) -> Body {
             1_f64.to_radians(),
             // I couldn't find the mean anomaly
             0.0,
+            MASS_QUAOAR,
         ))
     } else {
         None
@@ -88,6 +92,7 @@ pub fn charon(include_orbit: bool) -> Body {
             223.046_f64.to_radians(),
             // Could not find number for mean anomaly
             0.0,
+            MASS_PLUTO,
         ))
     } else {
         None
@@ -109,6 +114,7 @@ pub fn dysnomia(include_orbit: bool) -> Body {
             126.17_f64.to_radians(),
             // Could not find mean anomaly number
             0.0,
+            MASS_ERIS,
         ))
     } else {
         None

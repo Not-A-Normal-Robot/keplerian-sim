@@ -9,6 +9,7 @@ use std::f64::consts::{PI, TAU};
 
 const ALMOST_EQ_TOLERANCE: f64 = 1e-6;
 const ORBIT_POLL_ANGLES: usize = 4096;
+const PARENT_MASS: f64 = 1.0;
 
 fn assert_almost_eq(a: f64, b: f64, what: &str) {
     let dist = (a - b).abs();
@@ -97,13 +98,9 @@ fn poll_eccentric_anomaly(orbit: &impl OrbitTrait) -> Vec<f64> {
     return vec;
 }
 
-fn unit_orbit() -> Orbit {
-    return Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0);
-}
-
 #[test]
 fn unit_orbit_angle_3d() {
-    let orbit = unit_orbit();
+    let orbit = Orbit::default();
 
     assert_orbit_positions_3d(
         &orbit,
@@ -119,7 +116,7 @@ fn unit_orbit_angle_3d() {
 
 #[test]
 fn unit_orbit_angle_2d() {
-    let orbit = unit_orbit();
+    let orbit = Orbit::default();
 
     assert_orbit_positions_2d(
         &orbit,
@@ -137,7 +134,7 @@ fn unit_orbit_angle_2d() {
 fn unit_orbit_transformation() {
     // Test how the inclination and LAN tilts points in the orbit.
     // Since inclination is zero, it should not do anything.
-    let orbit = unit_orbit();
+    let orbit = Orbit::default();
 
     let tests = [(1.0, 1.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)];
 
@@ -159,6 +156,7 @@ fn tilted_equidistant() {
         1.9520945821,
         2.1834987325,
         0.69482153021,
+        PARENT_MASS,
     );
 
     // Test for equidistance
@@ -173,7 +171,7 @@ fn tilted_equidistant() {
 
 #[test]
 fn tilted_90deg() {
-    let orbit = Orbit::new(0.0, 1.0, PI / 2.0, 0.0, 0.0, 0.0);
+    let orbit = Orbit::new(0.0, 1.0, PI / 2.0, 0.0, 0.0, 0.0, PARENT_MASS);
 
     // Transform test
     let tests = [
@@ -193,7 +191,7 @@ fn tilted_90deg() {
 
 #[test]
 fn apoapsis_of_two() {
-    let orbit = Orbit::with_apoapsis(2.0, 1.0, 0.0, 0.0, 0.0, 0.0);
+    let orbit = Orbit::with_apoapsis(2.0, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS);
 
     let point_at_apoapsis = orbit.get_position_at_angle(PI);
     let point_at_periapsis = orbit.get_position_at_angle(0.0);
@@ -204,7 +202,7 @@ fn apoapsis_of_two() {
 
 #[test]
 fn huge_apoapsis() {
-    let orbit = Orbit::with_apoapsis(10000.0, 1.0, 0.0, 0.0, 0.0, 0.0);
+    let orbit = Orbit::with_apoapsis(10000.0, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS);
 
     let point_at_apoapsis = orbit.get_position_at_angle(PI);
     let point_at_periapsis = orbit.get_position_at_angle(0.0);
@@ -225,6 +223,7 @@ fn almost_parabolic() {
         0.0,
         0.0,
         0.0,
+        PARENT_MASS,
     );
 
     let eccentric_anomalies = poll_eccentric_anomaly(&orbit);
@@ -272,7 +271,7 @@ fn almost_parabolic() {
 
 #[test]
 fn parabolic() {
-    let orbit = Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0);
+    let orbit = Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS);
 
     let point_near_infinity = orbit.get_position_at_angle(PI - 1e-7);
     let point_at_periapsis = orbit.get_position_at_angle(0.0);
@@ -541,34 +540,37 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
 #[test]
 fn orbit_conversions() {
     let orbits = [
-        ("Unit orbit", Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0)),
+        (
+            "Unit orbit",
+            Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
+        ),
         (
             "Mildly eccentric orbit",
-            Orbit::new(0.39, 1.0, 0.0, 0.0, 0.0, 0.0),
+            Orbit::new(0.39, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
         ),
         (
             "Very eccentric orbit",
-            Orbit::new(0.99, 1.0, 0.0, 0.0, 0.0, 0.0),
+            Orbit::new(0.99, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
         ),
         (
             "Just below parabolic orbit",
-            Orbit::new(JUST_BELOW_ONE, 1.0, 0.0, 0.0, 0.0, 0.0),
+            Orbit::new(JUST_BELOW_ONE, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
         ),
         (
             "Parabolic trajectory",
-            Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0),
+            Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
         ),
         (
             "Barely hyperbolic trajectory",
-            Orbit::new(1.01, 1.0, 0.0, 0.0, 0.0, 0.0),
+            Orbit::new(1.01, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
         ),
         (
             "Very hyperbolic trajectory",
-            Orbit::new(9.0, 1.0, 0.0, 0.0, 0.0, 0.0),
+            Orbit::new(9.0, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
         ),
         (
             "Extremely hyperbolic trajectory",
-            Orbit::new(100.0, 1.0, 0.0, 0.0, 0.0, 0.0),
+            Orbit::new(100.0, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
         ),
         (
             "Tilted orbit",
@@ -579,6 +581,7 @@ fn orbit_conversions() {
                 1.9520945821,
                 2.1834987325,
                 0.69482153021,
+                PARENT_MASS,
             ),
         ),
         (
@@ -590,6 +593,7 @@ fn orbit_conversions() {
                 1.9520945821,
                 2.1834987325,
                 0.69482153021,
+                PARENT_MASS,
             ),
         ),
         (
@@ -601,6 +605,7 @@ fn orbit_conversions() {
                 1.9520945821,
                 2.1834987325,
                 0.69482153021,
+                PARENT_MASS,
             ),
         ),
         (
@@ -612,6 +617,7 @@ fn orbit_conversions() {
                 1.9520945821,
                 2.1834987325,
                 0.69482153021,
+                PARENT_MASS,
             ),
         ),
         (
@@ -623,6 +629,7 @@ fn orbit_conversions() {
                 1.9520945821,
                 2.1834987325,
                 0.69482153021,
+                PARENT_MASS,
             ),
         ),
     ];
@@ -801,14 +808,17 @@ fn slowly_get_real_hyperbolic_eccentric_anomaly(orbit: &Orbit, mean_anomaly: f64
 #[test]
 fn test_hyperbolic_eccentric_anomaly() {
     let orbits = [
-        ("Normal parabolic", Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0)),
+        (
+            "Normal parabolic",
+            Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
+        ),
         (
             "Normal hyperbolic",
-            Orbit::new(1.5, 1.0, 0.0, 0.0, 0.0, 0.0),
+            Orbit::new(1.5, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
         ),
         (
             "Extreme hyperbolic",
-            Orbit::new(100.0, 1.0, 0.0, 0.0, 0.0, 0.0),
+            Orbit::new(100.0, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
         ),
     ];
 
@@ -889,28 +899,44 @@ fn test_hyperbolic_eccentric_anomaly() {
 #[test]
 fn test_semi_latus_rectum() {
     let orbits = [
-        ("Circular", Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0), 1.0),
+        (
+            "Circular",
+            Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
+            1.0,
+        ),
         (
             "Large Circular",
-            Orbit::new(0.0, 192.168001001, 0.0, 0.0, 0.0, 0.0),
+            Orbit::new(0.0, 192.168001001, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
             192.168001001,
         ),
-        ("Elliptic", Orbit::new(0.5, 1.0, 0.0, 0.0, 0.0, 0.0), 1.5),
+        (
+            "Elliptic",
+            Orbit::new(0.5, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
+            1.5,
+        ),
         (
             "Large Elliptic",
-            Orbit::new(0.5, 100.0, 0.0, 0.0, 0.0, 0.0),
+            Orbit::new(0.5, 100.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
             150.0,
         ),
-        ("Parabolic", Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0), 2.0),
+        (
+            "Parabolic",
+            Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
+            2.0,
+        ),
         (
             "Large Parabolic",
-            Orbit::new(1.0, 100.0, 0.0, 0.0, 0.0, 0.0),
+            Orbit::new(1.0, 100.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
             200.0,
         ),
-        ("Hyperbolic", Orbit::new(2.0, 1.0, 0.0, 0.0, 0.0, 0.0), 3.0),
+        (
+            "Hyperbolic",
+            Orbit::new(2.0, 1.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
+            3.0,
+        ),
         (
             "Large Hyperbolic",
-            Orbit::new(2.0, 100.0, 0.0, 0.0, 0.0, 0.0),
+            Orbit::new(2.0, 100.0, 0.0, 0.0, 0.0, 0.0, PARENT_MASS),
             300.0,
         ),
     ];
@@ -937,6 +963,7 @@ fn test_altitude() {
                 0.3267764431411045,
                 0.6031097400880272,
                 0.7494917839241119,
+                PARENT_MASS,
             ),
         ),
         (
@@ -948,6 +975,7 @@ fn test_altitude() {
                 3.0362713144982374,
                 1.918498022946511,
                 5.8051565948396,
+                PARENT_MASS,
             ),
         ),
         (
@@ -959,6 +987,7 @@ fn test_altitude() {
                 3.981150762118136,
                 3.3940481449565048,
                 3.736718306390939,
+                PARENT_MASS,
             ),
         ),
         (
@@ -970,6 +999,7 @@ fn test_altitude() {
                 6.212669269522696,
                 1.990603413825992,
                 6.145132647429473,
+                PARENT_MASS,
             ),
         ),
     ];

@@ -230,7 +230,60 @@ impl Matrix3x2 {
 ///       accepts_orbit(&not_orbit);
 /// # }
 /// ```
-pub trait OrbitTrait {
+pub trait OrbitTrait: Default {
+    /// Creates a new `OrbitTrait` instance with the given parameters.
+    ///
+    /// Note: This function uses eccentricity instead of apoapsis.  
+    /// If you want to provide an apoapsis instead, consider using the
+    /// [`OrbitTrait::with_apoapsis`] function instead.
+    ///
+    /// ### Parameters
+    /// - `eccentricity`: The eccentricity of the orbit.
+    /// - `periapsis`: The periapsis of the orbit, in meters.
+    /// - `inclination`: The inclination of the orbit, in radians.
+    /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
+    /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
+    /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
+    /// - `parent_mass`: The mass of the parent body, in kilograms.
+    fn new(
+        eccentricity: f64,
+        periapsis: f64,
+        inclination: f64,
+        arg_pe: f64,
+        long_asc_node: f64,
+        mean_anomaly: f64,
+        parent_mass: f64,
+    ) -> Self;
+
+    /// Creates a new orbit with the given parameters.
+    ///
+    /// Note: This function uses apoapsis instead of eccentricity.  
+    /// Because of this, it's not recommended to initialize
+    /// parabolic or hyperbolic 'orbits' with this function.  
+    /// If you're looking to initialize a parabolic or hyperbolic
+    /// trajectory, consider using the [`OrbitTrait::new`] function instead.
+    ///
+    /// ### Parameters
+    /// - `apoapsis`: The apoapsis of the orbit, in meters.
+    /// - `periapsis`: The periapsis of the orbit, in meters.
+    /// - `inclination`: The inclination of the orbit, in radians.
+    /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
+    /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
+    /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
+    /// - `parent_mass`: The mass of the parent body, in kilograms.
+    fn with_apoapsis(
+        apoapsis: f64,
+        periapsis: f64,
+        inclination: f64,
+        arg_pe: f64,
+        long_asc_node: f64,
+        mean_anomaly: f64,
+        parent_mass: f64,
+    ) -> Self;
+
+    /// Returns the mass of the parent body, in kilograms.
+    fn get_parent_mass(&self) -> f64;
+
     /// Gets the semi-major axis of the orbit.
     ///
     /// In an elliptic orbit, the semi-major axis is the

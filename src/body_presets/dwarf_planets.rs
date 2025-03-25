@@ -10,7 +10,9 @@
 //!
 //! \- [International Astronomical Union](https://en.wikipedia.org/wiki/IAU_definition_of_planet#Final_definition)
 
-use crate::{Body, Orbit};
+use crate::{Body, Orbit, OrbitTrait};
+
+use super::{MASS_ERIS, MASS_PLUTO, MASS_QUAOAR, MASS_SUN};
 
 /// Returns 1 Ceres, a dwarf planet in the asteroid belt.  
 ///
@@ -25,6 +27,7 @@ pub fn ceres(include_orbit: bool) -> Body {
             73.6_f64.to_radians(),
             80.3_f64.to_radians(),
             291.4_f64.to_radians(),
+            MASS_SUN,
         ))
     } else {
         None
@@ -46,12 +49,13 @@ pub fn quaoar(include_orbit: bool) -> Body {
             147.48_f64.to_radians(),
             188.927_f64.to_radians(),
             301.104_f64.to_radians(),
+            MASS_SUN,
         ))
     } else {
         None
     };
 
-    Body::new("Quaoar".to_string(), 1.2e21, 5.45e5, orbit)
+    Body::new("Quaoar".to_string(), MASS_QUAOAR, 5.45e5, orbit)
 }
 
 /// Returns 90377 Sedna, a dwarf planet, sednoid, and extreme trans-Neptunian object.
@@ -67,6 +71,7 @@ pub fn sedna(include_orbit: bool) -> Body {
             311.352_f64.to_radians(),
             144.248_f64.to_radians(),
             358.117_f64.to_radians(),
+            MASS_SUN,
         ))
     } else {
         None
@@ -95,12 +100,13 @@ pub fn pluto(include_orbit: bool) -> Body {
             113.834_f64.to_radians(),
             110.299_f64.to_radians(),
             14.53_f64.to_radians(),
+            MASS_SUN,
         ))
     } else {
         None
     };
 
-    Body::new("Pluto".to_string(), 1.3025e22, 1.1883e6, orbit)
+    Body::new("Pluto".to_string(), MASS_PLUTO, 1.1883e6, orbit)
 }
 
 /// Returns 136108 Haumea, a dwarf planet in the Kuiper belt.  
@@ -116,6 +122,7 @@ pub fn haumea(include_orbit: bool) -> Body {
             239.041_f64.to_radians(),
             122.167_f64.to_radians(),
             218.205_f64.to_radians(),
+            MASS_SUN,
         ))
     } else {
         None
@@ -137,12 +144,13 @@ pub fn eris(include_orbit: bool) -> Body {
             151.639_f64.to_radians(),
             35.951_f64.to_radians(),
             205.989_f64.to_radians(),
+            MASS_SUN,
         ))
     } else {
         None
     };
 
-    Body::new("Eris".to_string(), 1.6466e22, 1.163e6, orbit)
+    Body::new("Eris".to_string(), MASS_ERIS, 1.163e6, orbit)
 }
 
 /// Returns 136472 Makemake, a dwarf planet in the Kuiper belt.  
@@ -158,6 +166,7 @@ pub fn makemake(include_orbit: bool) -> Body {
             294.834_f64.to_radians(),
             79.62_f64.to_radians(),
             165.514_f64.to_radians(),
+            MASS_SUN,
         ))
     } else {
         None

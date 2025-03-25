@@ -8,7 +8,9 @@ fn main() {
     fs::write(SINH_APPROXIMATOR_FILE_PATH, code).expect("Failed to write generated code to file");
 
     // Format the auto-generated code... Not sure how else to do this.
-    let _ = Command::new("cargo").arg("fmt").output();
+    let _ = Command::new("rustfmt")
+        .arg(SINH_APPROXIMATOR_FILE_PATH)
+        .output();
 }
 
 const SINH_APPROXIMATOR_FILE_PATH: &str = "src/generated_sinh_approximator.rs";
