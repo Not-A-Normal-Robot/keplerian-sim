@@ -1,6 +1,6 @@
 use glam::DVec3;
 
-use crate::{Orbit, OrbitTrait};
+use crate::{body_presets::planets::earth, Orbit, OrbitTrait};
 use core::f64::consts::TAU;
 
 #[cfg(feature = "serde")]
@@ -101,12 +101,6 @@ impl Default for Body {
     /// Currently, this function returns the Earth.  
     /// However, do not rely on this behavior, as it may change in the future.
     fn default() -> Self {
-        Self {
-            name: "Earth".to_string(),
-            mass: 5.972e24,
-            radius: 6.371e6,
-            orbit: None,
-            progress: 0.0,
-        }
+        earth(true)
     }
 }
