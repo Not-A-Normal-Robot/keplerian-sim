@@ -284,6 +284,11 @@ pub trait OrbitTrait: Default {
     /// Returns the mass of the parent body, in kilograms.
     fn get_parent_mass(&self) -> f64;
 
+    /// Returns g * mass.
+    fn get_mu(&self, g: f64) -> f64 {
+        g * self.get_parent_mass()
+    }
+
     /// Gets the semi-major axis of the orbit.
     ///
     /// In an elliptic orbit, the semi-major axis is the
@@ -565,6 +570,14 @@ pub trait OrbitTrait: Default {
     /// and so **may result in infinities when combined with other functions**.
     fn get_true_anomaly_at_time(&self, t: f64) -> f64 {
         self.get_true_anomaly(self.get_mean_anomaly_at_time(t))
+    }
+
+    /// Returns the distance in meters at time t.
+    ///
+    /// \- [Source](https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf)
+    fn get_distance_at_time(&self, t: f64) -> f64 {
+        self.get_semi_major_axis()
+            * (1. - self.get_eccentricity() * self.get_eccentric_anomaly_at_time(t).cos())
     }
 
     /// Gets the 3D position at a given angle (true anomaly) in the orbit.
@@ -1172,6 +1185,13 @@ pub trait OrbitTrait: Default {
 
         eccentric_anomaly * sign
     }
+
+    /// Returns `(mu * semi_major_axis).sqrt()`.
+    /// This is used when calculating velocity.
+    fn get_sqrt_mu_sma(&self) -> f64;
+
+    /// Returns a unit vector that can be used to calculate the velocity.
+    fn get_unit_velocity_vector(&self) -> f64;
 }
 
 /// An error to describe why setting the periapsis of an orbit failed.

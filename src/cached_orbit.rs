@@ -115,16 +115,22 @@ struct OrbitCachedCalculations {
     /// the true anomaly from the eccentric anomaly.  
     /// https://en.wikipedia.org/wiki/True_anomaly#From_the_eccentric_anomaly
     beta: f64,
+
+    /// `(mu * semi_major_axis).sqrt()`.
+    /// This is used when calculating velocity.
+    sqrt_mu_sma: f64
 }
 // Initialization and cache management
 impl Orbit {
-    fn update_cache(&mut self) {
+    fn update_cache(&mut self, g: f64) {
         self.cache = Self::get_cached_calculations(
             self.eccentricity,
             self.periapsis,
             self.inclination,
             self.arg_pe,
             self.long_asc_node,
+            self.parent_mass,
+            g
         );
     }
 
@@ -134,6 +140,8 @@ impl Orbit {
         inclination: f64,
         arg_pe: f64,
         long_asc_node: f64,
+        parent_mass: f64,
+        g: f64
     ) -> OrbitCachedCalculations {
         let semi_major_axis = periapsis / (1.0 - eccentricity);
         let semi_minor_axis = semi_major_axis * (1.0 - eccentricity * eccentricity).abs().sqrt();
@@ -141,6 +149,7 @@ impl Orbit {
         let transformation_matrix =
             Self::get_transformation_matrix(inclination, arg_pe, long_asc_node);
         let beta = eccentricity / (1.0 + (1.0 - eccentricity * eccentricity).sqrt());
+        let sqrt_mu_sma = (parent_mass * g * semi_major_axis).sqrt();
 
         OrbitCachedCalculations {
             semi_major_axis,
@@ -148,6 +157,7 @@ impl Orbit {
             linear_eccentricity,
             transformation_matrix,
             beta,
+            sqrt_mu_sma
         }
     }
 
