@@ -7,6 +7,9 @@ use crate::{OrbitTrait, StateVectors};
 
 use super::Body;
 
+/// The real-world gravitational constant.
+pub const G: f64 = 6.67430e-11;
+
 /// Struct that represents the simulation of the universe.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -152,15 +155,16 @@ impl Universe {
     /// Gets the absolute position and velocity of a body in the universe.
     ///
     /// Each coordinate is in meters.
-    pub fn get_state_vectors(&mut self, index: usize) -> StateVectors {
+    pub fn get_state_vectors(&self, index: usize) -> StateVectors {
+        let body = &self.bodies[index];
+
         match self.body_relations[index].parent {
             Some(parent) => {
                 let body_state_vectors = self.get_state_vectors(parent);
-                let body = &mut self.bodies[index];
-                match body.orbit.as_mut() {
+                match body.orbit.as_ref() {
                     Some(orbit) => {
-                        let state_vectors = orbit.get_state_vectors(body.progress, self.g);
-                        state_vectors + self.get_state_vectors(parent)
+                        orbit.get_state_vectors(body.progress, self.g)
+                            + self.get_state_vectors(parent)
                     }
                     None => body_state_vectors,
                 }
@@ -178,7 +182,7 @@ impl Default for Universe {
             body_relations: Vec::new(),
             time: 0.0,
             time_step: 3.6e3,
-            g: 6.67430e-11,
+            g: G,
         }
     }
 }

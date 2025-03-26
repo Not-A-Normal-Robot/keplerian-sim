@@ -4,7 +4,7 @@ use glam::DVec2;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::{ApoapsisSetterError, CompactOrbit, Matrix3x2, OrbitTrait, StateVectors};
+use crate::{ApoapsisSetterError, CompactOrbit, Matrix3x2, OrbitTrait};
 
 mod cached_orbit_values;
 mod cached_state_vector_values;
@@ -108,7 +108,7 @@ pub struct Orbit {
 
 // Initialization and cache management
 impl Orbit {
-    fn update_cache(&mut self) {
+    fn update_cache(&mut self, g: f64) {
         self.cached_orbit_values = Self::get_cached_calculations(
             self.eccentricity,
             self.periapsis,
@@ -117,8 +117,10 @@ impl Orbit {
             self.long_asc_node,
         );
 
-        // Mark the state vectors as dirty.
-        self.cached_state_vector_values.dirty = true;
+        // Update the cached state vector values.
+        self.cached_state_vector_values.sqrt_mu_sma = crate::get_sqrt_mu_sma(self, g);
+        self.cached_state_vector_values.velocity_unit_vector =
+            crate::get_velocity_unit_vector(self);
     }
 
     fn get_cached_calculations(
@@ -232,38 +234,27 @@ impl OrbitTrait for Orbit {
         self.cached_orbit_values.linear_eccentricity
     }
 
-    fn set_apoapsis(&mut self, apoapsis: f64) -> Result<(), ApoapsisSetterError> {
+    fn set_apoapsis(&mut self, apoapsis: f64, g: f64) -> Result<(), ApoapsisSetterError> {
         if apoapsis < 0.0 {
             Err(ApoapsisSetterError::ApoapsisNegative)
         } else if apoapsis < self.periapsis {
             Err(ApoapsisSetterError::ApoapsisLessThanPeriapsis)
         } else {
             self.eccentricity = (apoapsis - self.periapsis) / (apoapsis + self.periapsis);
-            self.update_cache();
+            self.update_cache(g);
 
             Ok(())
         }
     }
 
-    fn set_apoapsis_force(&mut self, apoapsis: f64) {
+    fn set_apoapsis_force(&mut self, apoapsis: f64, g: f64) {
         let mut apoapsis = apoapsis;
         if apoapsis < self.periapsis && apoapsis > 0.0 {
             (apoapsis, self.periapsis) = (self.periapsis, apoapsis);
         }
 
         self.eccentricity = (apoapsis - self.periapsis) / (apoapsis + self.periapsis);
-        self.update_cache();
-    }
-
-    fn get_state_vectors(&mut self, t: f64, g: f64) -> StateVectors {
-        // Update the cached values.
-        if self.cached_state_vector_values.dirty {
-            self.cached_state_vector_values.sqrt_mu_sma = crate::get_sqrt_mu_sma(self, g);
-            self.cached_state_vector_values.velocity_unit_vector =
-                crate::get_velocity_unit_vector(self);
-            self.cached_state_vector_values.dirty = false;
-        }
-        crate::get_state_vectors(self, t, g)
+        self.update_cache(g);
     }
 
     fn get_transformation_matrix(&self) -> Matrix3x2 {
@@ -308,29 +299,29 @@ impl OrbitTrait for Orbit {
         self.cached_state_vector_values.velocity_unit_vector
     }
 
-    fn set_eccentricity(&mut self, value: f64) {
+    fn set_eccentricity(&mut self, value: f64, g: f64) {
         self.eccentricity = value;
-        self.update_cache();
+        self.update_cache(g);
     }
-    fn set_periapsis(&mut self, value: f64) {
+    fn set_periapsis(&mut self, value: f64, g: f64) {
         self.periapsis = value;
-        self.update_cache();
+        self.update_cache(g);
     }
-    fn set_inclination(&mut self, value: f64) {
+    fn set_inclination(&mut self, value: f64, g: f64) {
         self.inclination = value;
-        self.update_cache();
+        self.update_cache(g);
     }
-    fn set_arg_pe(&mut self, value: f64) {
+    fn set_arg_pe(&mut self, value: f64, g: f64) {
         self.arg_pe = value;
-        self.update_cache();
+        self.update_cache(g);
     }
-    fn set_long_asc_node(&mut self, value: f64) {
+    fn set_long_asc_node(&mut self, value: f64, g: f64) {
         self.long_asc_node = value;
-        self.update_cache();
+        self.update_cache(g);
     }
-    fn set_mean_anomaly_at_epoch(&mut self, value: f64) {
+    fn set_mean_anomaly_at_epoch(&mut self, value: f64, g: f64) {
         self.mean_anomaly = value;
-        self.update_cache();
+        self.update_cache(g);
     }
 }
 

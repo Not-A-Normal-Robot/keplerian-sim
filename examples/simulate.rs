@@ -1,13 +1,13 @@
-use keplerian_sim::{body_presets, OrbitTrait, StateVectors, Universe};
+use keplerian_sim::{body_presets, OrbitTrait, Universe};
 
 const SIMULATION_TICKS: u128 = 1_000_000;
 fn main() {
     let mut universe = generate_solar_system();
-    describe_universe(&mut universe);
+    describe_universe(&universe);
     print!("Simulating {SIMULATION_TICKS} ticks...");
     universe.warp(SIMULATION_TICKS);
     println!(" done");
-    print_all_body_positions(&mut universe);
+    print_all_body_positions(&universe);
 }
 
 fn generate_solar_system<'a>() -> Universe {
@@ -76,20 +76,18 @@ fn generate_solar_system<'a>() -> Universe {
     return universe;
 }
 
-fn describe_universe(universe: &mut Universe) {
+fn describe_universe(universe: &Universe) {
     println!(
         "Simulation universe with {} bodies",
         universe.get_bodies().len()
     );
-    let state_vectors = (0..universe.get_bodies().len())
-        .map(|i| universe.get_state_vectors(i))
-        .collect::<Vec<StateVectors>>();
     for (i, body) in universe.get_bodies().iter().enumerate() {
         println!("    {}: {:?}", i, body.name);
         println!("      Mass: {}", body.mass);
         println!("      Radius: {}", body.radius);
         if let Some(orbit) = &body.orbit {
-            println!("      Orbit: {:?}", state_vectors[i]);
+            let state_vectors = universe.get_state_vectors(i);
+            println!("      Orbit: {:?}", state_vectors);
             println!("        Semi-major axis: {}", orbit.get_semi_major_axis());
             println!("        Eccentricity: {}", orbit.get_eccentricity());
             println!("        Inclination: {}", orbit.get_inclination());
@@ -106,15 +104,9 @@ fn describe_universe(universe: &mut Universe) {
     }
 }
 
-fn print_all_body_positions(universe: &mut Universe) {
-    let state_vectors = universe
-        .get_bodies()
-        .iter()
-        .enumerate()
-        .map(|(i, b)| (i, b.name.clone()))
-        .collect::<Vec<(usize, String)>>();
-    state_vectors.into_iter().for_each(|(i, name)| {
+fn print_all_body_positions(universe: &Universe) {
+    for (i, body) in universe.get_bodies().iter().enumerate() {
         let state_vectors = universe.get_state_vectors(i);
-        println!("{}: {:?}", name, state_vectors);
-    });
+        println!("{}: {:?}", body.name, state_vectors);
+    }
 }

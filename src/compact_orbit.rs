@@ -2,7 +2,7 @@ use glam::DVec2;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::{ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait, StateVectors};
+use crate::{ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait};
 
 /// A minimal struct representing a Keplerian orbit.
 ///
@@ -195,7 +195,7 @@ impl OrbitTrait for CompactOrbit {
         self.get_semi_major_axis() - self.periapsis
     }
 
-    fn set_apoapsis(&mut self, apoapsis: f64) -> Result<(), ApoapsisSetterError> {
+    fn set_apoapsis(&mut self, apoapsis: f64, _: f64) -> Result<(), ApoapsisSetterError> {
         if apoapsis < 0.0 {
             Err(ApoapsisSetterError::ApoapsisNegative)
         } else if apoapsis < self.periapsis {
@@ -207,7 +207,7 @@ impl OrbitTrait for CompactOrbit {
         }
     }
 
-    fn set_apoapsis_force(&mut self, apoapsis: f64) {
+    fn set_apoapsis_force(&mut self, apoapsis: f64, _: f64) {
         let mut apoapsis = apoapsis;
         if apoapsis < self.periapsis && apoapsis > 0.0 {
             (apoapsis, self.periapsis) = (self.periapsis, apoapsis);
@@ -234,10 +234,6 @@ impl OrbitTrait for CompactOrbit {
         matrix.e32 = cos_arg_pe * sin_inc;
 
         matrix
-    }
-
-    fn get_state_vectors(&mut self, t: f64, g: f64) -> StateVectors {
-        crate::get_state_vectors(self, t, g)
     }
 
     #[inline]
@@ -278,22 +274,22 @@ impl OrbitTrait for CompactOrbit {
         crate::get_velocity_unit_vector(self)
     }
 
-    fn set_eccentricity(&mut self, value: f64) {
+    fn set_eccentricity(&mut self, value: f64, _: f64) {
         self.eccentricity = value
     }
-    fn set_periapsis(&mut self, value: f64) {
+    fn set_periapsis(&mut self, value: f64, _: f64) {
         self.periapsis = value
     }
-    fn set_inclination(&mut self, value: f64) {
+    fn set_inclination(&mut self, value: f64, _: f64) {
         self.inclination = value
     }
-    fn set_arg_pe(&mut self, value: f64) {
+    fn set_arg_pe(&mut self, value: f64, _: f64) {
         self.arg_pe = value
     }
-    fn set_long_asc_node(&mut self, value: f64) {
+    fn set_long_asc_node(&mut self, value: f64, _: f64) {
         self.long_asc_node = value
     }
-    fn set_mean_anomaly_at_epoch(&mut self, value: f64) {
+    fn set_mean_anomaly_at_epoch(&mut self, value: f64, _: f64) {
         self.mean_anomaly = value
     }
 }

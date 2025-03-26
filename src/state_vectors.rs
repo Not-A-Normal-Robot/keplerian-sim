@@ -5,7 +5,7 @@ use glam::DVec3;
 use serde::{Deserialize, Serialize};
 
 /// Orbital state vectors, relative to a parent object.
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Copy, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct StateVectors {
     /// The position of the object.
