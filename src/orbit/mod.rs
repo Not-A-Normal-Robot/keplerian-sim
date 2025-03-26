@@ -1,7 +1,13 @@
+use cached_orbit_values::CachedOrbitValues;
+use cached_state_vector_values::CachedStateVectorValues;
+use glam::DVec2;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::{ApoapsisSetterError, CompactOrbit, Matrix3x2, OrbitTrait};
+use crate::{ApoapsisSetterError, CompactOrbit, Matrix3x2, OrbitTrait, StateVectors};
+
+mod cached_orbit_values;
+mod cached_state_vector_values;
 
 /// A struct representing a Keplerian orbit with some cached values.
 ///
@@ -93,45 +99,26 @@ pub struct Orbit {
     /// The mass of the parent body, in kilograms.
     parent_mass: f64,
 
-    cache: OrbitCachedCalculations,
+    /// Cached values for fast orbit calculations.
+    cached_orbit_values: CachedOrbitValues,
+
+    /// Cached values for fast state vector calculations.
+    cached_state_vector_values: CachedStateVectorValues,
 }
 
-#[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-struct OrbitCachedCalculations {
-    /// The semi-major axis of the orbit, in meters.
-    semi_major_axis: f64,
-
-    /// The semi-minor axis of the orbit, in meters.
-    semi_minor_axis: f64,
-
-    /// The linear eccentricity of the orbit, in meters.
-    linear_eccentricity: f64,
-
-    /// The transformation matrix to tilt the 2D planar orbit into 3D space.
-    transformation_matrix: Matrix3x2,
-
-    /// A value based on the orbit's eccentricity, used to calculate
-    /// the true anomaly from the eccentric anomaly.  
-    /// https://en.wikipedia.org/wiki/True_anomaly#From_the_eccentric_anomaly
-    beta: f64,
-
-    /// `(mu * semi_major_axis).sqrt()`.
-    /// This is used when calculating velocity.
-    sqrt_mu_sma: f64
-}
 // Initialization and cache management
 impl Orbit {
-    fn update_cache(&mut self, g: f64) {
-        self.cache = Self::get_cached_calculations(
+    fn update_cache(&mut self) {
+        self.cached_orbit_values = Self::get_cached_calculations(
             self.eccentricity,
             self.periapsis,
             self.inclination,
             self.arg_pe,
             self.long_asc_node,
-            self.parent_mass,
-            g
         );
+
+        // Mark the state vectors as dirty.
+        self.cached_state_vector_values.dirty = true;
     }
 
     fn get_cached_calculations(
@@ -140,24 +127,20 @@ impl Orbit {
         inclination: f64,
         arg_pe: f64,
         long_asc_node: f64,
-        parent_mass: f64,
-        g: f64
-    ) -> OrbitCachedCalculations {
+    ) -> CachedOrbitValues {
         let semi_major_axis = periapsis / (1.0 - eccentricity);
         let semi_minor_axis = semi_major_axis * (1.0 - eccentricity * eccentricity).abs().sqrt();
         let linear_eccentricity = semi_major_axis * eccentricity;
         let transformation_matrix =
             Self::get_transformation_matrix(inclination, arg_pe, long_asc_node);
         let beta = eccentricity / (1.0 + (1.0 - eccentricity * eccentricity).sqrt());
-        let sqrt_mu_sma = (parent_mass * g * semi_major_axis).sqrt();
 
-        OrbitCachedCalculations {
+        CachedOrbitValues {
             semi_major_axis,
             semi_minor_axis,
             linear_eccentricity,
             transformation_matrix,
             beta,
-            sqrt_mu_sma
         }
     }
 
@@ -192,7 +175,7 @@ impl OrbitTrait for Orbit {
         mean_anomaly: f64,
         parent_mass: f64,
     ) -> Self {
-        let cache = Self::get_cached_calculations(
+        let cached_orbit_values = Self::get_cached_calculations(
             eccentricity,
             periapsis,
             inclination,
@@ -207,7 +190,8 @@ impl OrbitTrait for Orbit {
             long_asc_node,
             mean_anomaly,
             parent_mass,
-            cache,
+            cached_orbit_values,
+            cached_state_vector_values: Default::default(),
         }
     }
 
@@ -237,15 +221,15 @@ impl OrbitTrait for Orbit {
     }
 
     fn get_semi_major_axis(&self) -> f64 {
-        self.cache.semi_major_axis
+        self.cached_orbit_values.semi_major_axis
     }
 
     fn get_semi_minor_axis(&self) -> f64 {
-        self.cache.semi_minor_axis
+        self.cached_orbit_values.semi_minor_axis
     }
 
     fn get_linear_eccentricity(&self) -> f64 {
-        self.cache.linear_eccentricity
+        self.cached_orbit_values.linear_eccentricity
     }
 
     fn set_apoapsis(&mut self, apoapsis: f64) -> Result<(), ApoapsisSetterError> {
@@ -271,8 +255,19 @@ impl OrbitTrait for Orbit {
         self.update_cache();
     }
 
+    fn get_state_vectors(&mut self, t: f64, g: f64) -> StateVectors {
+        // Update the cached values.
+        if self.cached_state_vector_values.dirty {
+            self.cached_state_vector_values.sqrt_mu_sma = crate::get_sqrt_mu_sma(self, g);
+            self.cached_state_vector_values.velocity_unit_vector =
+                crate::get_velocity_unit_vector(self);
+            self.cached_state_vector_values.dirty = false;
+        }
+        crate::get_state_vectors(self, t, g)
+    }
+
     fn get_transformation_matrix(&self) -> Matrix3x2 {
-        self.cache.transformation_matrix
+        self.cached_orbit_values.transformation_matrix
     }
 
     #[inline]
@@ -303,6 +298,14 @@ impl OrbitTrait for Orbit {
     #[inline]
     fn get_mean_anomaly_at_epoch(&self) -> f64 {
         self.mean_anomaly
+    }
+
+    fn get_sqrt_mu_sma(&self, _: f64) -> f64 {
+        self.cached_state_vector_values.sqrt_mu_sma
+    }
+
+    fn get_velocity_unit_vector(&self) -> DVec2 {
+        self.cached_state_vector_values.velocity_unit_vector
     }
 
     fn set_eccentricity(&mut self, value: f64) {

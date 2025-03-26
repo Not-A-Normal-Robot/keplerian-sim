@@ -1,5 +1,3 @@
-use glam::{DVec2, DVec3};
-
 use crate::{body_presets::planets::earth, Orbit, OrbitTrait};
 use core::f64::consts::TAU;
 
@@ -81,33 +79,6 @@ impl Body {
         }
 
         Ok(())
-    }
-    /// Gets the relative position of this body, in meters.
-    ///
-    /// The position is relative to the parent body, if there is one.  
-    /// If the body is not orbiting anything, this function will return None.
-    ///
-    /// Each coordinate is in meters.
-    pub fn get_relative_position(&self) -> Option<DVec3> {
-        self.orbit
-            .as_ref()
-            .map(|orbit| orbit.get_position_at_time(self.progress))
-    }
-
-    /// \- [Read this](https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf)
-    pub fn get_relative_velocity(&self, t: f64, g: f64) -> Option<DVec3> {
-        let orbit = self.orbit.as_ref()?;
-
-        let eccentricity: f64 = orbit.get_eccentricity();
-        let eccentric_anomaly = orbit.get_eccentric_anomaly(orbit.get_mean_anomaly_at_epoch());
-        let distance = orbit.get_distance_at_time(t);
-
-        let flat_velocity = ((orbit.get_mu(g) * orbit.get_semi_major_axis()).sqrt() / distance)
-            * DVec2 {
-                x: -eccentric_anomaly.sin(),
-                y: (1. - eccentricity.powi(2).sqrt() * eccentric_anomaly.cos()),
-            };
-        Some(orbit.tilt_flat_position(&flat_velocity))
     }
 }
 

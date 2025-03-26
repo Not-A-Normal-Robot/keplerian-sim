@@ -56,16 +56,19 @@
 
 mod body;
 pub mod body_presets;
-mod cached_orbit;
 mod compact_orbit;
+mod generated_sinh_approximator;
+mod orbit;
+mod state_vectors;
 mod universe;
 
 use std::f64::consts::{PI, TAU};
 
 pub use body::Body;
-pub use cached_orbit::Orbit;
 pub use compact_orbit::CompactOrbit;
 use glam::{DVec2, DVec3};
+pub use orbit::Orbit;
+pub use state_vectors::StateVectors;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -1186,12 +1189,18 @@ pub trait OrbitTrait: Default {
         eccentric_anomaly * sign
     }
 
-    /// Returns `(mu * semi_major_axis).sqrt()`.
-    /// This is used when calculating velocity.
-    fn get_sqrt_mu_sma(&self) -> f64;
+    /// Returns the position and velocity of an orbiting object relative to its parent.
+    ///
+    /// ### Parameters
+    /// - `t`: A value between 0 and 1 for closed orbits, and unbounded for open orbits.
+    /// - `g`: The gravitational constant.
+    fn get_state_vectors(&mut self, t: f64, g: f64) -> StateVectors;
 
-    /// Returns a unit vector that can be used to calculate the velocity.
-    fn get_unit_velocity_vector(&self) -> f64;
+    /// Returns `(mu * semi_major_axis).sqrt()`.
+    fn get_sqrt_mu_sma(&self, g: f64) -> f64;
+
+    /// Returns a unit vector used to calculate the velocity.
+    fn get_velocity_unit_vector(&self) -> DVec2;
 }
 
 /// An error to describe why setting the periapsis of an orbit failed.
@@ -1294,4 +1303,25 @@ fn solve_monotone_cubic(a: f64, b: f64, c: f64, d: f64) -> f64 {
     t - b / 3.0
 }
 
-mod generated_sinh_approximator;
+fn get_sqrt_mu_sma<T: OrbitTrait>(orbit: &T, g: f64) -> f64 {
+    (orbit.get_mu(g) * orbit.get_semi_major_axis()).sqrt()
+}
+
+fn get_velocity_unit_vector<T: OrbitTrait>(orbit: &T) -> DVec2 {
+    let eccentricity: f64 = orbit.get_eccentricity();
+    let eccentric_anomaly = orbit.get_eccentric_anomaly(orbit.get_mean_anomaly_at_epoch());
+    DVec2 {
+        x: -eccentric_anomaly.sin(),
+        y: (1. - eccentricity.powi(2).sqrt() * eccentric_anomaly.cos()),
+    }
+}
+
+/// This is outside of the trait so that it can be hidden.
+fn get_state_vectors<T: OrbitTrait>(orbit: &T, t: f64, g: f64) -> StateVectors {
+    let distance = orbit.get_distance_at_time(t);
+    let flat_velocity = (orbit.get_sqrt_mu_sma(g) / distance) * orbit.get_velocity_unit_vector();
+    StateVectors {
+        position: orbit.get_position_at_time(t),
+        velocity: orbit.tilt_flat_position(&flat_velocity),
+    }
+}

@@ -1,13 +1,13 @@
-use keplerian_sim::{body_presets, OrbitTrait, Universe};
+use keplerian_sim::{body_presets, OrbitTrait, StateVectors, Universe};
 
 const SIMULATION_TICKS: u128 = 1_000_000;
 fn main() {
     let mut universe = generate_solar_system();
-    describe_universe(&universe);
+    describe_universe(&mut universe);
     print!("Simulating {SIMULATION_TICKS} ticks...");
     universe.warp(SIMULATION_TICKS);
     println!(" done");
-    print_all_body_positions(&universe);
+    print_all_body_positions(&mut universe);
 }
 
 fn generate_solar_system<'a>() -> Universe {
@@ -76,18 +76,20 @@ fn generate_solar_system<'a>() -> Universe {
     return universe;
 }
 
-fn describe_universe(universe: &Universe) {
+fn describe_universe(universe: &mut Universe) {
     println!(
         "Simulation universe with {} bodies",
         universe.get_bodies().len()
     );
+    let state_vectors = (0..universe.get_bodies().len())
+        .map(|i| universe.get_state_vectors(i))
+        .collect::<Vec<StateVectors>>();
     for (i, body) in universe.get_bodies().iter().enumerate() {
         println!("    {}: {:?}", i, body.name);
         println!("      Mass: {}", body.mass);
         println!("      Radius: {}", body.radius);
         if let Some(orbit) = &body.orbit {
-            let location = universe.get_body_position(i);
-            println!("      Orbit: {:?}", location);
+            println!("      Orbit: {:?}", state_vectors[i]);
             println!("        Semi-major axis: {}", orbit.get_semi_major_axis());
             println!("        Eccentricity: {}", orbit.get_eccentricity());
             println!("        Inclination: {}", orbit.get_inclination());
@@ -104,9 +106,15 @@ fn describe_universe(universe: &Universe) {
     }
 }
 
-fn print_all_body_positions(universe: &Universe) {
-    for (i, body) in universe.get_bodies().iter().enumerate() {
-        let location = universe.get_body_position(i);
-        println!("{}: {:?}", body.name, location);
-    }
+fn print_all_body_positions(universe: &mut Universe) {
+    let state_vectors = universe
+        .get_bodies()
+        .iter()
+        .enumerate()
+        .map(|(i, b)| (i, b.name.clone()))
+        .collect::<Vec<(usize, String)>>();
+    state_vectors.into_iter().for_each(|(i, name)| {
+        let state_vectors = universe.get_state_vectors(i);
+        println!("{}: {:?}", name, state_vectors);
+    });
 }

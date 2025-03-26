@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use std::fmt;
 
-use glam::DVec3;
+use crate::{OrbitTrait, StateVectors};
 
 use super::Body;
 
@@ -149,21 +149,23 @@ impl Universe {
         }
     }
 
-    /// Gets the absolute position of a body in the universe.
+    /// Gets the absolute position and velocity of a body in the universe.
     ///
     /// Each coordinate is in meters.
-    pub fn get_body_position(&self, index: usize) -> DVec3 {
-        let body = &self.bodies[index];
-
+    pub fn get_state_vectors(&mut self, index: usize) -> StateVectors {
         match self.body_relations[index].parent {
             Some(parent) => {
-                let body_position = self.get_body_position(parent);
-                match body.get_relative_position() {
-                    Some(position) => position + self.get_body_position(parent),
-                    None => body_position,
+                let body_state_vectors = self.get_state_vectors(parent);
+                let body = &mut self.bodies[index];
+                match body.orbit.as_mut() {
+                    Some(orbit) => {
+                        let state_vectors = orbit.get_state_vectors(body.progress, self.g);
+                        state_vectors + self.get_state_vectors(parent)
+                    }
+                    None => body_state_vectors,
                 }
             }
-            None => DVec3::ZERO,
+            None => StateVectors::default(),
         }
     }
 }

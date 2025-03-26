@@ -1,7 +1,8 @@
+use glam::DVec2;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::{ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait};
+use crate::{ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait, StateVectors};
 
 /// A minimal struct representing a Keplerian orbit.
 ///
@@ -235,6 +236,10 @@ impl OrbitTrait for CompactOrbit {
         matrix
     }
 
+    fn get_state_vectors(&mut self, t: f64, g: f64) -> StateVectors {
+        crate::get_state_vectors(self, t, g)
+    }
+
     #[inline]
     fn get_eccentricity(&self) -> f64 {
         self.eccentricity
@@ -263,6 +268,14 @@ impl OrbitTrait for CompactOrbit {
     #[inline]
     fn get_mean_anomaly_at_epoch(&self) -> f64 {
         self.mean_anomaly
+    }
+
+    fn get_sqrt_mu_sma(&self, g: f64) -> f64 {
+        crate::get_sqrt_mu_sma(self, g)
+    }
+
+    fn get_velocity_unit_vector(&self) -> DVec2 {
+        crate::get_velocity_unit_vector(self)
     }
 
     fn set_eccentricity(&mut self, value: f64) {
