@@ -1194,6 +1194,8 @@ pub trait OrbitTrait: Default {
     /// ### Parameters
     /// - `t`: A value between 0 and 1 for closed orbits, and unbounded for open orbits.
     /// - `g`: The gravitational constant.
+    /// 
+    /// \- [Source](https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf)
     fn get_state_vectors(&self, t: f64, g: f64) -> StateVectors {
         let distance = self.get_distance_at_time(t);
         let flat_velocity = (self.get_sqrt_mu_sma(g) / distance) * self.get_velocity_unit_vector();
@@ -1310,10 +1312,12 @@ fn solve_monotone_cubic(a: f64, b: f64, c: f64, d: f64) -> f64 {
     t - b / 3.0
 }
 
+/// See: https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
 fn get_sqrt_mu_sma<T: OrbitTrait>(orbit: &T, g: f64) -> f64 {
     (orbit.get_mu(g) * orbit.get_semi_major_axis()).sqrt()
 }
 
+/// See: https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
 fn get_velocity_unit_vector<T: OrbitTrait>(orbit: &T) -> DVec2 {
     let eccentricity: f64 = orbit.get_eccentricity();
     let eccentric_anomaly = orbit.get_eccentric_anomaly(orbit.get_mean_anomaly_at_epoch());
