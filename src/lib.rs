@@ -56,21 +56,24 @@
 
 mod body;
 pub mod body_presets;
-mod cached_orbit;
 mod compact_orbit;
+mod generated_sinh_approximator;
+mod orbit;
+mod state_vectors;
 mod universe;
 
 use std::f64::consts::{PI, TAU};
 
 pub use body::Body;
-pub use cached_orbit::Orbit;
 pub use compact_orbit::CompactOrbit;
 use glam::{DVec2, DVec3};
+pub use orbit::Orbit;
+pub use state_vectors::StateVectors;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-pub use universe::Universe;
+pub use universe::{Universe, G};
 
 /// A constant used to get the initial seed for the eccentric anomaly.
 ///
@@ -230,7 +233,65 @@ impl Matrix3x2 {
 ///       accepts_orbit(&not_orbit);
 /// # }
 /// ```
-pub trait OrbitTrait {
+pub trait OrbitTrait: Default {
+    /// Creates a new `OrbitTrait` instance with the given parameters.
+    ///
+    /// Note: This function uses eccentricity instead of apoapsis.  
+    /// If you want to provide an apoapsis instead, consider using the
+    /// [`OrbitTrait::with_apoapsis`] function instead.
+    ///
+    /// ### Parameters
+    /// - `eccentricity`: The eccentricity of the orbit.
+    /// - `periapsis`: The periapsis of the orbit, in meters.
+    /// - `inclination`: The inclination of the orbit, in radians.
+    /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
+    /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
+    /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
+    /// - `parent_mass`: The mass of the parent body, in kilograms.
+    fn new(
+        eccentricity: f64,
+        periapsis: f64,
+        inclination: f64,
+        arg_pe: f64,
+        long_asc_node: f64,
+        mean_anomaly: f64,
+        parent_mass: f64,
+    ) -> Self;
+
+    /// Creates a new orbit with the given parameters.
+    ///
+    /// Note: This function uses apoapsis instead of eccentricity.  
+    /// Because of this, it's not recommended to initialize
+    /// parabolic or hyperbolic 'orbits' with this function.  
+    /// If you're looking to initialize a parabolic or hyperbolic
+    /// trajectory, consider using the [`OrbitTrait::new`] function instead.
+    ///
+    /// ### Parameters
+    /// - `apoapsis`: The apoapsis of the orbit, in meters.
+    /// - `periapsis`: The periapsis of the orbit, in meters.
+    /// - `inclination`: The inclination of the orbit, in radians.
+    /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
+    /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
+    /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
+    /// - `parent_mass`: The mass of the parent body, in kilograms.
+    fn with_apoapsis(
+        apoapsis: f64,
+        periapsis: f64,
+        inclination: f64,
+        arg_pe: f64,
+        long_asc_node: f64,
+        mean_anomaly: f64,
+        parent_mass: f64,
+    ) -> Self;
+
+    /// Returns the mass of the parent body, in kilograms.
+    fn get_parent_mass(&self) -> f64;
+
+    /// Returns g * mass.
+    fn get_mu(&self, g: f64) -> f64 {
+        g * self.get_parent_mass()
+    }
+
     /// Gets the semi-major axis of the orbit.
     ///
     /// In an elliptic orbit, the semi-major axis is the
@@ -245,11 +306,11 @@ pub trait OrbitTrait {
     ///
     /// # Example
     /// ```
-    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use keplerian_sim::{G, Orbit, OrbitTrait};
     ///
     /// let mut orbit = Orbit::default();
-    /// orbit.set_periapsis(50.0);
-    /// orbit.set_apoapsis_force(100.0);
+    /// orbit.set_periapsis(50.0, G);
+    /// orbit.set_apoapsis_force(100.0, G);
     /// let sma = orbit.get_semi_major_axis();
     /// let expected = 75.0;
     /// assert!((sma - expected).abs() < 1e-6);
@@ -284,11 +345,11 @@ pub trait OrbitTrait {
     ///
     /// # Example
     /// ```
-    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use keplerian_sim::{G, Orbit, OrbitTrait};
     ///
     /// let mut orbit = Orbit::default();
-    /// orbit.set_periapsis(50.0);
-    /// orbit.set_apoapsis_force(100.0);
+    /// orbit.set_periapsis(50.0, G);
+    /// orbit.set_apoapsis_force(100.0, G);
     ///
     /// // Let's say the periapsis is at x = -50.
     /// // The apoapsis would be at x = 100.
@@ -309,16 +370,16 @@ pub trait OrbitTrait {
     ///
     /// # Examples
     /// ```
-    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use keplerian_sim::{G, Orbit, OrbitTrait};
     ///
     /// let mut orbit = Orbit::default();
-    /// orbit.set_eccentricity(0.5); // Elliptic
+    /// orbit.set_eccentricity(0.5, G); // Elliptic
     /// assert!(orbit.get_apoapsis() > 0.0);
     ///
-    /// orbit.set_eccentricity(1.0); // Parabolic
+    /// orbit.set_eccentricity(1.0, G); // Parabolic
     /// assert!(orbit.get_apoapsis().is_infinite());
     ///
-    /// orbit.set_eccentricity(2.0); // Hyperbolic
+    /// orbit.set_eccentricity(2.0, G); // Hyperbolic
     /// assert!(orbit.get_apoapsis() < 0.0);
     /// ```
     fn get_apoapsis(&self) -> f64 {
@@ -338,31 +399,31 @@ pub trait OrbitTrait {
     ///
     /// # Examples
     /// ```
-    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use keplerian_sim::{G, Orbit, OrbitTrait};
     ///
     /// let mut orbit = Orbit::default();
-    /// orbit.set_periapsis(50.0);
+    /// orbit.set_periapsis(50.0, G);
     ///
     /// assert!(
-    ///     orbit.set_apoapsis(100.0)
+    ///     orbit.set_apoapsis(100.0, G)
     ///         .is_ok()
     /// );
     ///
-    /// let result = orbit.set_apoapsis(25.0);
+    /// let result = orbit.set_apoapsis(25.0, G);
     /// assert!(result.is_err());
     /// assert!(
     ///     result.unwrap_err() ==
     ///     keplerian_sim::ApoapsisSetterError::ApoapsisLessThanPeriapsis
     /// );
     ///
-    /// let result = orbit.set_apoapsis(-25.0);
+    /// let result = orbit.set_apoapsis(-25.0, G);
     /// assert!(result.is_err());
     /// assert!(
     ///     result.unwrap_err() ==
     ///     keplerian_sim::ApoapsisSetterError::ApoapsisNegative
     /// );
     /// ```
-    fn set_apoapsis(&mut self, apoapsis: f64) -> Result<(), ApoapsisSetterError>;
+    fn set_apoapsis(&mut self, apoapsis: f64, g: f64) -> Result<(), ApoapsisSetterError>;
 
     /// Sets the apoapsis of the orbit, with a best-effort attempt at interpreting
     /// possibly-invalid values.  
@@ -374,7 +435,7 @@ pub trait OrbitTrait {
     ///
     /// If these behaviors are undesirable, consider creating a custom wrapper around
     /// `set_eccentricity` instead.
-    fn set_apoapsis_force(&mut self, apoapsis: f64);
+    fn set_apoapsis_force(&mut self, apoapsis: f64, g: f64);
 
     /// Gets the transformation matrix needed to tilt a 2D vector into the
     /// tilted orbital plane.
@@ -514,6 +575,14 @@ pub trait OrbitTrait {
         self.get_true_anomaly(self.get_mean_anomaly_at_time(t))
     }
 
+    /// Returns the distance in meters at time t.
+    ///
+    /// \- [Source](https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf)
+    fn get_distance_at_time(&self, t: f64) -> f64 {
+        self.get_semi_major_axis()
+            * (1. - self.get_eccentricity() * self.get_eccentric_anomaly_at_time(t).cos())
+    }
+
     /// Gets the 3D position at a given angle (true anomaly) in the orbit.
     ///
     /// The angle is expressed in radians, and ranges from 0 to tau.  
@@ -523,11 +592,11 @@ pub trait OrbitTrait {
     /// ```
     /// use glam::DVec3;
     ///
-    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use keplerian_sim::{G, Orbit, OrbitTrait};
     ///
     /// let mut orbit = Orbit::default();
-    /// orbit.set_periapsis(100.0);
-    /// orbit.set_eccentricity(0.0);
+    /// orbit.set_periapsis(100.0, G);
+    /// orbit.set_eccentricity(0.0, G);
     ///
     /// let pos = orbit.get_position_at_angle(0.0);
     ///
@@ -548,11 +617,11 @@ pub trait OrbitTrait {
     /// # Example
     /// ```
     /// use glam::DVec2;
-    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use keplerian_sim::{G, Orbit, OrbitTrait};
     ///
     /// let mut orbit = Orbit::default();
-    /// orbit.set_periapsis(100.0);
-    /// orbit.set_eccentricity(0.0);
+    /// orbit.set_periapsis(100.0, G);
+    /// orbit.set_eccentricity(0.0, G);
     ///
     /// let pos = orbit.get_flat_position_at_angle(0.0);
     ///
@@ -567,11 +636,11 @@ pub trait OrbitTrait {
     ///
     /// # Example
     /// ```
-    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use keplerian_sim::{G, Orbit, OrbitTrait};
     ///
     /// let mut orbit = Orbit::default();
-    /// orbit.set_periapsis(100.0);
-    /// orbit.set_eccentricity(0.0);
+    /// orbit.set_periapsis(100.0, G);
+    /// orbit.set_eccentricity(0.0, G);
     ///
     /// let altitude = orbit.get_altitude_at_angle(0.0);
     ///
@@ -691,7 +760,7 @@ pub trait OrbitTrait {
     ///
     /// Wikipedia on conic section eccentricity: <https://en.wikipedia.org/wiki/Eccentricity_(mathematics)>  
     /// (Keplerian orbits are conic sections, so the concepts still apply)
-    fn set_eccentricity(&mut self, eccentricity: f64);
+    fn set_eccentricity(&mut self, eccentricity: f64, g: f64);
 
     /// Gets the periapsis of the orbit.
     ///
@@ -711,7 +780,7 @@ pub trait OrbitTrait {
     /// More simply, this is the "minimum altitude" of an orbit.
     ///
     /// Wikipedia: <https://en.wikipedia.org/wiki/Apsis>
-    fn set_periapsis(&mut self, periapsis: f64);
+    fn set_periapsis(&mut self, periapsis: f64, g: f64);
 
     /// Gets the inclination of the orbit in radians.
     ///
@@ -731,7 +800,7 @@ pub trait OrbitTrait {
     /// In simple terms, it tells you how "tilted" the orbit is.
     ///
     /// Wikipedia: <https://en.wikipedia.org/wiki/Orbital_inclination>
-    fn set_inclination(&mut self, inclination: f64);
+    fn set_inclination(&mut self, inclination: f64, g: f64);
 
     /// Gets the argument of periapsis of the orbit in radians.
     ///
@@ -755,7 +824,7 @@ pub trait OrbitTrait {
     ///
     /// In simple terms, it tells you how, and in which direction,
     /// the orbit "tilts".
-    fn set_arg_pe(&mut self, arg_pe: f64);
+    fn set_arg_pe(&mut self, arg_pe: f64, g: f64);
 
     /// Gets the longitude of ascending node of the orbit in radians.
     ///
@@ -779,7 +848,7 @@ pub trait OrbitTrait {
     ///
     /// In simple terms, it tells you how, and in which direction,
     /// the orbit "tilts".
-    fn set_long_asc_node(&mut self, long_asc_node: f64);
+    fn set_long_asc_node(&mut self, long_asc_node: f64, g: f64);
 
     /// Gets the mean anomaly of the orbit at a certain epoch.
     ///
@@ -807,7 +876,7 @@ pub trait OrbitTrait {
     /// <https://en.wikipedia.org/wiki/Mean_anomaly#Mean_anomaly_at_epoch>
     ///
     /// In simple terms, this modifies the "offset" of the orbit progression.
-    fn set_mean_anomaly_at_epoch(&mut self, mean_anomaly: f64);
+    fn set_mean_anomaly_at_epoch(&mut self, mean_anomaly: f64, g: f64);
 
     /// Get an initial guess for the hyperbolic eccentric anomaly of an orbit.
     ///
@@ -1119,6 +1188,28 @@ pub trait OrbitTrait {
 
         eccentric_anomaly * sign
     }
+
+    /// Returns the position and velocity of an orbiting object relative to its parent.
+    ///
+    /// ### Parameters
+    /// - `t`: A value between 0 and 1 for closed orbits, and unbounded for open orbits.
+    /// - `g`: The gravitational constant.
+    /// 
+    /// \- [Source](https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf)
+    fn get_state_vectors(&self, t: f64, g: f64) -> StateVectors {
+        let distance = self.get_distance_at_time(t);
+        let flat_velocity = (self.get_sqrt_mu_sma(g) / distance) * self.get_velocity_unit_vector();
+        StateVectors {
+            position: self.get_position_at_time(t),
+            velocity: self.tilt_flat_position(&flat_velocity),
+        }
+    }
+
+    /// Returns `(mu * semi_major_axis).sqrt()`.
+    fn get_sqrt_mu_sma(&self, g: f64) -> f64;
+
+    /// Returns a unit vector used to calculate the velocity.
+    fn get_velocity_unit_vector(&self) -> DVec2;
 }
 
 /// An error to describe why setting the periapsis of an orbit failed.
@@ -1221,4 +1312,17 @@ fn solve_monotone_cubic(a: f64, b: f64, c: f64, d: f64) -> f64 {
     t - b / 3.0
 }
 
-mod generated_sinh_approximator;
+/// See: https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+fn get_sqrt_mu_sma<T: OrbitTrait>(orbit: &T, g: f64) -> f64 {
+    (orbit.get_mu(g) * orbit.get_semi_major_axis()).sqrt()
+}
+
+/// See: https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+fn get_velocity_unit_vector<T: OrbitTrait>(orbit: &T) -> DVec2 {
+    let eccentricity: f64 = orbit.get_eccentricity();
+    let eccentric_anomaly = orbit.get_eccentric_anomaly(orbit.get_mean_anomaly_at_epoch());
+    DVec2 {
+        x: -eccentric_anomaly.sin(),
+        y: (1. - eccentricity.powi(2).sqrt() * eccentric_anomaly.cos()),
+    }
+}

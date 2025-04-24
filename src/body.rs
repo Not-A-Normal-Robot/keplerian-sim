@@ -1,6 +1,4 @@
-use glam::DVec3;
-
-use crate::{Orbit, OrbitTrait};
+use crate::{body_presets::planets::earth, Orbit, OrbitTrait};
 use core::f64::consts::TAU;
 
 #[cfg(feature = "serde")]
@@ -59,7 +57,7 @@ impl Body {
     /// given a gravitational constant.
     pub fn get_orbital_period(&self, g: f64) -> Option<f64> {
         let orbit = self.orbit.as_ref()?;
-        let mu = g * self.mass;
+        let mu = orbit.get_mu(g);
 
         Some(if orbit.get_eccentricity() >= 1.0 {
             f64::INFINITY
@@ -82,17 +80,6 @@ impl Body {
 
         Ok(())
     }
-    /// Gets the relative position of this body, in meters.
-    ///
-    /// The position is relative to the parent body, if there is one.  
-    /// If the body is not orbiting anything, this function will return None.
-    ///
-    /// Each coordinate is in meters.
-    pub fn get_relative_position(&self) -> Option<DVec3> {
-        self.orbit
-            .as_ref()
-            .map(|orbit| orbit.get_position_at_time(self.progress))
-    }
 }
 
 impl Default for Body {
@@ -101,12 +88,6 @@ impl Default for Body {
     /// Currently, this function returns the Earth.  
     /// However, do not rely on this behavior, as it may change in the future.
     fn default() -> Self {
-        Self {
-            name: "Earth".to_string(),
-            mass: 5.972e24,
-            radius: 6.371e6,
-            orbit: None,
-            progress: 0.0,
-        }
+        earth(true)
     }
 }

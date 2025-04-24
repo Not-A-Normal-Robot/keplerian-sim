@@ -9,7 +9,9 @@
 //!
 //! \- [International Astronomical Union](https://en.wikipedia.org/wiki/IAU_definition_of_planet#Final_definition)
 
-use crate::{Body, Orbit};
+use crate::{Body, Orbit, OrbitTrait};
+
+use super::{MASS_EARTH, MASS_SUN};
 
 /// Returns Mercury, the closest planet to the Sun.
 ///
@@ -24,6 +26,7 @@ pub fn mercury(include_orbit: bool) -> Body {
             29.124_f64.to_radians(),
             48.331_f64.to_radians(),
             174.796_f64.to_radians(),
+            MASS_SUN,
         ))
     } else {
         None
@@ -45,6 +48,7 @@ pub fn venus(include_orbit: bool) -> Body {
             54.884_f64.to_radians(),
             76.680_f64.to_radians(),
             50.115_f64.to_radians(),
+            MASS_SUN,
         ))
     } else {
         None
@@ -66,12 +70,13 @@ pub fn earth(include_orbit: bool) -> Body {
             114.20783_f64.to_radians(),
             -11.26064_f64.to_radians(),
             358.617_f64.to_radians(),
+            MASS_SUN,
         ))
     } else {
         None
     };
 
-    Body::new("Earth".to_string(), 5.972e24, 6.371e6, orbit)
+    Body::new("Earth".to_string(), MASS_EARTH, 6.371e6, orbit)
 }
 
 /// Returns Mars, the fourth planet from the Sun.
@@ -87,6 +92,7 @@ pub fn mars(include_orbit: bool) -> Body {
             286.5_f64.to_radians(),
             49.57854_f64.to_radians(),
             19.412_f64.to_radians(),
+            MASS_SUN,
         ))
     } else {
         None
@@ -108,6 +114,7 @@ pub fn jupiter(include_orbit: bool) -> Body {
             273.867_f64.to_radians(),
             100.464_f64.to_radians(),
             20.02_f64.to_radians(),
+            MASS_SUN,
         ))
     } else {
         None
@@ -129,6 +136,7 @@ pub fn saturn(include_orbit: bool) -> Body {
             339.392_f64.to_radians(),
             113.665_f64.to_radians(),
             317.020_f64.to_radians(),
+            MASS_SUN,
         ))
     } else {
         None
@@ -150,6 +158,7 @@ pub fn uranus(include_orbit: bool) -> Body {
             96.998857_f64.to_radians(),
             74.006_f64.to_radians(),
             142.2386_f64.to_radians(),
+            MASS_SUN,
         ))
     } else {
         None
@@ -171,6 +180,7 @@ pub fn neptune(include_orbit: bool) -> Body {
             273.187_f64.to_radians(),
             131.783_f64.to_radians(),
             259.883_f64.to_radians(),
+            MASS_SUN,
         ))
     } else {
         None

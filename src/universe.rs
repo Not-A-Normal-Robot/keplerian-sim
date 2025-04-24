@@ -3,9 +3,12 @@ use serde::{Deserialize, Serialize};
 
 use std::fmt;
 
-use glam::DVec3;
+use crate::{OrbitTrait, StateVectors};
 
 use super::Body;
+
+/// The real-world gravitational constant.
+pub const G: f64 = 6.67430e-11;
 
 /// Struct that represents the simulation of the universe.
 #[derive(Clone, Debug, PartialEq)]
@@ -149,21 +152,24 @@ impl Universe {
         }
     }
 
-    /// Gets the absolute position of a body in the universe.
+    /// Gets the absolute position and velocity of a body in the universe.
     ///
     /// Each coordinate is in meters.
-    pub fn get_body_position(&self, index: usize) -> DVec3 {
+    pub fn get_state_vectors(&self, index: usize) -> StateVectors {
         let body = &self.bodies[index];
 
         match self.body_relations[index].parent {
             Some(parent) => {
-                let body_position = self.get_body_position(parent);
-                match body.get_relative_position() {
-                    Some(position) => position + self.get_body_position(parent),
-                    None => body_position,
+                let body_state_vectors = self.get_state_vectors(parent);
+                match body.orbit.as_ref() {
+                    Some(orbit) => {
+                        orbit.get_state_vectors(body.progress, self.g)
+                            + self.get_state_vectors(parent)
+                    }
+                    None => body_state_vectors,
                 }
             }
-            None => DVec3::ZERO,
+            None => StateVectors::default(),
         }
     }
 }
@@ -176,7 +182,7 @@ impl Default for Universe {
             body_relations: Vec::new(),
             time: 0.0,
             time_step: 3.6e3,
-            g: 6.67430e-11,
+            g: G,
         }
     }
 }

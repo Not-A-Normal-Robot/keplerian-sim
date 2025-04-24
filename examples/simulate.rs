@@ -86,8 +86,8 @@ fn describe_universe(universe: &Universe) {
         println!("      Mass: {}", body.mass);
         println!("      Radius: {}", body.radius);
         if let Some(orbit) = &body.orbit {
-            let location = universe.get_body_position(i);
-            println!("      Orbit: {:?}", location);
+            let state_vectors = universe.get_state_vectors(i);
+            println!("      Orbit: {:?}", state_vectors);
             println!("        Semi-major axis: {}", orbit.get_semi_major_axis());
             println!("        Eccentricity: {}", orbit.get_eccentricity());
             println!("        Inclination: {}", orbit.get_inclination());
@@ -106,7 +106,7 @@ fn describe_universe(universe: &Universe) {
 
 fn print_all_body_positions(universe: &Universe) {
     for (i, body) in universe.get_bodies().iter().enumerate() {
-        let location = universe.get_body_position(i);
-        println!("{}: {:?}", body.name, location);
+        let state_vectors = universe.get_state_vectors(i);
+        println!("{}: {:?}", body.name, state_vectors);
     }
 }

@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use keplerian_sim::{CompactOrbit, Orbit, OrbitTrait};
+use keplerian_sim::{body_presets::MASS_SUN, CompactOrbit, Orbit, OrbitTrait};
 use std::hint::black_box;
 
 const POLL_ANGLES: usize = 1024;
@@ -38,7 +38,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     });
 
     // hyperbolic orbit
-    let orbit = Orbit::new(2.9, 1.0, 2.19, 0.44, 0.61, 0.98);
+    let orbit = Orbit::new(2.9, 1.0, 2.19, 0.44, 0.61, 0.98, MASS_SUN);
 
     c.bench_function("ecc poll hyp cached", |b| {
         b.iter(|| poll_ecc_cached(black_box(&orbit)))

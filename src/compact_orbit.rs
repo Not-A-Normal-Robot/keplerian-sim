@@ -1,3 +1,4 @@
+use glam::DVec2;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -35,6 +36,9 @@ use crate::{ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait};
 ///
 ///     // Mean anomaly at epoch
 ///     0.0,
+///
+///     // Mass of the parent body
+///     1.0
 /// );
 ///
 /// let orbit = CompactOrbit::with_apoapsis(
@@ -57,6 +61,9 @@ use crate::{ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait};
 ///
 ///     // Mean anomaly at epoch
 ///     0.0,
+///
+///     // Mass of the parent body
+///     1.0
 /// );
 /// ```
 /// See [Orbit::new] and [Orbit::with_apoapsis] for more information.
@@ -123,30 +130,20 @@ pub struct CompactOrbit {
     ///
     /// In simple terms, this modifies the "offset" of the orbit progression.
     pub mean_anomaly: f64,
+
+    /// The mass of the parent body, in kilograms.
+    pub parent_mass: f64,
 }
 
-// Initialization and cache management
-impl CompactOrbit {
-    /// Creates a new `CompactOrbit` instance with the given parameters.
-    ///
-    /// Note: This function uses eccentricity instead of apoapsis.  
-    /// If you want to provide an apoapsis instead, consider using the
-    /// [`CompactOrbit::with_apoapsis`] function instead.
-    ///
-    /// ### Parameters
-    /// - `eccentricity`: The eccentricity of the orbit.
-    /// - `periapsis`: The periapsis of the orbit, in meters.
-    /// - `inclination`: The inclination of the orbit, in radians.
-    /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
-    /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
-    /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
-    pub fn new(
+impl OrbitTrait for CompactOrbit {
+    fn new(
         eccentricity: f64,
         periapsis: f64,
         inclination: f64,
         arg_pe: f64,
         long_asc_node: f64,
         mean_anomaly: f64,
+        parent_mass: f64,
     ) -> CompactOrbit {
         CompactOrbit {
             eccentricity,
@@ -155,31 +152,18 @@ impl CompactOrbit {
             arg_pe,
             long_asc_node,
             mean_anomaly,
+            parent_mass,
         }
     }
 
-    /// Creates a new `CompactOrbit` instance with the given parameters.
-    ///
-    /// Note: This function uses apoapsis instead of eccentricity.  
-    /// Because of this, it's not recommended to initialize
-    /// parabolic or hyperbolic 'orbits' with this function.  
-    /// If you're looking to initialize a parabolic or hyperbolic
-    /// trajectory, consider using the [`CompactOrbit::new`] function instead.
-    ///
-    /// ### Parameters
-    /// - `apoapsis`: The apoapsis of the orbit, in meters.
-    /// - `periapsis`: The periapsis of the orbit, in meters.
-    /// - `inclination`: The inclination of the orbit, in radians.
-    /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
-    /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
-    /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
-    pub fn with_apoapsis(
+    fn with_apoapsis(
         apoapsis: f64,
         periapsis: f64,
         inclination: f64,
         arg_pe: f64,
         long_asc_node: f64,
         mean_anomaly: f64,
+        parent_mass: f64,
     ) -> CompactOrbit {
         let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
         CompactOrbit::new(
@@ -189,11 +173,14 @@ impl CompactOrbit {
             arg_pe,
             long_asc_node,
             mean_anomaly,
+            parent_mass,
         )
     }
-}
 
-impl OrbitTrait for CompactOrbit {
+    fn get_parent_mass(&self) -> f64 {
+        self.parent_mass
+    }
+
     fn get_semi_major_axis(&self) -> f64 {
         self.periapsis / (1.0 - self.eccentricity)
     }
@@ -208,7 +195,7 @@ impl OrbitTrait for CompactOrbit {
         self.get_semi_major_axis() - self.periapsis
     }
 
-    fn set_apoapsis(&mut self, apoapsis: f64) -> Result<(), ApoapsisSetterError> {
+    fn set_apoapsis(&mut self, apoapsis: f64, _: f64) -> Result<(), ApoapsisSetterError> {
         if apoapsis < 0.0 {
             Err(ApoapsisSetterError::ApoapsisNegative)
         } else if apoapsis < self.periapsis {
@@ -220,7 +207,7 @@ impl OrbitTrait for CompactOrbit {
         }
     }
 
-    fn set_apoapsis_force(&mut self, apoapsis: f64) {
+    fn set_apoapsis_force(&mut self, apoapsis: f64, _: f64) {
         let mut apoapsis = apoapsis;
         if apoapsis < self.periapsis && apoapsis > 0.0 {
             (apoapsis, self.periapsis) = (self.periapsis, apoapsis);
@@ -279,22 +266,30 @@ impl OrbitTrait for CompactOrbit {
         self.mean_anomaly
     }
 
-    fn set_eccentricity(&mut self, value: f64) {
+    fn get_sqrt_mu_sma(&self, g: f64) -> f64 {
+        crate::get_sqrt_mu_sma(self, g)
+    }
+
+    fn get_velocity_unit_vector(&self) -> DVec2 {
+        crate::get_velocity_unit_vector(self)
+    }
+
+    fn set_eccentricity(&mut self, value: f64, _: f64) {
         self.eccentricity = value
     }
-    fn set_periapsis(&mut self, value: f64) {
+    fn set_periapsis(&mut self, value: f64, _: f64) {
         self.periapsis = value
     }
-    fn set_inclination(&mut self, value: f64) {
+    fn set_inclination(&mut self, value: f64, _: f64) {
         self.inclination = value
     }
-    fn set_arg_pe(&mut self, value: f64) {
+    fn set_arg_pe(&mut self, value: f64, _: f64) {
         self.arg_pe = value
     }
-    fn set_long_asc_node(&mut self, value: f64) {
+    fn set_long_asc_node(&mut self, value: f64, _: f64) {
         self.long_asc_node = value
     }
-    fn set_mean_anomaly_at_epoch(&mut self, value: f64) {
+    fn set_mean_anomaly_at_epoch(&mut self, value: f64, _: f64) {
         self.mean_anomaly = value
     }
 }
@@ -304,7 +299,7 @@ impl Default for CompactOrbit {
     ///
     /// The unit orbit is a perfect circle of radius 1 and no "tilt".
     fn default() -> CompactOrbit {
-        Self::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0)
+        Self::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
     }
 }
 
@@ -317,6 +312,7 @@ impl From<Orbit> for CompactOrbit {
             arg_pe: cached.get_arg_pe(),
             long_asc_node: cached.get_long_asc_node(),
             mean_anomaly: cached.get_mean_anomaly_at_epoch(),
+            parent_mass: cached.get_parent_mass(),
         }
     }
 }
