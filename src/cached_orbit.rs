@@ -36,7 +36,7 @@ use core::f64::consts::{PI, TAU};
 ///
 ///     // Mean anomaly at epoch
 ///     0.0,
-/// 
+///
 ///     // Gravitational parameter of the parent body
 ///     1.0,
 /// );
@@ -61,7 +61,7 @@ use core::f64::consts::{PI, TAU};
 ///
 ///     // Mean anomaly at epoch
 ///     0.0,
-/// 
+///
 ///     // Gravitational parameter of the parent body
 ///     1.0,
 /// );
@@ -755,7 +755,9 @@ impl OrbitTrait for Orbit {
     }
 
     fn get_mean_anomaly_at_time(&self, t: f64) -> f64 {
-        return t * TAU + self.mean_anomaly;
+        // TODO: PARABOLA SUPPORT: Handle case where orbit is parabolic,
+        // where semi_major_axis is non-finite
+        return t * (self.mu / self.get_semi_major_axis().powi(3).abs()).sqrt() + self.mean_anomaly;
     }
 
     fn get_eccentricity(&self) -> f64 {
@@ -802,11 +804,11 @@ impl OrbitTrait for Orbit {
     }
 
     fn get_flat_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> crate::Vec2 {
-        todo!()
+        todo!("get_flat_velocity_at_eccentric_anomaly");
     }
 
     fn get_gravitational_parameter(&self) -> f64 {
-        todo!()
+        self.mu
     }
 
     fn set_gravitational_parameter(
@@ -814,7 +816,32 @@ impl OrbitTrait for Orbit {
         gravitational_parameter: f64,
         mode: crate::MuSetterMode,
     ) {
-        todo!()
+        match mode {
+            crate::MuSetterMode::KeepElements => {
+                self.mu = gravitational_parameter;
+            }
+            crate::MuSetterMode::KeepPositionAtTime(t) => {
+                todo!("set_gravitational_parameter with MuSetterMode::KeepPositionAtTime")
+            }
+            crate::MuSetterMode::KeepPositionAndVelocityAtTime(t) => {
+                todo!("set_gravitational_parameter with MuSetter::KeepPositionAndVelocityAtTime")
+            }
+            crate::MuSetterMode::KeepPositionAtAngle(_) => {
+                todo!("set_gravitational_parameter with MuSetterMode::KeepPositionAtTime")
+            }
+            crate::MuSetterMode::KeepPositionAndVelocityAtAngle(_) => {
+                todo!("set_gravitational_parameter with MuSetter::KeepPositionAndVelocityAtAngle")
+            }
+        }
+        self.update_cache();
+    }
+
+    fn get_mean_anomaly_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> f64 {
+        todo!("get_mean_anomaly_at_eccentric_anomaly")
+    }
+
+    fn get_mean_anomaly_at_true_anomaly(&self, true_anomaly: f64) -> f64 {
+        todo!("get_mean_anomaly_at_true_anomaly")
     }
 }
 

@@ -37,7 +37,7 @@ use crate::{
 ///
 ///     // Mean anomaly at epoch
 ///     0.0,
-/// 
+///
 ///     // Gravitational parameter of the parent body
 ///     1.0,
 /// );
@@ -62,7 +62,7 @@ use crate::{
 ///
 ///     // Mean anomaly at epoch
 ///     0.0,
-/// 
+///
 ///     // Gravitational parameter of the parent body
 ///     1.0,
 /// );
@@ -733,7 +733,9 @@ impl OrbitTrait for CompactOrbit {
     }
 
     fn get_mean_anomaly_at_time(&self, t: f64) -> f64 {
-        return t * TAU + self.mean_anomaly;
+        // TODO: PARABOLA SUPPORT: Handle case where orbit is parabolic,
+        // where semi_major_axis is non-finite
+        return t * (self.mu / self.get_semi_major_axis().powi(3).abs()).sqrt() + self.mean_anomaly;
     }
 
     fn get_eccentricity(&self) -> f64 {
@@ -787,10 +789,39 @@ impl OrbitTrait for CompactOrbit {
             crate::MuSetterMode::KeepElements => {
                 self.mu = gravitational_parameter;
             }
-            crate::MuSetterMode::KeepPositionAtTime(t) => todo!(),
-            crate::MuSetterMode::KeepPositionAndVelocityAtTime(t) => todo!(),
+            crate::MuSetterMode::KeepPositionAtTime(t) => {
+                // We need to keep the position at time t
+                // This means keeping the mean anomaly at that point
+                // Current mean anomaly:
+                // M_1(t) = M_0_1 + t * sqrt(mu_1 / |a^3|)
+                //
+                // Mean anomaly after mu changes:
+                // M_2(t) = M_0_2 + t * sqrt(mu_2 / |a^3|)
+                //
+                // M_1(t) = M_2(t)
+                //
+                // We need to find M_0_2
+                //
+                // M_0_1 + t * sqrt(mu_1 / |a^3|) = M_0_2 + t * sqrt(mu_2 / |a^3|)
+                // M_0_2 + t * sqrt(mu_2 / |a^3|) = M_0_1 + t * sqrt(mu_1 / |a^3|)
+                // M_0_2 = M_0_1 + t * sqrt(mu_1 / |a^3|) - t * sqrt(mu_2 / |a^3|)
+                // M_0_2 = M_0_1 + t * (sqrt(mu_1 / |a^3|) - sqrt(mu_2 / |a^3|))
+                todo!("set_gravitational_parameter with MuSetterMode::KeepPositionAtTime")
+            }
+            crate::MuSetterMode::KeepPositionAndVelocityAtTime(t) => {
+                // We need to preserve the state vector at time t
+                //
+                // r_0(t), v_0(t) == r_1(t), v_1(t)
+
+                todo!("set_gravitational_parameter with MuSetter::KeepPositionAndVelocityAtTime")
+            }
+            crate::MuSetterMode::KeepPositionAtAngle(_) => {
+                todo!("set_gravitational_parameter with MuSetterMode::KeepPositionAtTime")
+            }
+            crate::MuSetterMode::KeepPositionAndVelocityAtAngle(_) => {
+                todo!("set_gravitational_parameter with MuSetter::KeepPositionAndVelocityAtAngle")
+            }
         }
-        todo!()
     }
 
     fn get_flat_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> Vec2 {
@@ -809,7 +840,15 @@ impl OrbitTrait for CompactOrbit {
         //     -sin,
         //     (1.0 - self.get_eccentricity().powi(2)).sqrt() * cos
         // )
-        todo!()
+        todo!("get_flat_velocity_at_eccentric_anomaly");
+    }
+
+    fn get_mean_anomaly_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> f64 {
+        todo!("get_mean_anomaly_at_eccentric_anomaly");
+    }
+
+    fn get_mean_anomaly_at_true_anomaly(&self, true_anomaly: f64) -> f64 {
+        todo!("get_mean_anomaly_at_true_anomaly")
     }
 }
 

@@ -566,6 +566,181 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
     }
 }
 
+fn random_mult() -> f64 {
+    if rand::random_bool(0.5) {
+        // Lower
+        rand::random_range(0.1f64..0.9f64)
+    } else {
+        // Higher
+        rand::random_range(1.1f64..5.0f64)
+    }
+}
+
+fn random_circular() -> Orbit {
+    Orbit::new(
+        0.0,
+        rand::random_range(0.01..1e6),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(0.01..1e6),
+    )
+}
+
+fn random_elliptic() -> Orbit {
+    Orbit::new(
+        rand::random_range(0.01..0.99),
+        rand::random_range(0.01..1e6),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(0.01..1e6),
+    )
+}
+
+fn random_parabolic() -> Orbit {
+    Orbit::new(
+        1.0,
+        rand::random_range(0.01..1e6),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(0.01..1e6),
+    )
+}
+
+fn random_hyperbolic() -> Orbit {
+    Orbit::new(
+        rand::random_range(1.01..3.0),
+        rand::random_range(0.01..1e6),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(0.01..1e6),
+    )
+}
+
+fn random_very_hyperbolic() -> Orbit {
+    Orbit::new(
+        rand::random_range(5.0..15.0),
+        rand::random_range(0.01..1e6),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(0.01..1e6),
+    )
+}
+
+fn random_extremely_hyperbolic() -> Orbit {
+    Orbit::new(
+        rand::random_range(80.0..150.0),
+        rand::random_range(0.01..1e6),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(-TAU..TAU),
+        rand::random_range(0.01..1e6),
+    )
+}
+
+fn orbit_mu_setter_test(orbit: impl OrbitTrait + Clone) {
+    for i in 0..1024 {
+        let after = {
+            let mut o = orbit.clone();
+            o.set_gravitational_parameter(
+                orbit.get_gravitational_parameter() * random_mult(),
+                crate::MuSetterMode::KeepElements,
+            );
+            o
+        };
+    }
+
+    for i in 0..1024 {
+        let time = i as f64 * 0.15f64;
+        let mut o = orbit.clone();
+        let pos_before = orbit.get_position_at_time(time);
+        o.set_gravitational_parameter(
+            orbit.get_gravitational_parameter() * random_mult(),
+            crate::MuSetterMode::KeepPositionAtTime(time),
+        );
+        let pos_after = orbit.get_position_at_time(time);
+        assert_almost_eq_vec3(
+            pos_before,
+            pos_after,
+            "Positions before and after mu setter",
+        );
+    }
+
+    for i in 0..1024 {
+        let time = i as f64 * 0.15f64;
+        let mut o = orbit.clone();
+        let pos_before = orbit.get_position_at_time(time);
+        let vel_before = orbit.get_velocity_at_time(time);
+        o.set_gravitational_parameter(
+            orbit.get_gravitational_parameter() * random_mult(),
+            crate::MuSetterMode::KeepPositionAndVelocityAtTime(time),
+        );
+        let pos_after = orbit.get_position_at_time(time);
+        let vel_after = orbit.get_velocity_at_time(time);
+        assert_almost_eq_vec3(
+            pos_before,
+            pos_after,
+            "Positions before and after mu setter",
+        );
+        assert_almost_eq_vec3(
+            vel_before,
+            vel_after,
+            "Velocities before and after mu setter",
+        )
+    }
+
+    for i in 0..1024 {
+        let angle = i as f64 * 0.15f64;
+        let mut o = orbit.clone();
+        let pos_before = orbit.get_position_at_angle(angle);
+        o.set_gravitational_parameter(
+            o.get_gravitational_parameter() * random_mult(),
+            crate::MuSetterMode::KeepPositionAtAngle(angle),
+        );
+        let pos_after = orbit.get_position_at_angle(angle);
+
+        assert_almost_eq_vec3(
+            pos_before,
+            pos_after,
+            "Positions before and after mu setter",
+        );
+    }
+
+    for i in 0..1024 {
+        let angle = i as f64 * 0.15f64;
+        let mut o = orbit.clone();
+        let pos_before = orbit.get_position_at_angle(angle);
+        let vel_before = orbit.get_velocity_at_angle(angle);
+        o.set_gravitational_parameter(
+            orbit.get_gravitational_parameter() * random_mult(),
+            crate::MuSetterMode::KeepPositionAndVelocityAtAngle(angle),
+        );
+        let pos_after = orbit.get_position_at_angle(angle);
+        let vel_after = orbit.get_velocity_at_angle(angle);
+        assert_almost_eq_vec3(
+            pos_before,
+            pos_after,
+            "Positions before and after mu setter",
+        );
+        assert_almost_eq_vec3(
+            vel_before,
+            vel_after,
+            "Velocities before and after mu setter",
+        );
+    }
+    todo!("Orbit mu setter test");
+}
+
 #[test]
 fn orbit_conversions() {
     let orbits = [
