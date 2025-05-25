@@ -816,12 +816,36 @@ impl OrbitTrait for Orbit {
         gravitational_parameter: f64,
         mode: crate::MuSetterMode,
     ) {
+        let new_mu = gravitational_parameter;
         match mode {
             crate::MuSetterMode::KeepElements => {
-                self.mu = gravitational_parameter;
+                self.mu = new_mu;
             }
             crate::MuSetterMode::KeepPositionAtTime(t) => {
-                todo!("set_gravitational_parameter with MuSetterMode::KeepPositionAtTime")
+                // We need to keep the position at time t
+                // This means keeping the mean anomaly at that point, since the
+                // orbit shape does not change
+                // Current mean anomaly:
+                // M_1(t) = M_0_1 + t * sqrt(mu_1 / |a^3|)
+                //
+                // Mean anomaly after mu changes:
+                // M_2(t) = M_0_2 + t * sqrt(mu_2 / |a^3|)
+                //
+                // M_1(t) = M_2(t)
+                //
+                // We need to find M_0_2
+                //
+                // M_0_1 + t * sqrt(mu_1 / |a^3|) = M_0_2 + t * sqrt(mu_2 / |a^3|)
+                // M_0_2 + t * sqrt(mu_2 / |a^3|) = M_0_1 + t * sqrt(mu_1 / |a^3|)
+                // M_0_2 = M_0_1 + t * sqrt(mu_1 / |a^3|) - t * sqrt(mu_2 / |a^3|)
+                // M_0_2 = M_0_1 + t * (sqrt(mu_1 / |a^3|) - sqrt(mu_2 / |a^3|))
+
+                let inv_abs_a_cubed = self.get_semi_major_axis().powi(3).abs().recip();
+
+                self.mean_anomaly +=
+                    t * ((self.mu * inv_abs_a_cubed).sqrt() - (new_mu * inv_abs_a_cubed).sqrt());
+
+                self.mu = new_mu;
             }
             crate::MuSetterMode::KeepPositionAndVelocityAtTime(t) => {
                 todo!("set_gravitational_parameter with MuSetter::KeepPositionAndVelocityAtTime")
