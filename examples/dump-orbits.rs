@@ -1,10 +1,40 @@
 use core::f64::NAN;
 use glam::{DVec2, DVec3};
 use keplerian_sim::{Orbit, OrbitTrait};
+use keplerian_sim::{Orbit, OrbitTrait};
 use std::fs;
+use std::{env::args, fs, process::exit};
 
-const SIMULATION_TICKS: usize = 10_000;
+const DEFAULT_SIMULATION_TICKS: usize = 10_000;
 const CSV_PATH: &str = "out/output-orbit-dump.csv";
+
+fn get_sim_ticks() -> usize {
+    let mut ticks = DEFAULT_SIMULATION_TICKS;
+
+    let mut cur_val_is_ticks = false;
+
+    for arg in args() {
+        if arg == "--ticks" || arg == "-t" {
+            cur_val_is_ticks = true;
+            continue;
+        }
+
+        if cur_val_is_ticks {
+            ticks = match usize::from_str_radix(&arg, 10) {
+                Ok(n) => n,
+                Err(_) => {
+                    println!(
+                        "Failed to parse {arg} as valid number\
+                        Please input a valid number after the --ticks argument."
+                    );
+                    exit(1);
+                }
+            }
+        }
+    }
+
+    ticks
+}
 
 struct OrbitWrapper {
     name: &'static str,
@@ -135,17 +165,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
     ];
 
-    let mut logs: Vec<OrbitLog> = Vec::with_capacity(orbits.len() * SIMULATION_TICKS);
+    let simulation_ticks = get_sim_ticks();
+
+    let mut logs: Vec<OrbitLog> = Vec::with_capacity(orbits.len() * simulation_ticks);
 
     println!(">> Begin simulations.");
 
     for named_orbit in orbits {
         let (name, orbit) = (named_orbit.name, named_orbit.orbit);
 
-        println!("Simulating orbit {name} for {SIMULATION_TICKS} ticks");
+        println!("Simulating orbit {name} for {simulation_ticks} ticks");
 
-        for iter in 0..SIMULATION_TICKS {
-            let time = iter as f64 / SIMULATION_TICKS as f64;
+        for iter in 0..simulation_ticks {
+            let time = iter as f64 / simulation_ticks as f64;
             let time = named_orbit.time_mult * time + named_orbit.time_offset;
 
             let mean_anom = orbit.get_mean_anomaly_at_time(time);
@@ -184,12 +216,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let csv = create_csv(&logs);
 
     println!("CSV file generated, length: {} KiB", csv.len() / 1024);
-    println!(">> Writing CSV file to '{CSV_PATH}'");
 
-    let result = fs::write(CSV_PATH, csv);
+    if args().all(|a| a != "--no-write") {
+        println!(">> Writing CSV file to '{CSV_PATH}'");
 
-    if let Err(e) = result {
-        eprintln!("Failed to write CSV file: {e}");
+        let result = fs::write(CSV_PATH, csv);
+
+        if let Err(e) = result {
+            eprintln!("Failed to write CSV file: {e}");
+        }
     }
 
     println!(">> All done!");
