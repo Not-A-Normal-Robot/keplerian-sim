@@ -821,13 +821,17 @@ impl OrbitTrait for CompactOrbit {
                 // r_0(t), v_0(t) == r_1(t), v_1(t)
                 // ...todo: figure out a way to do this
 
-                todo!("set_gravitational_parameter with MuSetter::KeepPositionAndVelocityAtTime")
+                todo!(
+                    "set_gravitational_parameter with MuSetterMode::KeepPositionAndVelocityAtTime"
+                )
             }
             crate::MuSetterMode::KeepPositionAtAngle(_t) => {
-                todo!("set_gravitational_parameter with MuSetterMode::KeepPositionAtTime")
+                todo!("set_gravitational_parameter with MuSetterMode::KeepPositionAtAngle")
             }
             crate::MuSetterMode::KeepPositionAndVelocityAtAngle(_t) => {
-                todo!("set_gravitational_parameter with MuSetter::KeepPositionAndVelocityAtAngle")
+                todo!(
+                    "set_gravitational_parameter with MuSetterMode::KeepPositionAndVelocityAtAngle"
+                )
             }
         }
     }

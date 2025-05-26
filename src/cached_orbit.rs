@@ -848,13 +848,17 @@ impl OrbitTrait for Orbit {
                 self.mu = new_mu;
             }
             crate::MuSetterMode::KeepPositionAndVelocityAtTime(t) => {
-                todo!("set_gravitational_parameter with MuSetter::KeepPositionAndVelocityAtTime")
+                todo!(
+                    "set_gravitational_parameter with MuSetterMode::KeepPositionAndVelocityAtTime"
+                )
             }
             crate::MuSetterMode::KeepPositionAtAngle(_) => {
-                todo!("set_gravitational_parameter with MuSetterMode::KeepPositionAtTime")
+                todo!("set_gravitational_parameter with MuSetterMode::KeepPositionAtAngle")
             }
             crate::MuSetterMode::KeepPositionAndVelocityAtAngle(_) => {
-                todo!("set_gravitational_parameter with MuSetter::KeepPositionAndVelocityAtAngle")
+                todo!(
+                    "set_gravitational_parameter with MuSetterMode::KeepPositionAndVelocityAtAngle"
+                )
             }
         }
         self.update_cache();
