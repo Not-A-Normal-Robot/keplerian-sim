@@ -902,6 +902,24 @@ pub trait OrbitTrait {
     /// ```
     fn get_altitude_at_angle(&self, angle: f64) -> f64;
 
+    /// Gets the altitude of the body from its parent at a given eccentric anomaly in the orbit.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// let mut orbit = Orbit::new_default();
+    /// orbit.set_periapsis(100.0);
+    /// orbit.set_eccentricity(0.0);
+    ///
+    /// let altitude = orbit.get_altitude_at_eccentric_anomaly(0.0);
+    ///
+    /// assert_eq!(altitude, 100.0);
+    /// ```
+    fn get_altitude_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> f64 {
+        self.get_altitude_at_angle(self.get_true_anomaly_at_eccentric_anomaly(eccentric_anomaly))
+    }
+
     /// Gets the altitude of the body from its parent at a given time in the orbit.
     ///
     /// This involves calculating the true anomaly at a given time, and so is not very performant.  

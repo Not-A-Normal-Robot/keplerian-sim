@@ -841,10 +841,6 @@ impl OrbitTrait for CompactOrbit {
         }
     }
 
-    /// # Not Yet Implemented
-    /// This function sometimes panics when it encounters a todo macro.  
-    /// Refrain from using this function.
-    #[doc(hidden)]
     fn get_flat_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> Vec2 {
         // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
         // Equation 8:
@@ -852,16 +848,15 @@ impl OrbitTrait for CompactOrbit {
         // vector_o'(t) = sqrt(GM * a) / r * [ sqrt(1-e^2) cos E ]
         //                                   [         0         ]
 
-        // let multiplier = (self.get_semi_major_axis() * self.get_gravitational_parameter()).sqrt()
-        //     / self.get_altitude_at_angle(angle);
+        let multiplier = (self.get_semi_major_axis() * self.get_gravitational_parameter()).sqrt()
+            / self.get_altitude_at_eccentric_anomaly(eccentric_anomaly);
 
-        // let (sin, cos) = eccentric_anomaly.sin_cos();
+        let (sin, cos) = eccentric_anomaly.sin_cos();
 
-        // let vec = (
-        //     -sin,
-        //     (1.0 - self.get_eccentricity().powi(2)).sqrt() * cos
-        // )
-        todo!("get_flat_velocity_at_eccentric_anomaly");
+        (
+            -sin * multiplier,
+            (1.0 - self.get_eccentricity().powi(2)).sqrt() * cos * multiplier,
+        )
     }
 }
 
