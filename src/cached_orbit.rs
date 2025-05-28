@@ -803,7 +803,11 @@ impl OrbitTrait for Orbit {
         self.update_cache();
     }
 
-    fn get_flat_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> crate::Vec2 {
+    /// # Not Yet Implemented
+    /// This function sometimes panics when it encounters a todo macro.  
+    /// Refrain from using this function.
+    #[doc(hidden)]
+    fn get_flat_velocity_at_eccentric_anomaly(&self, _eccentric_anomaly: f64) -> crate::Vec2 {
         todo!("get_flat_velocity_at_eccentric_anomaly");
     }
 
@@ -811,6 +815,10 @@ impl OrbitTrait for Orbit {
         self.mu
     }
 
+    /// # Not Yet Implemented
+    /// This function sometimes panics when it encounters a todo macro.  
+    /// Refrain from using this function.
+    #[doc(hidden)]
     fn set_gravitational_parameter(
         &mut self,
         gravitational_parameter: f64,
@@ -847,15 +855,15 @@ impl OrbitTrait for Orbit {
 
                 self.mu = new_mu;
             }
-            crate::MuSetterMode::KeepPositionAndVelocityAtTime(t) => {
+            crate::MuSetterMode::KeepPositionAndVelocityAtTime(_t) => {
                 todo!(
                     "set_gravitational_parameter with MuSetterMode::KeepPositionAndVelocityAtTime"
                 )
             }
-            crate::MuSetterMode::KeepPositionAtAngle(_) => {
+            crate::MuSetterMode::KeepPositionAtAngle(_t) => {
                 todo!("set_gravitational_parameter with MuSetterMode::KeepPositionAtAngle")
             }
-            crate::MuSetterMode::KeepPositionAndVelocityAtAngle(_) => {
+            crate::MuSetterMode::KeepPositionAndVelocityAtAngle(_t) => {
                 todo!(
                     "set_gravitational_parameter with MuSetterMode::KeepPositionAndVelocityAtAngle"
                 )
@@ -864,11 +872,7 @@ impl OrbitTrait for Orbit {
         self.update_cache();
     }
 
-    fn get_mean_anomaly_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> f64 {
-        todo!("get_mean_anomaly_at_eccentric_anomaly")
-    }
-
-    fn get_mean_anomaly_at_true_anomaly(&self, true_anomaly: f64) -> f64 {
+    fn get_mean_anomaly_at_true_anomaly(&self, _true_anomaly: f64) -> f64 {
         todo!("get_mean_anomaly_at_true_anomaly")
     }
 }

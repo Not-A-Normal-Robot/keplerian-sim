@@ -780,6 +780,10 @@ impl OrbitTrait for CompactOrbit {
         return self.mu;
     }
 
+    /// # Not Yet Implemented
+    /// This function sometimes panics when it encounters a todo macro.  
+    /// Refrain from using this function.
+    #[doc(hidden)]
     fn set_gravitational_parameter(
         &mut self,
         gravitational_parameter: f64,
@@ -820,6 +824,7 @@ impl OrbitTrait for CompactOrbit {
                 //
                 // r_0(t), v_0(t) == r_1(t), v_1(t)
                 // ...todo: figure out a way to do this
+                // https://downloads.rene-schwarz.com/download/M002-Cartesian_State_Vectors_to_Keplerian_Orbit_Elements.pdf
 
                 todo!(
                     "set_gravitational_parameter with MuSetterMode::KeepPositionAndVelocityAtTime"
@@ -836,6 +841,10 @@ impl OrbitTrait for CompactOrbit {
         }
     }
 
+    /// # Not Yet Implemented
+    /// This function sometimes panics when it encounters a todo macro.  
+    /// Refrain from using this function.
+    #[doc(hidden)]
     fn get_flat_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> Vec2 {
         // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
         // Equation 8:
@@ -853,14 +862,6 @@ impl OrbitTrait for CompactOrbit {
         //     (1.0 - self.get_eccentricity().powi(2)).sqrt() * cos
         // )
         todo!("get_flat_velocity_at_eccentric_anomaly");
-    }
-
-    fn get_mean_anomaly_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> f64 {
-        todo!("get_mean_anomaly_at_eccentric_anomaly");
-    }
-
-    fn get_mean_anomaly_at_true_anomaly(&self, true_anomaly: f64) -> f64 {
-        todo!("get_mean_anomaly_at_true_anomaly")
     }
 }
 
