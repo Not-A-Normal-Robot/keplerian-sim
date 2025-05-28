@@ -106,6 +106,144 @@ fn unit_orbit() -> Orbit {
     return Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
 }
 
+mod random_orbit {
+    use super::*;
+    pub(super) fn random_mult() -> f64 {
+        if rand::random_bool(0.5) {
+            // Lower
+            rand::random_range(0.1f64..0.9f64)
+        } else {
+            // Higher
+            rand::random_range(1.1f64..5.0f64)
+        }
+    }
+
+    pub(super) fn random_circular() -> Orbit {
+        Orbit::new(
+            0.0,
+            rand::random_range(0.01..1e6),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(0.01..1e6),
+        )
+    }
+
+    pub(super) fn random_elliptic() -> Orbit {
+        Orbit::new(
+            rand::random_range(0.01..0.99),
+            rand::random_range(0.01..1e6),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(0.01..1e6),
+        )
+    }
+
+    pub(super) fn random_near_parabolic() -> Orbit {
+        Orbit::new(
+            rand::random_range(0.99..0.9999),
+            rand::random_range(0.01..1e6),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(0.01..1e6),
+        )
+    }
+
+    pub(super) fn random_parabolic() -> Orbit {
+        Orbit::new(
+            1.0,
+            rand::random_range(0.01..1e6),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(0.01..1e6),
+        )
+    }
+
+    pub(super) fn random_hyperbolic() -> Orbit {
+        Orbit::new(
+            rand::random_range(1.01..3.0),
+            rand::random_range(0.01..1e6),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(0.01..1e6),
+        )
+    }
+
+    pub(super) fn random_very_hyperbolic() -> Orbit {
+        Orbit::new(
+            rand::random_range(5.0..15.0),
+            rand::random_range(0.01..1e6),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(0.01..1e6),
+        )
+    }
+
+    pub(super) fn random_extremely_hyperbolic() -> Orbit {
+        Orbit::new(
+            rand::random_range(80.0..150.0),
+            rand::random_range(0.01..1e6),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(-TAU..TAU),
+            rand::random_range(0.01..1e6),
+        )
+    }
+
+    pub(super) fn random_nonparabolic() -> Orbit {
+        const FNS: &[fn() -> Orbit] = &[
+            random_circular,
+            random_elliptic,
+            random_near_parabolic,
+            random_hyperbolic,
+            random_very_hyperbolic,
+            random_extremely_hyperbolic,
+        ];
+
+        let i = rand::random_range(0..FNS.len());
+
+        FNS[i]()
+    }
+
+    pub(super) fn random_nonparabolic_iter(iters: usize) -> impl Iterator<Item = Orbit> {
+        (0..iters).into_iter().map(|_| random_nonparabolic())
+    }
+
+    pub(super) fn random_any() -> Orbit {
+        const FNS: &[fn() -> Orbit] = &[
+            random_circular,
+            random_elliptic,
+            random_near_parabolic,
+            random_parabolic,
+            random_hyperbolic,
+            random_very_hyperbolic,
+            random_extremely_hyperbolic,
+        ];
+
+        let i = rand::random_range(0..FNS.len());
+
+        FNS[i]()
+    }
+
+    pub(super) fn random_any_iter(iters: usize) -> impl Iterator<Item = Orbit> {
+        (0..iters).into_iter().map(|_| random_any())
+    }
+}
+
+use random_orbit::*;
+
 #[test]
 fn unit_orbit_angle_3d() {
     let orbit = unit_orbit();
@@ -564,91 +702,19 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
             );
         }
     }
+    // TODO: check speed, flat velocity, tilted velocity
 }
 
-fn random_mult() -> f64 {
-    if rand::random_bool(0.5) {
-        // Lower
-        rand::random_range(0.1f64..0.9f64)
-    } else {
-        // Higher
-        rand::random_range(1.1f64..5.0f64)
-    }
+fn speed_velocity_base_test(orbit: impl OrbitTrait + Clone, what: &str) {
+    // TODO: check speed, flat velocity, tilted velocity
 }
 
-fn random_circular() -> Orbit {
-    Orbit::new(
-        0.0,
-        rand::random_range(0.01..1e6),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(0.01..1e6),
-    )
+fn naive_speed_correlation_base_test(orbit: impl OrbitTrait + Clone, what: &str) {
+    // TODO: check speed correlation
 }
 
-fn random_elliptic() -> Orbit {
-    Orbit::new(
-        rand::random_range(0.01..0.99),
-        rand::random_range(0.01..1e6),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(0.01..1e6),
-    )
-}
-
-fn random_parabolic() -> Orbit {
-    Orbit::new(
-        1.0,
-        rand::random_range(0.01..1e6),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(0.01..1e6),
-    )
-}
-
-fn random_hyperbolic() -> Orbit {
-    Orbit::new(
-        rand::random_range(1.01..3.0),
-        rand::random_range(0.01..1e6),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(0.01..1e6),
-    )
-}
-
-fn random_very_hyperbolic() -> Orbit {
-    Orbit::new(
-        rand::random_range(5.0..15.0),
-        rand::random_range(0.01..1e6),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(0.01..1e6),
-    )
-}
-
-fn random_extremely_hyperbolic() -> Orbit {
-    Orbit::new(
-        rand::random_range(80.0..150.0),
-        rand::random_range(0.01..1e6),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(-TAU..TAU),
-        rand::random_range(0.01..1e6),
-    )
-}
-
-fn orbit_mu_setter_test(orbit: impl OrbitTrait + Clone) {
+// TODO: Add a unit test for this when the feature is implemented
+fn orbit_mu_setter_base_test(orbit: impl OrbitTrait + Clone) {
     for i in 0..1024 {
         let after = {
             let mut o = orbit.clone();
@@ -837,6 +903,11 @@ fn orbit_conversions() {
 
     for (what, orbit) in orbits.iter() {
         orbit_conversion_base_test(orbit.clone(), what);
+    }
+
+    for orbit in random_any_iter(1000) {
+        let message = &format!("Random orbit ({orbit:?})");
+        orbit_conversion_base_test(orbit, message);
     }
 }
 
@@ -1102,6 +1173,12 @@ fn test_true_anom_to_ecc_anom_base(what: &str, orbit: &impl OrbitTrait) {
         let true_anomaly = i as f64 * 0.1;
 
         let ecc_anom = orbit.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
+
+        if ecc_anom.is_nan() && orbit.get_eccentricity() >= 1.0 {
+            // Some true anomalies just aren't possible in hyperbolic trajectories
+            continue;
+        }
+
         let reconverted_true_anomaly = orbit.get_true_anomaly_at_eccentric_anomaly(ecc_anom);
 
         let message = format!("True -> Ecc -> True anomaly conversion for {what}, at iter {i} and angle {true_anomaly}");
