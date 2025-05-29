@@ -842,6 +842,7 @@ impl OrbitTrait for CompactOrbit {
     }
 
     fn get_flat_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> Vec2 {
+        // TODO: Hyperbolic support
         // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
         // Equation 8:
         //                                   [      -sin E       ]

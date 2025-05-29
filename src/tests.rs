@@ -101,7 +101,27 @@ fn poll_eccentric_anomaly(orbit: &impl OrbitTrait) -> Vec<f64> {
 
     return vec;
 }
-
+fn poll_speed(orbit: &impl OrbitTrait) -> Vec<f64> {
+    (0..ORBIT_POLL_ANGLES)
+        .into_iter()
+        .map(|i| (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64))
+        .map(|t| orbit.get_speed_at_time(t))
+        .collect()
+}
+fn poll_flat_vel(orbit: &impl OrbitTrait) -> Vec<Vec2> {
+    (0..ORBIT_POLL_ANGLES)
+        .into_iter()
+        .map(|i| (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64))
+        .map(|t| orbit.get_flat_velocity_at_time(t))
+        .collect()
+}
+fn poll_vel(orbit: &impl OrbitTrait) -> Vec<Vec3> {
+    (0..ORBIT_POLL_ANGLES)
+        .into_iter()
+        .map(|i| (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64))
+        .map(|t| orbit.get_velocity_at_time(t))
+        .collect()
+}
 fn unit_orbit() -> Orbit {
     return Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
 }
@@ -702,7 +722,99 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
             );
         }
     }
-    // TODO: check speed, flat velocity, tilted velocity
+    {
+        let original_speeds = poll_speed(&orbit);
+        let compact_speeds = poll_speed(&compact_orbit);
+        let reexpanded_speeds = poll_speed(&reexpanded_orbit);
+
+        let compact_message = format!("{compact_message} (speed)");
+        let reexpanded_message = format!("{reexpanded_message} (speed)");
+
+        assert_eq!(
+            original_speeds
+                .iter()
+                .map(|x| x.to_bits())
+                .collect::<Vec<_>>(),
+            compact_speeds
+                .iter()
+                .map(|x| x.to_bits())
+                .collect::<Vec<_>>(),
+            "{compact_message}",
+        );
+        assert_eq!(
+            original_speeds
+                .iter()
+                .map(|x| x.to_bits())
+                .collect::<Vec<_>>(),
+            reexpanded_speeds
+                .iter()
+                .map(|x| x.to_bits())
+                .collect::<Vec<_>>(),
+            "{reexpanded_message}",
+        );
+    }
+    {
+        let original_fvels = poll_flat_vel(&orbit);
+        let compact_fvels = poll_flat_vel(&compact_orbit);
+        let reexpanded_fvels = poll_flat_vel(&reexpanded_orbit);
+
+        let compact_message = format!("{compact_message} (flat velocity)");
+        let reexpanded_message = format!("{reexpanded_message} (flat velocity)");
+
+        assert_eq!(
+            original_fvels
+                .iter()
+                .map(|(x, y)| (x.to_bits(), y.to_bits()))
+                .collect::<Vec<_>>(),
+            compact_fvels
+                .iter()
+                .map(|(x, y)| (x.to_bits(), y.to_bits()))
+                .collect::<Vec<_>>(),
+            "{compact_message}",
+        );
+        assert_eq!(
+            original_fvels
+                .iter()
+                .map(|(x, y)| (x.to_bits(), y.to_bits()))
+                .collect::<Vec<_>>(),
+            reexpanded_fvels
+                .iter()
+                .map(|(x, y)| (x.to_bits(), y.to_bits()))
+                .collect::<Vec<_>>(),
+            "{reexpanded_message}",
+        );
+    }
+    {
+        let original_vels = poll_vel(&orbit);
+        let compact_vels = poll_vel(&compact_orbit);
+        let reexpanded_vels = poll_vel(&reexpanded_orbit);
+
+        let compact_message = format!("{compact_message} (velocity)");
+        let reexpanded_message = format!("{reexpanded_message} (velocity)");
+
+        assert_eq!(
+            original_vels
+                .iter()
+                .map(|(x, y, z)| (x.to_bits(), y.to_bits(), z.to_bits()))
+                .collect::<Vec<_>>(),
+            compact_vels
+                .iter()
+                .map(|(x, y, z)| (x.to_bits(), y.to_bits(), z.to_bits()))
+                .collect::<Vec<_>>(),
+            "{compact_message}",
+        );
+        assert_eq!(
+            original_vels
+                .iter()
+                .map(|(x, y, z)| (x.to_bits(), y.to_bits(), z.to_bits()))
+                .collect::<Vec<_>>(),
+            reexpanded_vels
+                .iter()
+                .map(|(x, y, z)| (x.to_bits(), y.to_bits(), z.to_bits()))
+                .collect::<Vec<_>>(),
+            "{reexpanded_message}",
+        );
+    }
 }
 
 fn speed_velocity_base_test(orbit: impl OrbitTrait + Clone, what: &str) {
