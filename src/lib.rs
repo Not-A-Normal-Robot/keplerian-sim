@@ -702,7 +702,42 @@ pub trait OrbitTrait {
     /// Speed is not to be confused with velocity.  
     /// Speed tells you how fast something is moving,
     /// while velocity tells you how fast *and in what direction* it's moving in.
-    fn get_flat_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> Vec2;
+    fn get_flat_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> Vec2 {
+        // TODO: PARABOLA SUPPORT: This does not play well with parabolic trajectories.
+        if self.get_eccentricity() < 1.0 {
+            // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+            // Equation 8:
+            //                                   [      -sin E       ]
+            // vector_o'(t) = sqrt(GM * a) / r * [ sqrt(1-e^2) cos E ]
+            //                                   [         0         ]
+
+            let multiplier = (self.get_semi_major_axis() * self.get_gravitational_parameter())
+                .sqrt()
+                / self.get_altitude_at_eccentric_anomaly(eccentric_anomaly);
+
+            let (sin, cos) = eccentric_anomaly.sin_cos();
+
+            (
+                -sin * multiplier,
+                (1.0 - self.get_eccentricity().powi(2)).sqrt() * cos * multiplier,
+            )
+        } else {
+            // https://space.stackexchange.com/a/54418
+            //                                    [        sinh F       ]
+            // vector_o'(t) = sqrt(-GM * a) / r * [ -sqrt(e^2-1) cosh F ]
+            //                                    [          0          ]
+            let multiplier = (-self.get_semi_major_axis() * self.get_gravitational_parameter())
+                .sqrt()
+                / self.get_altitude_at_eccentric_anomaly(eccentric_anomaly);
+
+            let (sinh, cosh) = sinhcosh(eccentric_anomaly);
+
+            (
+                -sinh * multiplier,
+                -(self.get_eccentricity().powi(2) - 1.0).sqrt() * cosh * multiplier,
+            )
+        }
+    }
 
     /// Gets the velocity at a given time in the orbit if
     /// it had an inclination and longitude of ascending node of 0.
