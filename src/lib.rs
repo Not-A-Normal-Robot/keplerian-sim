@@ -495,7 +495,13 @@ pub trait OrbitTrait {
 
     /// Gets the mean anomaly at a given eccentric anomaly in the orbit.
     ///
-    /// #
+    /// # Performance
+    /// This function is a wrapper around
+    /// [`get_mean_anomaly_at_elliptic_eccentric_anomaly`][Self::get_mean_anomaly_at_elliptic_eccentric_anomaly]
+    /// and
+    /// [`get_mean_anomaly_at_hyperbolic_eccentric_anomaly`][Self::get_mean_anomaly_at_hyperbolic_eccentric_anomaly].  
+    /// It does some trigonometry, but if you know `sin(eccentric_anomaly)` or `sinh(eccentric_anomaly)`
+    /// beforehand, this can be skipped by directly using those inner functions.
     ///
     /// The mean anomaly is the fraction of an elliptical orbit's period
     /// that has elapsed since the orbiting body passed periapsis,
@@ -504,10 +510,78 @@ pub trait OrbitTrait {
     ///
     /// \- [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
     fn get_mean_anomaly_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> f64 {
-        self.get_mean_anomaly_at_eccentric_anomaly_with_sin(
-            eccentric_anomaly,
-            eccentric_anomaly.sin(),
-        )
+        // TODO: PARABOLA SUPPORT: This function doesn't consider parabolas yet.
+        if self.get_eccentricity() < 1.0 {
+            self.get_mean_anomaly_at_elliptic_eccentric_anomaly(
+                eccentric_anomaly,
+                eccentric_anomaly.sin(),
+            )
+        } else {
+            self.get_mean_anomaly_at_hyperbolic_eccentric_anomaly(
+                eccentric_anomaly,
+                eccentric_anomaly.sinh(),
+            )
+        }
+    }
+
+    /// Gets the mean anomaly at a given eccentric anomaly in the orbit and
+    /// its precomputed sine.  
+    ///
+    /// # Unchecked Operation
+    /// This function does no checks on the validity of the value given
+    /// as `sin_eccentric_anomaly`. It also doesn't check if the orbit is elliptic.  
+    /// If invalid values are passed in, you will receive a possibly-nonsensical value as output.  
+    ///
+    /// The mean anomaly is the fraction of an elliptical orbit's period
+    /// that has elapsed since the orbiting body passed periapsis,
+    /// expressed as an angle which can be used in calculating the position
+    /// of that body in the classical two-body problem.
+    ///
+    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
+    fn get_mean_anomaly_at_elliptic_eccentric_anomaly(
+        &self,
+        eccentric_anomaly: f64,
+        sin_eccentric_anomaly: f64,
+    ) -> f64 {
+        // https://en.wikipedia.org/wiki/Kepler%27s_equation#Equation
+        //
+        //      M = E - e sin E
+        //
+        // where:
+        //   M = mean anomaly
+        //   E = eccentric anomaly
+        //   e = eccentricity
+        eccentric_anomaly - self.get_eccentricity() * sin_eccentric_anomaly
+    }
+
+    /// Gets the mean anomaly at a given eccentric anomaly in the orbit and
+    /// its precomputed sine.  
+    ///
+    /// # Unchecked Operation
+    /// This function does no checks on the validity of the value given
+    /// as `sinh_eccentric_anomaly`. It also doesn't check if the orbit is hyperbolic.  
+    /// If invalid values are passed in, you will receive a possibly-nonsensical value as output.  
+    ///
+    /// The mean anomaly is the fraction of an elliptical orbit's period
+    /// that has elapsed since the orbiting body passed periapsis,
+    /// expressed as an angle which can be used in calculating the position
+    /// of that body in the classical two-body problem.
+    ///
+    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
+    fn get_mean_anomaly_at_hyperbolic_eccentric_anomaly(
+        &self,
+        eccentric_anomaly: f64,
+        sinh_eccentric_anomaly: f64,
+    ) -> f64 {
+        // https://en.wikipedia.org/wiki/Kepler%27s_equation#Hyperbolic_Kepler_equation
+        //
+        //      M = e sinh(H) - H
+        //
+        // where:
+        //   M = mean anomaly
+        //   e = eccentricity
+        //   H = hyperbolic eccentric anomaly
+        self.get_eccentricity() * sinh_eccentric_anomaly - eccentric_anomaly
     }
 
     /// Gets the mean anomaly at a given eccentric anomaly in the orbit and
@@ -524,7 +598,7 @@ pub trait OrbitTrait {
     /// of that body in the classical two-body problem.
     ///
     /// \- [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
-    fn get_mean_anomaly_at_eccentric_anomaly_with_sin(
+    fn get_mean_anomaly_at_elliptic_eccentric_anomaly(
         &self,
         eccentric_anomaly: f64,
         sin_eccentric_anomaly: f64,
@@ -595,6 +669,7 @@ pub trait OrbitTrait {
     /// Speed tells you how fast something is moving,
     /// while velocity tells you how fast *and in what direction* it's moving in.
     fn get_speed_at_angle(&self, angle: f64) -> f64 {
+        // https://en.wikipedia.org/wiki/Vis-viva_equation
         // v^2 = GM (2/r - 1/a)
         // v = sqrt(GM * (2/r - 1/a))
 
@@ -733,7 +808,7 @@ pub trait OrbitTrait {
             let (sinh, cosh) = sinhcosh(eccentric_anomaly);
 
             (
-                -sinh * multiplier,
+                sinh * multiplier,
                 -(self.get_eccentricity().powi(2) - 1.0).sqrt() * cosh * multiplier,
             )
         }
