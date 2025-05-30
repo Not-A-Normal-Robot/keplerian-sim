@@ -776,9 +776,9 @@ pub trait OrbitTrait {
             )
         } else {
             // https://space.stackexchange.com/a/54418
-            //                                    [        sinh F       ]
-            // vector_o'(t) = sqrt(-GM * a) / r * [ -sqrt(e^2-1) cosh F ]
-            //                                    [          0          ]
+            //                                    [      -sinh F       ]
+            // vector_o'(t) = sqrt(-GM * a) / r * [ sqrt(e^2-1) cosh F ]
+            //                                    [         0          ]
             let multiplier = (-self.get_semi_major_axis() * self.get_gravitational_parameter())
                 .sqrt()
                 / self.get_altitude_at_eccentric_anomaly(eccentric_anomaly);
@@ -786,8 +786,8 @@ pub trait OrbitTrait {
             let (sinh, cosh) = sinhcosh(eccentric_anomaly);
 
             (
-                sinh * multiplier,
-                -(self.get_eccentricity().powi(2) - 1.0).sqrt() * cosh * multiplier,
+                -sinh * multiplier,
+                (self.get_eccentricity().powi(2) - 1.0).sqrt() * cosh * multiplier,
             )
         }
     }

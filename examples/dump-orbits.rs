@@ -31,6 +31,12 @@ struct OrbitLog<'a> {
     altitude: f64,
 
     expected_speed: f64,
+    real_speed: f64,
+    real_dfx: f64,
+    real_dfy: f64,
+    real_dx: f64,
+    real_dy: f64,
+    real_dz: f64,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -158,6 +164,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let expected_speed = (2.0 / altitude - 1.0 / orbit.get_semi_major_axis()).sqrt();
 
+            let real_speed = orbit.get_speed_at_angle(angle);
+            let (real_dfx, real_dfy) = orbit.get_flat_velocity_at_eccentric_anomaly(ecc_anom);
+            let (real_dx, real_dy, real_dz) = orbit.get_velocity_at_eccentric_anomaly(ecc_anom);
+
             logs.push(OrbitLog {
                 name,
                 iter,
@@ -172,6 +182,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 flat_y,
                 altitude,
                 expected_speed,
+                real_speed,
+                real_dfx,
+                real_dfy,
+                real_dx,
+                real_dy,
+                real_dz,
             });
         }
     }
@@ -196,7 +212,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn create_csv(logs: &Vec<OrbitLog>) -> String {
     let mut string = String::new();
-    string += "orbit,iter,time,mean-anom,ecc-anom,angle,flat-x,flat-y,dfx,dfy,x,y,z,dx,dy,dz,altitude,d-altitude,speed,accel,expected-speed\n";
+    string += "orbit,iter,time,mean-anom,ecc-anom,angle,\
+        flat-x,flat-y,naive-dfx,naive-dfy,x,y,z,\
+        naive-dx,naive-dy,naive-dz,altitude,d-altitude,\
+        naive-speed,accel,expected-speed,real-speed,real-dfx,real-dfy,\
+        real-dx,real-dy,real-dz\n";
 
     let mut prev_orbit_type: &str = "";
     let mut prev_flat_pos: Option<(f64, f64)> = None;
@@ -234,7 +254,7 @@ fn create_csv(logs: &Vec<OrbitLog>) -> String {
         let accel = speed - prev_speed.unwrap_or(NAN);
 
         string += &format!(
-            "{orbit},{iter},{time},{mean_anom},{ecc_anom},{angle},{flat_x},{flat_y},{dfx},{dfy},{x},{y},{z},{dx},{dy},{dz},{altitude},{d_altitude},{speed},{accel},{expected_speed}\n",
+            "{orbit},{iter},{time},{mean_anom},{ecc_anom},{angle},{flat_x},{flat_y},{dfx},{dfy},{x},{y},{z},{dx},{dy},{dz},{altitude},{d_altitude},{speed},{accel},{expected_speed},{real_speed},{real_dfx},{real_dfy},{real_dx},{real_dy},{real_dz}\n",
             orbit = log.name,
             iter = log.iter,
             time = log.time,
@@ -242,6 +262,12 @@ fn create_csv(logs: &Vec<OrbitLog>) -> String {
             ecc_anom = log.ecc_anom,
             angle = log.angle,
             expected_speed = log.expected_speed,
+            real_speed = log.real_speed,
+            real_dfx = log.real_dfx,
+            real_dfy = log.real_dfy,
+            real_dx = log.real_dx,
+            real_dy = log.real_dy,
+            real_dz = log.real_dz,
         );
 
         prev_flat_pos = Some((flat_x, flat_y));
