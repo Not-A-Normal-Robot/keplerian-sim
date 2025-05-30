@@ -818,11 +818,80 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
 }
 
 fn speed_velocity_base_test(orbit: impl OrbitTrait + Clone, what: &str) {
-    // TODO: check speed, flat velocity, tilted velocity
+    for i in 0..ORBIT_POLL_ANGLES {
+        let t = (i as f64) * TAU / (ORBIT_POLL_ANGLES as f64);
+
+        let speed = orbit.get_speed_at_time(t);
+        let flat_vel = orbit.get_flat_velocity_at_time(t);
+        let vel = orbit.get_velocity_at_time(t);
+
+        let flat_vel_mag = (flat_vel.0.powi(2) + flat_vel.1.powi(2)).sqrt();
+        let vel_mag = (vel.0.powi(2) + vel.1.powi(2) + vel.2.powi(2)).sqrt();
+
+        assert_almost_eq(
+            speed,
+            flat_vel_mag,
+            &format!("Speed and flat velocity magnitude on orbit {what} at i={i}, t={t}"),
+        );
+
+        assert_almost_eq(
+            speed,
+            vel_mag,
+            &format!("Speed and velocity magnitude on orbit {what} at i={i}, t={t}"),
+        );
+    }
 }
 
 fn naive_speed_correlation_base_test(orbit: impl OrbitTrait + Clone, what: &str) {
-    // TODO: check speed correlation
+    let mut coeff = None;
+
+    fn cosine_similarity(v1: Vec3, v2: Vec3) -> f64 {
+        let dot_product = v1.0 * v2.0 + v1.1 * v2.1 + v1.2 * v2.2;
+        let v1_mag = (v1.0.powi(2) + v1.1.powi(2) + v1.2.powi(2)).sqrt();
+        let v2_mag = (v2.0.powi(2) + v2.1.powi(2) + v2.2.powi(2)).sqrt();
+
+        dot_product / (v1_mag * v2_mag)
+    }
+
+    for i in 0..ORBIT_POLL_ANGLES {
+        let t = (i as f64) * TAU / (ORBIT_POLL_ANGLES as f64);
+        let t2 = (i as f64 + 0.01) * TAU / (ORBIT_POLL_ANGLES as f64);
+
+        let pos1 = orbit.get_position_at_time(t);
+        let pos2 = orbit.get_position_at_time(t2);
+        let diff = (pos2.0 - pos1.0, pos2.1 - pos1.1, pos2.2 - pos1.2);
+
+        let vel = orbit.get_velocity_at_time(t);
+
+        let direction_similarity = cosine_similarity(vel, diff);
+        const SIMILARITY_THRESHOLD: f64 = 0.99;
+
+        assert!(
+            direction_similarity > SIMILARITY_THRESHOLD,
+            "Velocity and position difference direction similarity is {direction_similarity}, \
+            which is below threshold of {SIMILARITY_THRESHOLD}\n\
+            On orbit {what}\n\
+            At i={i}, t={t}, t2={t2}\n\n\
+            pos1 = {pos1:?}\npos2 = {pos2:?}\ndiff = {diff:?}\nvel = {vel:?}"
+        );
+
+        let diff_mag = (diff.0.powi(2) + diff.1.powi(2) + diff.2.powi(2)).sqrt();
+        let vel_mag = (vel.0.powi(2) + vel.1.powi(2) + vel.2.powi(2)).sqrt();
+        let new_coeff = diff_mag / vel_mag;
+
+        match coeff {
+            Some(coeff) => {
+                assert_almost_eq(
+                    coeff,
+                    new_coeff,
+                    &format!("coefficient between diff_mag and vel_mag on orbit {what} at i={i}, t={t}, t2={t2}"),
+                );
+            }
+            None => {
+                coeff = Some(new_coeff);
+            }
+        }
+    }
 }
 
 // TODO: Add a unit test for this when the feature is implemented
@@ -1485,6 +1554,27 @@ fn test_altitude() {
                 &format!("Dist of flat point (orbit {kind}, angle {angle})",),
             );
         }
+    }
+}
+
+#[test]
+fn test_velocity() {
+    let orbits = [
+        ("Circular", random_circular()),
+        ("Elliptic", random_elliptic()),
+        ("Hyperbolic", random_hyperbolic()),
+    ];
+
+    for (what, orbit) in orbits {
+        speed_velocity_base_test(orbit.clone(), what);
+        naive_speed_correlation_base_test(orbit, what);
+    }
+
+    // TODO: PARABOLA SUPPORT: Change to all-random instead of just nonparabolic
+    for orbit in random_nonparabolic_iter(128) {
+        let what = &format!("random ({orbit:?})");
+        speed_velocity_base_test(orbit.clone(), what);
+        naive_speed_correlation_base_test(orbit, what);
     }
 }
 
