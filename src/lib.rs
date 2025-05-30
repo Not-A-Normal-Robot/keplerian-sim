@@ -584,28 +584,6 @@ pub trait OrbitTrait {
         self.get_eccentricity() * sinh_eccentric_anomaly - eccentric_anomaly
     }
 
-    /// Gets the mean anomaly at a given eccentric anomaly in the orbit and
-    /// its precomputed sine.  
-    ///
-    /// # Note
-    /// This function does no checks on the validity of the value given
-    /// as `sin_eccentric_anomaly`. If invalid values are passed in, you will receive
-    /// a possibly-nonsensical value as output.
-    ///
-    /// The mean anomaly is the fraction of an elliptical orbit's period
-    /// that has elapsed since the orbiting body passed periapsis,
-    /// expressed as an angle which can be used in calculating the position
-    /// of that body in the classical two-body problem.
-    ///
-    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
-    fn get_mean_anomaly_at_elliptic_eccentric_anomaly(
-        &self,
-        eccentric_anomaly: f64,
-        sin_eccentric_anomaly: f64,
-    ) -> f64 {
-        eccentric_anomaly - self.get_eccentricity() * sin_eccentric_anomaly
-    }
-
     /// Gets the mean anomaly at a given true anomaly in the orbit.
     ///
     /// The mean anomaly is the fraction of an elliptical orbit's period
