@@ -597,10 +597,10 @@ impl Orbit {
 
             if denominator.abs() < 1e-30 || !denominator.is_finite() {
                 // dangerously close to div-by-zero, break out
-                #[cfg(debug_assertions)]
-                eprintln!(
-                    "Hyperbolic eccentric anomaly solver: denominator is too small or not finite"
-                );
+                // #[cfg(debug_assertions)]
+                // eprintln!(
+                //     "Hyperbolic eccentric anomaly solver: denominator is too small or not finite"
+                // );
                 break;
             }
 
@@ -632,14 +632,6 @@ impl OrbitTrait for Orbit {
         return self.cache.linear_eccentricity;
     }
 
-    fn get_apoapsis(&self) -> f64 {
-        if self.eccentricity == 1.0 {
-            return f64::INFINITY;
-        } else {
-            return self.cache.semi_major_axis * (1.0 + self.eccentricity);
-        }
-    }
-
     fn set_apoapsis(&mut self, apoapsis: f64) -> Result<(), ApoapsisSetterError> {
         if apoapsis < 0.0 {
             return Err(ApoapsisSetterError::ApoapsisNegative);
@@ -668,6 +660,7 @@ impl OrbitTrait for Orbit {
     }
 
     fn get_eccentric_anomaly(&self, mean_anomaly: f64) -> f64 {
+        // TODO: PARABOLA SUPPORT: This does not consider parabolic trajectories yet.
         if self.eccentricity < 1.0 {
             self.get_eccentric_anomaly_elliptic(mean_anomaly)
         } else {
@@ -739,19 +732,6 @@ impl OrbitTrait for Orbit {
             // H = 2 atanh(tan(f/2) * sqrt((e-1)/(e+1)))
             return 2.0 * ((true_anomaly * 0.5).tan() * ((e - 1.0) / (e + 1.0)).sqrt()).atanh();
         }
-    }
-
-    fn get_semi_latus_rectum(&self) -> f64 {
-        if self.eccentricity == 1.0 {
-            return 2.0 * self.periapsis;
-        }
-
-        return self.cache.semi_major_axis * (1.0 - self.eccentricity * self.eccentricity);
-    }
-
-    fn get_altitude_at_angle(&self, true_anomaly: f64) -> f64 {
-        return (self.get_semi_latus_rectum() / (1.0 + self.eccentricity * true_anomaly.cos()))
-            .abs();
     }
 
     fn get_mean_anomaly_at_time(&self, t: f64) -> f64 {

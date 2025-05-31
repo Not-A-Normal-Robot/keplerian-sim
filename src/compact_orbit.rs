@@ -559,10 +559,10 @@ impl CompactOrbit {
 
             if denominator.abs() < 1e-30 || !denominator.is_finite() {
                 // dangerously close to div-by-zero, break out
-                #[cfg(debug_assertions)]
-                eprintln!(
-                    "Hyperbolic eccentric anomaly solver: denominator is too small or not finite"
-                );
+                // #[cfg(debug_assertions)]
+                // eprintln!(
+                //     "Hyperbolic eccentric anomaly solver: denominator is too small or not finite"
+                // );
                 break;
             }
 
@@ -581,28 +581,6 @@ impl CompactOrbit {
 }
 
 impl OrbitTrait for CompactOrbit {
-    fn get_semi_major_axis(&self) -> f64 {
-        return self.periapsis / (1.0 - self.eccentricity);
-    }
-
-    fn get_semi_minor_axis(&self) -> f64 {
-        let semi_major_axis = self.get_semi_major_axis();
-        let eccentricity_squared = self.eccentricity * self.eccentricity;
-        return semi_major_axis * (1.0 - eccentricity_squared).abs().sqrt();
-    }
-
-    fn get_linear_eccentricity(&self) -> f64 {
-        return self.get_semi_major_axis() - self.periapsis;
-    }
-
-    fn get_apoapsis(&self) -> f64 {
-        if self.eccentricity == 1.0 {
-            return f64::INFINITY;
-        } else {
-            return self.get_semi_major_axis() * (1.0 + self.eccentricity);
-        }
-    }
-
     fn set_apoapsis(&mut self, apoapsis: f64) -> Result<(), ApoapsisSetterError> {
         if apoapsis < 0.0 {
             return Err(ApoapsisSetterError::ApoapsisNegative);
@@ -717,19 +695,6 @@ impl OrbitTrait for CompactOrbit {
             // H = 2 atanh(tan(f/2) * sqrt((e-1)/(e+1)))
             return 2.0 * ((true_anomaly * 0.5).tan() * ((e - 1.0) / (e + 1.0)).sqrt()).atanh();
         }
-    }
-
-    fn get_semi_latus_rectum(&self) -> f64 {
-        if self.eccentricity == 1.0 {
-            return 2.0 * self.periapsis;
-        }
-
-        return self.get_semi_major_axis() * (1.0 - self.eccentricity * self.eccentricity);
-    }
-
-    fn get_altitude_at_angle(&self, true_anomaly: f64) -> f64 {
-        return (self.get_semi_latus_rectum() / (1.0 + self.eccentricity * true_anomaly.cos()))
-            .abs();
     }
 
     fn get_mean_anomaly_at_time(&self, t: f64) -> f64 {

@@ -62,6 +62,7 @@ pub use body::Body;
 pub use cached_orbit::Orbit;
 pub use compact_orbit::CompactOrbit;
 pub use universe::Universe;
+use std::f64::consts::TAU;
 
 /// A struct representing a 3x2 matrix.
 ///
@@ -129,6 +130,7 @@ pub struct StateVectors3D {
 }
 
 impl StateVectors3D {
+    /// A state vector representing something at the origin with zero velocity.
     pub const ZERO: StateVectors3D = StateVectors3D {
         position: (0.0, 0.0, 0.0),
         velocity: (0.0, 0.0, 0.0),
@@ -264,7 +266,13 @@ pub trait OrbitTrait {
     /// let expected = 75.0;
     /// assert!((sma - expected).abs() < 1e-6);
     /// ```
-    fn get_semi_major_axis(&self) -> f64;
+    /// 
+    /// # Performance
+    /// This function is very performant and should not be the cause of any
+    /// performance issues.
+    fn get_semi_major_axis(&self) -> f64 {
+        self.get_periapsis() / (1.0 - self.get_eccentricity())
+    }
 
     /// Gets the semi-minor axis of the orbit.
     ///
@@ -272,19 +280,39 @@ pub trait OrbitTrait {
     /// of the orbit.
     ///
     /// Learn more: <https://en.wikipedia.org/wiki/Semi-major_and_semi-minor_axes>
-    fn get_semi_minor_axis(&self) -> f64;
+    /// 
+    /// # Performance
+    /// This function is performant and is unlikely to be the cause of any
+    /// performance issues.
+    fn get_semi_minor_axis(&self) -> f64 {
+        self.get_semi_major_axis() * (1.0 - self.get_eccentricity().powi(2)).abs().sqrt()
+    }
 
     /// Gets the semi-latus rectum of the orbit.
     ///
     /// Learn more: <https://en.wikipedia.org/wiki/Ellipse#Semi-latus_rectum>  
     /// <https://en.wikipedia.org/wiki/Conic_section#Conic_parameters>
-    fn get_semi_latus_rectum(&self) -> f64;
+    /// 
+    /// # Performance
+    /// This function is very performant and should not be the cause of any
+    /// performance issues.
+    fn get_semi_latus_rectum(&self) -> f64 {
+        if self.get_eccentricity() == 1.0 {
+            return 2.0 * self.get_periapsis();
+        }
+
+        return self.get_semi_major_axis() * (1.0 - self.get_eccentricity().powi(2));
+    }
 
     /// Gets the linear eccentricity of the orbit, in meters.
     ///
     /// In an elliptic orbit, the linear eccentricity is the distance
     /// between its center and either of its two foci (focuses).
     ///
+    /// # Performance
+    /// This function is very performant and should not be the cause of any
+    /// performance issues.
+    /// 
     /// # Example
     /// ```
     /// use keplerian_sim::{Orbit, OrbitTrait};
@@ -304,12 +332,18 @@ pub trait OrbitTrait {
     ///
     /// assert!((linear_eccentricity - expected).abs() < 1e-6);
     /// ```
-    fn get_linear_eccentricity(&self) -> f64;
+    fn get_linear_eccentricity(&self) -> f64 {
+        self.get_semi_major_axis() - self.get_periapsis()
+    }
 
     /// Gets the apoapsis of the orbit.  
     /// Returns infinity for parabolic orbits.  
     /// Returns negative values for hyperbolic orbits.  
     ///
+    /// # Performance
+    /// This function is very performant and should not be the cause of any
+    /// performance issues.
+    /// 
     /// # Examples
     /// ```
     /// use keplerian_sim::{Orbit, OrbitTrait};
@@ -324,7 +358,13 @@ pub trait OrbitTrait {
     /// orbit.set_eccentricity(2.0); // Hyperbolic
     /// assert!(orbit.get_apoapsis() < 0.0);
     /// ```
-    fn get_apoapsis(&self) -> f64;
+    fn get_apoapsis(&self) -> f64 {
+        if self.get_eccentricity() == 1.0 {
+            return f64::INFINITY;
+        } else {
+            return self.get_semi_major_axis() * (1.0 + self.get_eccentricity());
+        }
+    }
 
     /// Sets the apoapsis of the orbit.  
     /// Errors when the apoapsis is less than the periapsis, or less than zero.  
@@ -374,6 +414,10 @@ pub trait OrbitTrait {
 
     /// Gets the transformation matrix needed to tilt a 2D vector into the
     /// tilted orbital plane.
+    /// 
+    /// # Performance
+    /// For [`CompactOrbit`][crate::CompactOrbit], this will perform a few trigonometric operations.  
+    /// If you need this value often, consider using [the cached orbit struct][crate::Orbit] instead.
     ///
     /// # Example
     /// ```
@@ -392,10 +436,6 @@ pub trait OrbitTrait {
 
     /// Gets the eccentric anomaly at a given mean anomaly in the orbit.
     ///
-    /// The method to get the eccentric anomaly often uses numerical
-    /// methods like Newton's method, and so it is not very performant.  
-    /// It is recommended to cache this value if you can.
-    ///
     /// When the orbit is open (has an eccentricity of at least 1),
     /// the [hyperbolic eccentric anomaly](https://space.stackexchange.com/questions/27602/what-is-hyperbolic-eccentric-anomaly-f)
     /// would be returned instead.
@@ -404,10 +444,13 @@ pub trait OrbitTrait {
     /// of a body that is moving along an elliptic Kepler orbit.
     ///
     /// \- [Wikipedia](https://en.wikipedia.org/wiki/Eccentric_anomaly)
+    /// 
+    /// # Performance
+    /// The method to get the eccentric anomaly from the mean anomaly 
+    /// uses numerical approach methods, and so it is not performant.  
+    /// It is recommended to cache this value if you can.
     fn get_eccentric_anomaly(&self, mean_anomaly: f64) -> f64;
 
-    // TODO: Improve documentation on this
-    // namely: is this performant?
     /// Gets the eccentric anomaly at a given true anomaly in the orbit.
     ///
     /// When the orbit is open (has an eccentricity of at least 1),
@@ -418,13 +461,52 @@ pub trait OrbitTrait {
     /// of a body that is moving along an elliptic Kepler orbit.
     ///
     /// \- [Wikipedia](https://en.wikipedia.org/wiki/Eccentric_anomaly)
-    fn get_eccentric_anomaly_at_true_anomaly(&self, true_anomaly: f64) -> f64;
+    /// 
+    /// # Performance
+    /// The method to get the eccentric anomaly from the true anomaly
+    /// uses a few trigonometry operations, and so it is not too performant.  
+    /// It is, however, faster than the numerical approach methods used by 
+    /// the mean anomaly to eccentric anomaly conversion.  
+    /// It is still recommended to cache this value if you can.
+    fn get_eccentric_anomaly_at_true_anomaly(&self, true_anomaly: f64) -> f64 {
+        // TODO: PARABOLA SUPPORT: This does not play well with parabolic trajectories.
+        // Implement inverse of Barker's Equation for parabolas.
+        let e = self.get_eccentricity();
+        let true_anomaly = true_anomaly.rem_euclid(TAU);
+
+        if e < 1.0 {
+            // let v = true_anomaly,
+            //   e = eccentricity,
+            //   E = eccentric anomaly
+            //
+            // https://en.wikipedia.org/wiki/True_anomaly#From_the_eccentric_anomaly:
+            // tan(v / 2) = sqrt((1 + e)/(1 - e)) * tan(E / 2)
+            // 1 = sqrt((1 + e)/(1 - e)) * tan(E / 2) / tan(v / 2)
+            // 1 / tan(E / 2) = sqrt((1 + e)/(1 - e)) / tan(v / 2)
+            // tan(E / 2) = tan(v / 2) / sqrt((1 + e)/(1 - e))
+            // E / 2 = atan(tan(v / 2) / sqrt((1 + e)/(1 - e)))
+            // E = 2 * atan(tan(v / 2) / sqrt((1 + e)/(1 - e)))
+            // E = 2 * atan(tan(v / 2) * sqrt((1 - e)/(1 + e)))
+
+            return 2.0 * ((true_anomaly * 0.5).tan() * ((1.0 - e) / (1.0 + e)).sqrt()).atan();
+        } else {
+            // From the presentation "Spacecraft Dynamics and Control"
+            // by Matthew M. Peet
+            // https://control.asu.edu/Classes/MAE462/462Lecture05.pdf
+            // Slide 25 of 27
+            // Section "The Method for Hyperbolic Orbits"
+            //
+            // tan(f/2) = sqrt((e+1)/(e-1))*tanh(H/2)
+            // 1 / tanh(H/2) = sqrt((e+1)/(e-1)) / tan(f/2)
+            // tanh(H/2) = tan(f/2) / sqrt((e+1)/(e-1))
+            // tanh(H/2) = tan(f/2) * sqrt((e-1)/(e+1))
+            // H/2 = atanh(tan(f/2) * sqrt((e-1)/(e+1)))
+            // H = 2 atanh(tan(f/2) * sqrt((e-1)/(e+1)))
+            return 2.0 * ((true_anomaly * 0.5).tan() * ((e - 1.0) / (e + 1.0)).sqrt()).atanh();
+        }
+    }
 
     /// Gets the eccentric anomaly at a given time in the orbit.
-    ///
-    /// The method to get the eccentric anomaly often uses numerical
-    /// methods like Newton's method, and so it is not very performant.  
-    /// It is recommended to cache this value if you can.
     ///
     /// When the orbit is open (has an eccentricity of at least 1),
     /// the [hyperbolic eccentric anomaly](https://space.stackexchange.com/questions/27602/what-is-hyperbolic-eccentric-anomaly-f)
@@ -434,24 +516,38 @@ pub trait OrbitTrait {
     /// of a body that is moving along an elliptic Kepler orbit.
     ///
     /// \- [Wikipedia](https://en.wikipedia.org/wiki/Eccentric_anomaly)
+    /// 
+    /// # Performance
+    /// The method to get the eccentric anomaly from the time
+    /// uses numerical approach methods, and so it is not performant.  
+    /// It is recommended to cache this value if you can.
     fn get_eccentric_anomaly_at_time(&self, t: f64) -> f64 {
         self.get_eccentric_anomaly(self.get_mean_anomaly_at_time(t))
     }
 
     /// Gets the true anomaly at a given eccentric anomaly in the orbit.
     ///
-    /// This function is faster than the function which takes mean anomaly as input,
-    /// as the eccentric anomaly is hard to calculate.
-    ///
     /// This function returns +/- pi for parabolic orbits due to how the equation works,
     /// and so **may result in infinities when combined with other functions**.
+    /// 
+    /// The true anomaly is the angle between the direction of periapsis
+    /// and the current position of the body, as seen from the main focus
+    /// of the ellipse.
+    ///
+    /// \- [Wikipedia](https://en.wikipedia.org/wiki/True_anomaly)
+    /// 
+    /// # Performance  
+    /// This function is faster than the function which takes mean anomaly as input,
+    /// as the eccentric anomaly is hard to calculate.  
+    /// However, this function still uses a few trigonometric functions, so it is
+    /// not too performant.  
+    /// It is recommended to cache this value if you can.
     fn get_true_anomaly_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> f64;
 
     /// Gets the true anomaly at a given mean anomaly in the orbit.
     ///
-    /// The true anomaly is derived from the eccentric anomaly, which
-    /// uses numerical methods and so is not very performant.  
-    /// It is recommended to cache this value if you can.
+    /// This function returns +/- pi for parabolic orbits due to how the equation works,
+    /// and so **may result in infinities when combined with other functions**.
     ///
     /// The true anomaly is the angle between the direction of periapsis
     /// and the current position of the body, as seen from the main focus
@@ -459,18 +555,20 @@ pub trait OrbitTrait {
     ///
     /// \- [Wikipedia](https://en.wikipedia.org/wiki/True_anomaly)
     ///
-    /// This function returns +/- pi for parabolic orbits due to how the equation works,
-    /// and so **may result in infinities when combined with other functions**.
+    /// # Performance
+    /// The true anomaly is derived from the eccentric anomaly, which
+    /// uses numerical approach methods and so is not performant.  
+    /// It is recommended to cache this value if you can.
+    /// 
+    /// Alternatively, if you already know the eccentric anomaly, you should use
+    /// [`get_true_anomaly_at_eccentric_anomaly`][Self::get_true_anomaly_at_eccentric_anomaly]
+    /// instead.
     fn get_true_anomaly(&self, mean_anomaly: f64) -> f64 {
         self.get_true_anomaly_at_eccentric_anomaly(self.get_eccentric_anomaly(mean_anomaly))
     }
 
     /// Gets the true anomaly at a given time in the orbit.
     ///
-    /// The true anomaly is derived from the eccentric anomaly, which
-    /// uses numerical methods and so is not very performant.  
-    /// It is recommended to cache this value if you can.
-    ///
     /// The true anomaly is the angle between the direction of periapsis
     /// and the current position of the body, as seen from the main focus
     /// of the ellipse.
@@ -479,6 +577,19 @@ pub trait OrbitTrait {
     ///
     /// This function returns +/- pi for parabolic orbits due to how the equation works,
     /// and so **may result in infinities when combined with other functions**.
+    /// 
+    /// # Performance
+    /// The true anomaly is derived from the eccentric anomaly, which
+    /// uses numerical approach methods and so is not performant.  
+    /// It is recommended to cache this value if you can.
+    /// 
+    /// Alternatively, if you already know the eccentric anomaly, you should use
+    /// [`get_true_anomaly_at_eccentric_anomaly`][Self::get_true_anomaly_at_eccentric_anomaly]
+    /// instead.
+    /// 
+    /// If you already know the mean anomaly, consider using
+    /// [`get_true_anomaly`][Self::get_true_anomaly] instead.  
+    /// It won't help performance much, but it's not zero.
     fn get_true_anomaly_at_time(&self, t: f64) -> f64 {
         self.get_true_anomaly(self.get_mean_anomaly_at_time(t))
     }
@@ -491,17 +602,13 @@ pub trait OrbitTrait {
     /// of that body in the classical two-body problem.
     ///
     /// \- [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
+    /// 
+    /// # Performance
+    /// This function is performant and is unlikely to be the culprit of
+    /// any performance issues.
     fn get_mean_anomaly_at_time(&self, t: f64) -> f64;
 
     /// Gets the mean anomaly at a given eccentric anomaly in the orbit.
-    ///
-    /// # Performance
-    /// This function is a wrapper around
-    /// [`get_mean_anomaly_at_elliptic_eccentric_anomaly`][Self::get_mean_anomaly_at_elliptic_eccentric_anomaly]
-    /// and
-    /// [`get_mean_anomaly_at_hyperbolic_eccentric_anomaly`][Self::get_mean_anomaly_at_hyperbolic_eccentric_anomaly].  
-    /// It does some trigonometry, but if you know `sin(eccentric_anomaly)` or `sinh(eccentric_anomaly)`
-    /// beforehand, this can be skipped by directly using those inner functions.
     ///
     /// The mean anomaly is the fraction of an elliptical orbit's period
     /// that has elapsed since the orbiting body passed periapsis,
@@ -509,6 +616,14 @@ pub trait OrbitTrait {
     /// of that body in the classical two-body problem.
     ///
     /// \- [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
+    /// 
+    /// # Performance
+    /// This function is a wrapper around
+    /// [`get_mean_anomaly_at_elliptic_eccentric_anomaly`][Self::get_mean_anomaly_at_elliptic_eccentric_anomaly]
+    /// and
+    /// [`get_mean_anomaly_at_hyperbolic_eccentric_anomaly`][Self::get_mean_anomaly_at_hyperbolic_eccentric_anomaly].  
+    /// It does some trigonometry, but if you know `sin(eccentric_anomaly)` or `sinh(eccentric_anomaly)`
+    /// beforehand, this can be skipped by directly using those inner functions.
     fn get_mean_anomaly_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> f64 {
         // TODO: PARABOLA SUPPORT: This function doesn't consider parabolas yet.
         if self.get_eccentricity() < 1.0 {
@@ -526,18 +641,22 @@ pub trait OrbitTrait {
 
     /// Gets the mean anomaly at a given eccentric anomaly in the orbit and
     /// its precomputed sine.  
-    ///
-    /// # Unchecked Operation
-    /// This function does no checks on the validity of the value given
-    /// as `sin_eccentric_anomaly`. It also doesn't check if the orbit is elliptic.  
-    /// If invalid values are passed in, you will receive a possibly-nonsensical value as output.  
-    ///
+    /// 
     /// The mean anomaly is the fraction of an elliptical orbit's period
     /// that has elapsed since the orbiting body passed periapsis,
     /// expressed as an angle which can be used in calculating the position
     /// of that body in the classical two-body problem.
     ///
     /// \- [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
+    ///
+    /// # Unchecked Operation
+    /// This function does no checks on the validity of the value given
+    /// as `sin_eccentric_anomaly`. It also doesn't check if the orbit is elliptic.  
+    /// If invalid values are passed in, you will receive a possibly-nonsensical value as output.  
+    ///
+    /// # Performance
+    /// This function is performant and is unlikely to be the culprit of
+    /// any performance issues.
     fn get_mean_anomaly_at_elliptic_eccentric_anomaly(
         &self,
         eccentric_anomaly: f64,
@@ -557,17 +676,21 @@ pub trait OrbitTrait {
     /// Gets the mean anomaly at a given eccentric anomaly in the orbit and
     /// its precomputed sine.  
     ///
-    /// # Unchecked Operation
-    /// This function does no checks on the validity of the value given
-    /// as `sinh_eccentric_anomaly`. It also doesn't check if the orbit is hyperbolic.  
-    /// If invalid values are passed in, you will receive a possibly-nonsensical value as output.  
-    ///
     /// The mean anomaly is the fraction of an elliptical orbit's period
     /// that has elapsed since the orbiting body passed periapsis,
     /// expressed as an angle which can be used in calculating the position
     /// of that body in the classical two-body problem.
     ///
     /// \- [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
+    ///
+    /// # Unchecked Operation
+    /// This function does no checks on the validity of the value given
+    /// as `sinh_eccentric_anomaly`. It also doesn't check if the orbit is hyperbolic.  
+    /// If invalid values are passed in, you will receive a possibly-nonsensical value as output.  
+    /// 
+    /// # Performance
+    /// This function is performant and is unlikely to be the culprit of
+    /// any performance issues.
     fn get_mean_anomaly_at_hyperbolic_eccentric_anomaly(
         &self,
         eccentric_anomaly: f64,
@@ -592,6 +715,17 @@ pub trait OrbitTrait {
     /// of that body in the classical two-body problem.
     ///
     /// \- [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
+    /// 
+    /// # Performance
+    /// The method to get the eccentric anomaly from the true anomaly
+    /// uses a few trigonometry operations, and so it is not too performant.  
+    /// It is, however, faster than the numerical approach methods used by 
+    /// the mean anomaly to eccentric anomaly conversion.  
+    /// It is still recommended to cache this value if you can.
+    /// 
+    /// Alternatively, if you already know the eccentric anomaly, use
+    /// [`get_mean_anomaly_at_eccentric_anomaly`][Self::get_mean_anomaly_at_eccentric_anomaly]
+    /// instead.
     fn get_mean_anomaly_at_true_anomaly(&self, true_anomaly: f64) -> f64 {
         let ecc_anom = self.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
         self.get_mean_anomaly_at_eccentric_anomaly(ecc_anom)
@@ -601,6 +735,14 @@ pub trait OrbitTrait {
     ///
     /// The angle is expressed in radians, and ranges from 0 to tau.  
     /// Anything out of range will get wrapped around.
+    /// 
+    /// # Performance
+    /// This function benefits significantly from being in the
+    /// [cached version of the orbit struct][crate::Orbit].  
+    /// If you already know the altitude at the angle, you can
+    /// rotate the altitude using the true anomaly, then tilt
+    /// it using the [`tilt_flat_position`][OrbitTrait::tilt_flat_position]
+    /// function instead.
     ///
     /// # Example
     /// ```
@@ -620,13 +762,23 @@ pub trait OrbitTrait {
     }
 
     /// Gets the speed at a given angle (true anomaly) in the orbit.
-    ///
+    /// 
     /// The speed is derived from the vis-viva equation, and so is
     /// a lot faster than the velocity calculation.
-    ///
+    /// 
+    /// # Speed vs. Velocity
+    /// Speed is not to be confused with velocity.  
+    /// Speed tells you how fast something is moving,
+    /// while velocity tells you how fast *and in what direction* it's moving in.
+    /// 
     /// # Angle
     /// The angle is expressed in radians, and ranges from 0 to tau.
     /// Anything out of range will get wrapped around.
+    /// 
+    /// # Performance
+    /// This function is performant, however, if you already know the altitude at the angle,
+    /// you can use the [`get_speed_at_altitude`][OrbitTrait::get_speed_at_altitude]
+    /// function instead to skip some calculations.
     ///
     /// # Example
     /// ```
@@ -641,17 +793,58 @@ pub trait OrbitTrait {
     ///
     /// assert!(speed_periapsis > speed_apoapsis);
     /// ```
-    ///
+    fn get_speed_at_angle(&self, angle: f64) -> f64 {
+        self.get_speed_at_altitude(self.get_altitude_at_angle(angle))
+    }
+
+    /// Gets the speed at a given altitude in the orbit.
+    /// 
+    /// The speed is derived from the vis-viva equation, and so is
+    /// a lot faster than the velocity calculation.
+    /// 
     /// # Speed vs. Velocity
     /// Speed is not to be confused with velocity.  
     /// Speed tells you how fast something is moving,
     /// while velocity tells you how fast *and in what direction* it's moving in.
-    fn get_speed_at_angle(&self, angle: f64) -> f64 {
+    /// 
+    /// # Unchecked Operation
+    /// This function does no checks on the validity of the value given
+    /// in the `altitude` parameter, namely whether or not this altitude
+    /// is possible in the given orbit.  
+    /// If invalid values are passed in, you will receive a possibly-nonsensical
+    /// value as output.
+    /// 
+    /// # Altitude
+    /// The altitude is expressed in meters, and is the distance to the
+    /// center of the orbit.
+    /// 
+    /// # Performance
+    /// This function is very performant and should not be the cause of any
+    /// performance issues.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// 
+    /// const PERIAPSIS: f64 = 100.0;
+    ///
+    /// let mut orbit = Orbit::new_default();
+    /// orbit.set_periapsis(PERIAPSIS);
+    /// orbit.set_eccentricity(0.5);
+    /// 
+    /// let apoapsis = orbit.get_apoapsis();
+    ///
+    /// let speed_periapsis = orbit.get_speed_at_altitude(PERIAPSIS);
+    /// let speed_apoapsis = orbit.get_speed_at_altitude(apoapsis);
+    ///
+    /// assert!(speed_periapsis > speed_apoapsis);
+    /// ```
+    fn get_speed_at_altitude(&self, altitude: f64) -> f64 {
         // https://en.wikipedia.org/wiki/Vis-viva_equation
         // v^2 = GM (2/r - 1/a)
         // v = sqrt(GM * (2/r - 1/a))
 
-        let r = self.get_altitude_at_angle(angle);
+        let r = altitude;
         let a = self.get_semi_major_axis();
 
         return ((2.0 / r - a.recip()) * self.get_gravitational_parameter()).sqrt();
@@ -665,9 +858,12 @@ pub trait OrbitTrait {
     /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you know the eccentric anomaly or the true anomaly,
-    /// then you should use the [`get_speed_at_angle`][OrbitTrait::get_speed_at_angle]
-    /// method instead.  
-    /// It does not use numerical methods and therefore is a lot faster.
+    /// then you should use the
+    /// [`get_speed_at_eccentric_anomaly`][OrbitTrait::get_speed_at_eccentric_anomaly]
+    /// and
+    /// [`get_speed_at_angle`][OrbitTrait::get_speed_at_angle]
+    /// functions instead.  
+    /// Those does not use numerical methods and therefore are a lot faster.
     ///
     /// # Speed vs. Velocity
     /// Speed is not to be confused with velocity.  
@@ -686,11 +882,21 @@ pub trait OrbitTrait {
     /// Speed is not to be confused with velocity.  
     /// Speed tells you how fast something is moving,
     /// while velocity tells you how fast *and in what direction* it's moving in.
+    /// 
+    /// # Performance
+    /// This function is not too performant as it uses a few trigonometric
+    /// operations.  
+    /// It is recommended to cache this value if you can.  
+    /// 
+    /// Alternatively, if you already know the true anomaly,
+    /// then you should use the
+    /// [`get_speed_at_angle`][OrbitTrait::get_speed_at_angle]
+    /// function instead.
     fn get_speed_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> f64 {
         self.get_speed_at_angle(self.get_true_anomaly_at_eccentric_anomaly(eccentric_anomaly))
     }
 
-    /// Gets the velocity at a given angle (true anomaly) in the orbit if
+    /// Gets the velocity at a given angle (true anomaly) in the orbit as if
     /// it had an inclination and longitude of ascending node of 0.
     ///
     /// # Flat
@@ -744,7 +950,7 @@ pub trait OrbitTrait {
         return self.get_flat_velocity_at_eccentric_anomaly(eccentric_anomaly);
     }
 
-    /// Gets the velocity at a given eccentric anomaly in the orbit if
+    /// Gets the velocity at a given eccentric anomaly in the orbit as if
     /// it had an inclination and longitude of ascending node of 0.
     ///
     /// # Flat
@@ -755,6 +961,14 @@ pub trait OrbitTrait {
     /// Speed is not to be confused with velocity.  
     /// Speed tells you how fast something is moving,
     /// while velocity tells you how fast *and in what direction* it's moving in.
+    /// 
+    /// # Performance
+    /// This function is not too performant as it uses some trigonometric
+    /// operations.  
+    /// It is recommended to cache this value if you can.
+    /// If you want to just get the speed, consider using the
+    /// [`get_speed_at_eccentric_anomaly`][OrbitTrait::get_speed_at_eccentric_anomaly]
+    /// function instead.
     fn get_flat_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> Vec2 {
         // TODO: PARABOLA SUPPORT: This does not play well with parabolic trajectories.
         if self.get_eccentricity() < 1.0 {
@@ -803,19 +1017,45 @@ pub trait OrbitTrait {
     /// Speed is not to be confused with velocity.  
     /// Speed tells you how fast something is moving,
     /// while velocity tells you how fast *and in what direction* it's moving in.
+    /// 
+    /// # Performance
+    /// This method involves converting the time into an eccentric anomaly,
+    /// which uses numerical methods and so is not performant.  
+    /// It is recommended to cache this value if you can.
+    /// 
+    /// Alternatively, if you already know the eccentric anomaly or the true anomaly,
+    /// then you should use the
+    /// [`get_flat_velocity_at_eccentric_anomaly`][OrbitTrait::get_flat_velocity_at_eccentric_anomaly]
+    /// and
+    /// [`get_flat_velocity_at_angle`][OrbitTrait::get_flat_velocity_at_angle]
+    /// functions instead.  
+    /// Those do not use numerical methods and therefore are a lot faster.
     fn get_flat_velocity_at_time(&self, t: f64) -> Vec2 {
         self.get_flat_velocity_at_eccentric_anomaly(self.get_eccentric_anomaly_at_time(t))
     }
 
-    // TODO: Make all docstrings sectioned like these
+    // TODO: DOC: Make all docstrings sectioned like these
+    // TODO: DOC: Flat description section
+    // TODO: DOC: Angle/time description section
+    // TODO: DOC: Performance description section
+
     /// Gets the 2D position at a given angle (true anomaly) in the orbit.
     ///
+    /// # Flat
     /// This ignores "orbital tilting" parameters, namely the inclination and
     /// the longitude of ascending node.
     ///
     /// # Angle
     /// The angle is expressed in radians, and ranges from 0 to tau.  
     /// Anything out of range will get wrapped around.
+    /// 
+    /// # Performance
+    /// This function is somewhat performant. However, if you already know
+    /// the altitude beforehand, you can simply use that and rotate it
+    /// by the angle instead.  
+    /// If you're looking to just get the altitude at a given angle,
+    /// consider using the [`get_altitude_at_angle`][OrbitTrait::get_altitude_at_angle]
+    /// function instead.
     ///
     /// # Example
     /// ```
@@ -831,49 +1071,63 @@ pub trait OrbitTrait {
     /// ```
     fn get_flat_position_at_angle(&self, angle: f64) -> Vec2 {
         let alt = self.get_altitude_at_angle(angle);
-        return (alt * angle.cos(), alt * angle.sin());
+        let (cos, sin) = angle.sin_cos();
+        return (alt * cos, alt * sin);
     }
 
+    // TODO: Post-Parabolic Support: Update doc
     /// Gets the 2D position at a given time in the orbit.
     ///
-    /// This involves calculating the true anomaly at a given time,
-    /// and so is not very performant.
-    /// It is recommended to cache this value when possible.
-    ///
+    /// # Flat
     /// This ignores "orbital tilting" parameters, namely the inclination
     /// and longitude of ascending node.
     ///
-    /// For closed orbits (with an eccentricity less than 1), the
-    /// `t` (time) value ranges from 0 to 1.  
-    /// Anything out of range will get wrapped around.
+    /// # Time
+    /// The time is expressed in seconds.
     ///
-    /// For open orbits (with an eccentricity of at least 1), the
-    /// `t` (time) value is unbounded.  
-    /// Note that due to floating-point imprecision, values of extreme
-    /// magnitude may not be accurate.
-    ///
+    /// # Parabolic Support
     /// **This function returns non-finite numbers for parabolic orbits**
     /// due to how the equation for true anomaly works.
+    /// 
+    /// # Performance
+    /// This involves calculating the true anomaly at a given time,
+    /// and so is not performant.
+    /// It is recommended to cache this value when possible.
+    /// 
+    /// Alternatively, if you already know the eccentric anomaly or the true anomaly,
+    /// consider using the
+    /// [`get_flat_position_at_eccentric_anomaly`][OrbitTrait::get_flat_position_at_eccentric_anomaly]
+    /// and
+    /// [`get_flat_position_at_angle`][OrbitTrait::get_flat_position_at_angle]
+    /// functions instead.
+    /// Those do not use numerical methods and therefore are a lot faster.
     fn get_flat_position_at_time(&self, t: f64) -> Vec2 {
         self.get_flat_position_at_angle(self.get_true_anomaly_at_time(t))
     }
 
+    // TODO: Post-Parabolic Support: Update doc
     /// Gets the 2D position at a given eccentric anomaly in the orbit.
     ///
+    /// # Flat
     /// This ignores "orbital tilting" parameters, namely the inclination
     /// and longitude of ascending node.
     ///
-    /// For closed orbits (with an eccentricity less than 1), the
-    /// `t` (time) value ranges from 0 to 1.  
-    /// Anything out of range will get wrapped around.
+    /// # Time
+    /// The time is expressed in seconds.
     ///
-    /// For open orbits (with an eccentricity of at least 1), the
-    /// `t` (time) value is unbounded.  
-    /// Note that due to floating-point imprecision, values of extreme
-    /// magnitude may not be accurate.
-    ///
+    /// # Parabolic Support
     /// **This function returns non-finite numbers for parabolic orbits**
     /// due to how the equation for true anomaly works.
+    /// 
+    /// # Performance
+    /// This function is not too performant as it uses a few trigonometric
+    /// operations.
+    /// It is recommended to cache this value if you can.
+    /// 
+    /// Alternatively, if you already know the true anomaly,
+    /// consider using the
+    /// [`get_flat_position_at_angle`][OrbitTrait::get_flat_position_at_angle]
+    /// function instead.
     fn get_flat_position_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> Vec2 {
         self.get_flat_position_at_angle(
             self.get_true_anomaly_at_eccentric_anomaly(eccentric_anomaly),
@@ -946,6 +1200,18 @@ pub trait OrbitTrait {
     /// Speed is not to be confused with velocity.  
     /// Speed tells you how fast something is moving,
     /// while velocity tells you how fast *and in what direction* it's moving in.
+    /// 
+    /// # Performance
+    /// This function is not too performant as it uses a few trigonometric
+    /// operations.  
+    /// It is recommended to cache this value if you can.
+    /// 
+    /// Alternatively, if you just want to get the speed, consider using the
+    /// [`get_speed_at_eccentric_anomaly`][OrbitTrait::get_speed_at_eccentric_anomaly]
+    /// function instead.
+    /// 
+    /// This function benefits significantly from being in the
+    /// [cached version of the orbit struct][crate::Orbit].
     fn get_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> Vec3 {
         let (x, y) = self.get_flat_velocity_at_eccentric_anomaly(eccentric_anomaly);
 
@@ -956,14 +1222,16 @@ pub trait OrbitTrait {
     ///
     /// # Performance
     /// The velocity is derived from the eccentric anomaly, which uses numerical
-    /// methods and so is not very performant.  
+    /// methods and so is not performant.  
     /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you only want to know the speed, use
     /// [`get_speed_at_time`][OrbitTrait::get_speed_at_time] instead.  
-    /// Or, if you already have the eccentric anomaly, use
+    /// Or, if you already have the eccentric anomaly or true anomaly, use the
     /// [`get_velocity_at_eccentric_anomaly`][OrbitTrait::get_velocity_at_eccentric_anomaly]
-    /// instead.
+    /// and
+    /// [`get_velocity_at_angle`][OrbitTrait::get_velocity_at_angle]
+    /// functions instead.  
     /// These functions do not require numerical methods and therefore are a lot faster.
     ///
     /// # Speed vs. Velocity
@@ -975,6 +1243,13 @@ pub trait OrbitTrait {
     }
 
     /// Gets the altitude of the body from its parent at a given angle (true anomaly) in the orbit.
+    /// 
+    /// # Performance
+    /// This function is performant, however, if you already
+    /// know the orbit's semi-latus rectum or the cosine of the true anomaly,
+    /// you can use the
+    /// [`get_altitude_at_angle_unchecked`][Self::get_altitude_at_angle_unchecked]
+    /// function to skip a few steps in the calculation.
     ///
     /// # Example
     /// ```
@@ -988,9 +1263,77 @@ pub trait OrbitTrait {
     ///
     /// assert_eq!(altitude, 100.0);
     /// ```
-    fn get_altitude_at_angle(&self, angle: f64) -> f64;
+    fn get_altitude_at_angle(&self, true_anomaly: f64) -> f64 {
+        self.get_altitude_at_angle_unchecked(self.get_semi_latus_rectum(), true_anomaly.cos())
+    }
+
+    /// Gets the altitude of the body from its parent given the
+    /// cosine of the true anomaly.  
+    /// 
+    /// This function should only be used if you already know the semi-latus
+    /// rectum or `cos(true_anomaly)` beforehand, and want to minimize
+    /// duplicated work.
+    /// 
+    /// # Unchecked Operation
+    /// This function does not perform any checks on the validity
+    /// of the `cos_true_anomaly` parameter. Invalid values result in
+    /// possibly-nonsensical output values.
+    /// 
+    /// # Performance
+    /// This function, by itself, is performant and is unlikely
+    /// to be the culprit of any performance issues.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// 
+    /// let mut orbit = Orbit::new_default();
+    /// orbit.set_periapsis(100.0);
+    /// orbit.set_eccentricity(0.5);
+    /// 
+    /// let true_anomaly = 1.2345;
+    /// 
+    /// // Precalculate some values...
+    /// # let semi_latus_rectum = orbit.get_semi_latus_rectum();
+    /// # let cos_true_anomaly = true_anomaly.cos();
+    /// 
+    /// // Scenario 1: If you know just the semi-latus rectum
+    /// let scenario_1 = orbit.get_altitude_at_angle_unchecked(
+    ///     semi_latus_rectum, // We pass in our precalculated SLR...
+    ///     true_anomaly.cos() // but calculate the cosine
+    /// );
+    /// 
+    /// // Scenario 2: If you know just the cosine of the true anomaly
+    /// let scenario_2 = orbit.get_altitude_at_angle_unchecked(
+    ///     orbit.get_semi_latus_rectum(), // We calculate the SLR...
+    ///     cos_true_anomaly // but use our precalculated cosine
+    /// )
+    /// 
+    /// // Scenario 3: If you know both the semi-latus rectum:
+    /// let scenario_3 = orbit.get_altitude_at_angle_unchecked(
+    ///     semi_latus_rectum, // We pass in our precalculated SLR...
+    ///     cos_true_anomaly // AND use our precalculated cosine
+    /// )
+    /// 
+    /// assert_eq!(scenario_1, scenario_2);
+    /// assert_eq!(scenario_2, scenario_3);
+    /// assert_eq!(scenario_3, orbit.get_altitude_at_angle(true_anomaly));
+    /// ```
+    fn get_altitude_at_angle_unchecked(&self, semi_latus_rectum: f64, cos_true_anomaly: f64) -> f64 {
+        return (semi_latus_rectum / (1.0 + self.get_eccentricity() * cos_true_anomaly))
+            .abs();
+    }
 
     /// Gets the altitude of the body from its parent at a given eccentric anomaly in the orbit.
+    /// 
+    /// # Performance
+    /// This function is not too performant as it uses a few trigonometric
+    /// operations.  
+    /// It is recommended to cache this value if you can.
+    /// 
+    /// Alternatively, if you already know the true anomaly, use the
+    /// [`get_altitude_at_angle`][OrbitTrait::get_altitude_at_angle]
+    /// function instead.
     ///
     /// # Example
     /// ```
@@ -1008,35 +1351,52 @@ pub trait OrbitTrait {
         self.get_altitude_at_angle(self.get_true_anomaly_at_eccentric_anomaly(eccentric_anomaly))
     }
 
+    // TODO: Post-Parabolic Support: Update doc
     /// Gets the altitude of the body from its parent at a given time in the orbit.
-    ///
-    /// This involves calculating the true anomaly at a given time, and so is not very performant.  
-    /// It is recommended to cache this value when possible.
-    ///
+    /// 
     /// Note that due to floating-point imprecision, values of extreme
     /// magnitude may not be accurate.
     ///
+    /// # Performance
+    /// This involves calculating the true anomaly at a given time, and so is not very performant.  
+    /// It is recommended to cache this value when possible.
+    /// 
+    /// Alternatively, if you already know the eccentric anomaly or the true anomaly,
+    /// consider using the
+    /// [`get_altitude_at_eccentric_anomaly`][OrbitTrait::get_altitude_at_eccentric_anomaly]
+    /// and
+    /// [`get_altitude_at_angle`][OrbitTrait::get_altitude_at_angle]
+    /// functions instead.  
+    /// Those do not use numerical methods and therefore are a lot faster.
+    /// 
+    /// # Time
+    /// The time is expressed in seconds.
+    ///
+    /// # Parabolic Support
     /// **This function returns infinity for parabolic orbits** due to how the equation for
     /// true anomaly works.
     fn get_altitude_at_time(&self, t: f64) -> f64 {
         self.get_altitude_at_angle(self.get_true_anomaly_at_time(t))
     }
 
+    // TODO: DOC: Post-Parabolic Support: Update doc
     /// Gets the 3D position at a given time in the orbit.
     ///
+    /// # Performance
     /// This involves calculating the true anomaly at a given time,
     /// and so is not very performant.  
     /// It is recommended to cache this value when possible.
+    /// 
+    /// Alternatively, if you already know the true anomaly,
+    /// consider using the
+    /// [`get_position_at_angle`][OrbitTrait::get_position_at_angle]
+    /// function instead.  
+    /// That does not use numerical methods and therefore is a lot faster.
     ///
-    /// For closed orbits (with an eccentricity less than 1), the
-    /// `t` (time) value ranges from 0 to 1.  
-    /// Anything out of range will get wrapped around.
+    /// # Time
+    /// The time is expressed in seconds.
     ///
-    /// For open orbits (with an eccentricity of at least 1), the
-    /// `t` (time) value is unbounded.  
-    /// Note that due to floating-point imprecision, values of extreme
-    /// magnitude may not be accurate.
-    ///
+    /// # Parabolic Support
     /// **This function returns non-finite numbers for parabolic orbits**
     /// due to how the equation for true anomaly works.
     fn get_position_at_time(&self, t: f64) -> Vec3 {
@@ -1049,9 +1409,10 @@ pub trait OrbitTrait {
     /// and longitude of ascending node, to tilt that position into the same
     /// plane that the orbit resides in.
     ///
+    /// # Performance
     /// This function performs 10x faster in the cached version of the
     /// [`Orbit`] struct, as it doesn't need to recalculate the transformation
-    /// matrix needed to transform 2D vector.
+    /// matrix needed to transform 2D vector.  
     fn tilt_flat_position(&self, x: f64, y: f64) -> Vec3 {
         self.get_transformation_matrix().dot_vec((x, y))
     }
