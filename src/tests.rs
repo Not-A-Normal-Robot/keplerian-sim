@@ -8,7 +8,7 @@ use std::f64::consts::{PI, TAU};
 type Vec3 = (f64, f64, f64);
 type Vec2 = (f64, f64);
 
-const ALMOST_EQ_TOLERANCE: f64 = 1e-5;
+const ALMOST_EQ_TOLERANCE: f64 = 1e-6;
 const ORBIT_POLL_ANGLES: usize = 4096;
 
 fn assert_almost_eq(a: f64, b: f64, what: &str) {
@@ -853,8 +853,6 @@ fn naive_speed_correlation_base_test(orbit: &impl OrbitTrait, what: &str) {
 
         dot_product / (v1_mag * v2_mag)
     }
-    let mut similarities = Vec::with_capacity(ORBIT_POLL_ANGLES);
-    const SIMILARITY_THRESHOLD: f64 = 0.95;
 
     for i in 0..ORBIT_POLL_ANGLES {
         let t = (i as f64) * TAU / (ORBIT_POLL_ANGLES as f64);
@@ -874,19 +872,16 @@ fn naive_speed_correlation_base_test(orbit: &impl OrbitTrait, what: &str) {
 
         let direction_similarity = cosine_similarity(vel, diff);
 
-        match orbit.get_eccentricity() {
-            e if e > 0.98 && e < 1.001 => {
-                // println!(
-                //     "Velocity and position difference direction similarity check skipped (e = {e})"
-                // );
-            }
-            _ if direction_similarity.is_finite() => similarities.push(direction_similarity),
-            _ => {
-                // println!(
-                //     "Velocity and position difference direction similarity check skipped (pos1 = pos2 = {pos1})"
-                // );
-            }
-        }
+        const SIMILARITY_THRESHOLD: f64 = 0.99;
+
+        assert!(
+            direction_similarity > SIMILARITY_THRESHOLD,
+            "Velocity and position difference direction similarity is {direction_similarity}, \
+            which is below threshold of {SIMILARITY_THRESHOLD}\n\
+            On orbit {what}\n\
+            At i={i}, t={t}, t2={t2}\n\n\
+            pos1 = {pos1:?}\npos2 = {pos2:?}\ndiff = {diff:?}\nvel = {vel:?}"
+        );
 
         let diff_mag = (diff.0.powi(2) + diff.1.powi(2) + diff.2.powi(2)).sqrt();
         let vel_mag = (vel.0.powi(2) + vel.1.powi(2) + vel.2.powi(2)).sqrt();
@@ -910,15 +905,6 @@ fn naive_speed_correlation_base_test(orbit: &impl OrbitTrait, what: &str) {
             }
             None => (),
         }
-    }
-    if similarities.len() > 0 {
-        let avg_direction_similarity = similarities.iter().sum::<f64>() / similarities.len() as f64;
-        assert!(
-            avg_direction_similarity > SIMILARITY_THRESHOLD,
-            "Average velocity and position difference direction similarity is {avg_direction_similarity}, \
-            which is below threshold of {SIMILARITY_THRESHOLD}\n\
-            On orbit {what}\n\nVec: {similarities:?}"
-        )
     }
 }
 
@@ -1636,7 +1622,8 @@ fn test_velocity() {
         orbit.set_gravitational_parameter(100.0 / orbit.get_semi_major_axis().abs(), crate::MuSetterMode::KeepElements);
         let what = &format!("random ({orbit:?})");
         speed_velocity_base_test(&orbit, what);
-        naive_speed_correlation_base_test(&orbit, what);
+        // We purposely leave out naive speed correlation because some fuzzed orbits
+        // are just too extreme for the naive method to be accurate
     }
 }
 
