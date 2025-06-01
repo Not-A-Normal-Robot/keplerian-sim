@@ -386,15 +386,15 @@ pub trait OrbitTrait {
     ///
     /// let result = orbit.set_apoapsis(25.0);
     /// assert!(result.is_err());
-    /// assert!(
-    ///     result.unwrap_err() ==
+    /// assert_eq!(
+    ///     result.unwrap_err(),
     ///     keplerian_sim::ApoapsisSetterError::ApoapsisLessThanPeriapsis
     /// );
     ///
     /// let result = orbit.set_apoapsis(-25.0);
     /// assert!(result.is_err());
-    /// assert!(
-    ///     result.unwrap_err() ==
+    /// assert_eq!(
+    ///     result.unwrap_err(),
     ///     keplerian_sim::ApoapsisSetterError::ApoapsisNegative
     /// );
     /// ```
@@ -410,6 +410,44 @@ pub trait OrbitTrait {
     ///
     /// If these behaviors are undesirable, consider creating a custom wrapper around
     /// `set_eccentricity` instead.
+    /// 
+    /// # Examples
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// 
+    /// let mut base = Orbit::new_default();
+    /// base.set_periapsis(50.0);
+    /// 
+    /// let mut normal = base.clone();
+    /// // Set the apoapsis to 100
+    /// normal.set_apoapsis_force(100.0);
+    /// assert_eq!(normal.get_apoapsis(), 99.99999999999997);
+    /// assert_eq!(normal.get_periapsis(), 50.0);
+    /// assert_eq!(normal.get_arg_pe(), 0.0);
+    /// assert_eq!(normal.get_mean_anomaly_at_epoch(), 0.0);
+    /// 
+    /// let mut flipped = base.clone();
+    /// // Set the "apoapsis" to 25
+    /// // This will flip the orbit, setting the altitude
+    /// // where the current apoapsis is, to 25, and
+    /// // flipping the orbit.
+    /// // This sets the periapsis to 25, and the apoapsis to the
+    /// // previous periapsis.
+    /// flipped.set_apoapsis_force(25.0);
+    /// assert_eq!(flipped.get_apoapsis(), 49.999999999999986);
+    /// assert_eq!(flipped.get_periapsis(), 25.0);
+    /// assert_eq!(flipped.get_arg_pe(), std::f64::consts::PI);
+    /// assert_eq!(flipped.get_mean_anomaly_at_epoch(), std::f64::consts::PI);
+    /// 
+    /// let mut hyperbolic = base.clone();
+    /// // Set the "apoapsis" to -25
+    /// hyperbolic.set_apoapsis_force(-25.0);
+    /// assert_eq!(hyperbolic.get_apoapsis(), -25.0);
+    /// assert_eq!(hyperbolic.get_periapsis(), 50.0);
+    /// assert_eq!(hyperbolic.get_arg_pe(), 0.0);
+    /// assert!(hyperbolic.get_eccentricity() > 1.0);
+    /// assert_eq!(hyperbolic.get_mean_anomaly_at_epoch(), 0.0);
+    /// ```
     fn set_apoapsis_force(&mut self, apoapsis: f64);
 
     /// Gets the transformation matrix needed to tilt a 2D vector into the

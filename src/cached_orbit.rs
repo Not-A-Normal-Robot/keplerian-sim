@@ -649,9 +649,11 @@ impl OrbitTrait for Orbit {
         let mut apoapsis = apoapsis;
         if apoapsis < self.periapsis && apoapsis > 0.0 {
             (apoapsis, self.periapsis) = (self.periapsis, apoapsis);
+            self.arg_pe = (self.arg_pe + PI).rem_euclid(TAU);
+            self.mean_anomaly = (self.mean_anomaly + PI).rem_euclid(TAU);
         }
 
-        self.eccentricity = (apoapsis - self.periapsis) / (apoapsis + self.periapsis);
+        self.eccentricity = ((apoapsis - self.periapsis) / (apoapsis + self.periapsis)).abs();
         self.update_cache();
     }
 

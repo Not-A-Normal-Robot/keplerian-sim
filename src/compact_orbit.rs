@@ -2,7 +2,7 @@ use core::f64::consts::{PI, TAU};
 
 use crate::{
     keplers_equation, keplers_equation_derivative, keplers_equation_second_derivative, sinhcosh,
-    solve_monotone_cubic, ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait, Vec2,
+    solve_monotone_cubic, ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait,
 };
 
 /// A minimal struct representing a Keplerian orbit.
@@ -597,9 +597,11 @@ impl OrbitTrait for CompactOrbit {
         let mut apoapsis = apoapsis;
         if apoapsis < self.periapsis && apoapsis > 0.0 {
             (apoapsis, self.periapsis) = (self.periapsis, apoapsis);
+            self.arg_pe = (self.arg_pe + PI).rem_euclid(TAU);
+            self.mean_anomaly = (self.mean_anomaly + PI).rem_euclid(TAU);
         }
 
-        self.eccentricity = (apoapsis - self.periapsis) / (apoapsis + self.periapsis);
+        self.eccentricity = ((apoapsis - self.periapsis) / (apoapsis + self.periapsis)).abs();
     }
 
     fn get_transformation_matrix(&self) -> Matrix3x2<f64> {
