@@ -595,13 +595,19 @@ impl OrbitTrait for CompactOrbit {
 
     fn set_apoapsis_force(&mut self, apoapsis: f64) {
         let mut apoapsis = apoapsis;
-        if apoapsis < self.periapsis && apoapsis > 0.0 {
+        if apoapsis < self.periapsis && apoapsis >= 0.0 {
             (apoapsis, self.periapsis) = (self.periapsis, apoapsis);
             self.arg_pe = (self.arg_pe + PI).rem_euclid(TAU);
             self.mean_anomaly = (self.mean_anomaly + PI).rem_euclid(TAU);
         }
 
-        self.eccentricity = ((apoapsis - self.periapsis) / (apoapsis + self.periapsis)).abs();
+        if apoapsis < 0.0 && apoapsis > -self.periapsis {
+            // Even for hyperbolic orbits, apoapsis cannot be between 0 and -periapsis
+            // We will interpret this as an infinite apoapsis (parabolic trajectory)
+            self.eccentricity = 1.0;
+        } else {
+            self.eccentricity = (apoapsis - self.periapsis) / (apoapsis + self.periapsis);
+        }
     }
 
     fn get_transformation_matrix(&self) -> Matrix3x2<f64> {

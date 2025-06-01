@@ -405,8 +405,11 @@ pub trait OrbitTrait {
     /// This function will not error, but may have undesirable behavior:
     /// - If the given apoapsis is less than the periapsis but more than zero,
     ///   the orbit will be flipped and the periapsis will be set to the given apoapsis.
-    /// - If the given apoapsis is less than zero, the orbit will be hyperbolic
-    ///   instead.
+    /// - If the given apoapsis is negative but between zero and negative periapsis,
+    ///   the apoapsis will get treated as infinity and the orbit will be parabolic.
+    ///   (This is because even in hyperbolic orbits, apoapsis cannot be between 0 and -periapsis)  
+    /// - If the given apoapsis is negative AND less than negative periapsis,
+    ///   the orbit will be hyperbolic.
     ///
     /// If these behaviors are undesirable, consider creating a custom wrapper around
     /// `set_eccentricity` instead.
@@ -440,13 +443,23 @@ pub trait OrbitTrait {
     /// assert_eq!(flipped.get_mean_anomaly_at_epoch(), std::f64::consts::PI);
     /// 
     /// let mut hyperbolic = base.clone();
-    /// // Set the "apoapsis" to -25
-    /// hyperbolic.set_apoapsis_force(-25.0);
-    /// assert_eq!(hyperbolic.get_apoapsis(), -25.0);
+    /// // Set the "apoapsis" to -250
+    /// hyperbolic.set_apoapsis_force(-250.0);
+    /// assert_eq!(hyperbolic.get_apoapsis(), -250.0);
     /// assert_eq!(hyperbolic.get_periapsis(), 50.0);
     /// assert_eq!(hyperbolic.get_arg_pe(), 0.0);
     /// assert!(hyperbolic.get_eccentricity() > 1.0);
     /// assert_eq!(hyperbolic.get_mean_anomaly_at_epoch(), 0.0);
+    /// 
+    /// let mut parabolic = base.clone();
+    /// // Set the "apoapsis" to between 0 and -50
+    /// // This will set the apoapsis to infinity, and the orbit will be parabolic.
+    /// parabolic.set_apoapsis_force(-25.0);
+    /// assert!(parabolic.get_apoapsis().is_infinite());
+    /// assert_eq!(parabolic.get_periapsis(), 50.0);
+    /// assert_eq!(parabolic.get_arg_pe(), 0.0);
+    /// assert_eq!(parabolic.get_eccentricity(), 1.0);
+    /// assert_eq!(parabolic.get_mean_anomaly_at_epoch(), 0.0);
     /// ```
     fn set_apoapsis_force(&mut self, apoapsis: f64);
 
