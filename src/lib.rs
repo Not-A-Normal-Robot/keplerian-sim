@@ -1071,7 +1071,7 @@ pub trait OrbitTrait {
     /// ```
     fn get_flat_position_at_angle(&self, angle: f64) -> Vec2 {
         let alt = self.get_altitude_at_angle(angle);
-        let (cos, sin) = angle.sin_cos();
+        let (sin, cos) = angle.sin_cos();
         return (alt * cos, alt * sin);
     }
 
@@ -1291,7 +1291,7 @@ pub trait OrbitTrait {
     /// orbit.set_periapsis(100.0);
     /// orbit.set_eccentricity(0.5);
     /// 
-    /// let true_anomaly = 1.2345;
+    /// let true_anomaly = 1.2345f64;
     /// 
     /// // Precalculate some values...
     /// # let semi_latus_rectum = orbit.get_semi_latus_rectum();
@@ -1307,13 +1307,13 @@ pub trait OrbitTrait {
     /// let scenario_2 = orbit.get_altitude_at_angle_unchecked(
     ///     orbit.get_semi_latus_rectum(), // We calculate the SLR...
     ///     cos_true_anomaly // but use our precalculated cosine
-    /// )
+    /// );
     /// 
     /// // Scenario 3: If you know both the semi-latus rectum:
     /// let scenario_3 = orbit.get_altitude_at_angle_unchecked(
     ///     semi_latus_rectum, // We pass in our precalculated SLR...
     ///     cos_true_anomaly // AND use our precalculated cosine
-    /// )
+    /// );
     /// 
     /// assert_eq!(scenario_1, scenario_2);
     /// assert_eq!(scenario_2, scenario_3);
