@@ -13,9 +13,10 @@ use crate::{Body, Orbit};
 
 /// Returns Mercury, the closest planet to the Sun.
 ///
-/// `include_orbit`: Whether to include the orbit of Mercury around the Sun.
-pub fn mercury(include_orbit: bool) -> Body {
-    let orbit = if include_orbit {
+/// `parent_mu`: The gravitational parameter of the parent body, if any.
+/// If None, the celestial body will not be placed in an orbit.
+pub fn mercury(parent_mu: Option<f64>) -> Body {
+    let orbit = if let Some(mu) = parent_mu {
         // Source: Wikipedia
         Some(Orbit::with_apoapsis(
             6.982e7,
@@ -24,7 +25,7 @@ pub fn mercury(include_orbit: bool) -> Body {
             29.124_f64.to_radians(),
             48.331_f64.to_radians(),
             174.796_f64.to_radians(),
-            1.0,
+            mu,
         ))
     } else {
         None
@@ -35,9 +36,10 @@ pub fn mercury(include_orbit: bool) -> Body {
 
 /// Returns Venus, the second planet from the Sun.
 ///
-/// `include_orbit`: Whether to include the orbit of Venus around the Sun.
-pub fn venus(include_orbit: bool) -> Body {
-    let orbit = if include_orbit {
+/// `parent_mu`: The gravitational parameter of the parent body, if any.
+/// If None, the celestial body will not be placed in an orbit.
+pub fn venus(parent_mu: Option<f64>) -> Body {
+    let orbit = if let Some(mu) = parent_mu {
         // Source: Wikipedia
         Some(Orbit::with_apoapsis(
             1.0894e8,
@@ -46,7 +48,7 @@ pub fn venus(include_orbit: bool) -> Body {
             54.884_f64.to_radians(),
             76.680_f64.to_radians(),
             50.115_f64.to_radians(),
-            1.0,
+            mu,
         ))
     } else {
         None
@@ -57,9 +59,10 @@ pub fn venus(include_orbit: bool) -> Body {
 
 /// Returns Earth, the third planet from the Sun.
 ///
-/// `include_orbit`: Whether to include the orbit of Earth around the Sun.
-pub fn earth(include_orbit: bool) -> Body {
-    let orbit = if include_orbit {
+/// `parent_mu`: The gravitational parameter of the parent body, if any.
+/// If None, the celestial body will not be placed in an orbit.
+pub fn earth(parent_mu: Option<f64>) -> Body {
+    let orbit = if let Some(mu) = parent_mu {
         // Source: Wikipedia
         Some(Orbit::with_apoapsis(
             1.52097597e11,
@@ -68,7 +71,7 @@ pub fn earth(include_orbit: bool) -> Body {
             114.20783_f64.to_radians(),
             -11.26064_f64.to_radians(),
             358.617_f64.to_radians(),
-            1.0,
+            mu,
         ))
     } else {
         None
@@ -79,9 +82,10 @@ pub fn earth(include_orbit: bool) -> Body {
 
 /// Returns Mars, the fourth planet from the Sun.
 ///
-/// `include_orbit`: Whether to include the orbit of Mars around the Sun.
-pub fn mars(include_orbit: bool) -> Body {
-    let orbit = if include_orbit {
+/// `parent_mu`: The gravitational parameter of the parent body, if any.
+/// If None, the celestial body will not be placed in an orbit.
+pub fn mars(parent_mu: Option<f64>) -> Body {
+    let orbit = if let Some(mu) = parent_mu {
         // Source: Wikipedia
         Some(Orbit::with_apoapsis(
             2.49261e11,
@@ -90,7 +94,7 @@ pub fn mars(include_orbit: bool) -> Body {
             286.5_f64.to_radians(),
             49.57854_f64.to_radians(),
             19.412_f64.to_radians(),
-            1.0,
+            mu,
         ))
     } else {
         None
@@ -101,9 +105,10 @@ pub fn mars(include_orbit: bool) -> Body {
 
 /// Returns Jupiter, the fifth planet from the Sun.  
 ///
-/// `include_orbit`: Whether to include the orbit of Jupiter around the Sun.
-pub fn jupiter(include_orbit: bool) -> Body {
-    let orbit = if include_orbit {
+/// `parent_mu`: The gravitational parameter of the parent body, if any.
+/// If None, the celestial body will not be placed in an orbit.
+pub fn jupiter(parent_mu: Option<f64>) -> Body {
+    let orbit = if let Some(mu) = parent_mu {
         // Source: Wikipedia
         Some(Orbit::with_apoapsis(
             8.16363e11,
@@ -112,7 +117,7 @@ pub fn jupiter(include_orbit: bool) -> Body {
             273.867_f64.to_radians(),
             100.464_f64.to_radians(),
             20.02_f64.to_radians(),
-            1.0,
+            mu,
         ))
     } else {
         None
@@ -123,9 +128,10 @@ pub fn jupiter(include_orbit: bool) -> Body {
 
 /// Returns Saturn, the sixth planet from the Sun.  
 ///
-/// `include_orbit`: Whether to include the orbit of Saturn around the Sun.
-pub fn saturn(include_orbit: bool) -> Body {
-    let orbit = if include_orbit {
+/// `parent_mu`: The gravitational parameter of the parent body, if any.
+/// If None, the celestial body will not be placed in an orbit.
+pub fn saturn(parent_mu: Option<f64>) -> Body {
+    let orbit = if let Some(mu) = parent_mu {
         // Source: Wikipedia
         Some(Orbit::with_apoapsis(
             1.5145e12,
@@ -134,7 +140,7 @@ pub fn saturn(include_orbit: bool) -> Body {
             339.392_f64.to_radians(),
             113.665_f64.to_radians(),
             317.020_f64.to_radians(),
-            1.0,
+            mu,
         ))
     } else {
         None
@@ -145,9 +151,10 @@ pub fn saturn(include_orbit: bool) -> Body {
 
 /// Returns Uranus, the seventh planet from the Sun.
 ///
-/// `include_orbit`: Whether to include the orbit of Uranus around the Sun.
-pub fn uranus(include_orbit: bool) -> Body {
-    let orbit = if include_orbit {
+/// `parent_mu`: The gravitational parameter of the parent body, if any.
+/// If None, the celestial body will not be placed in an orbit.
+pub fn uranus(parent_mu: Option<f64>) -> Body {
+    let orbit = if let Some(mu) = parent_mu {
         // Source: Wikipedia
         Some(Orbit::with_apoapsis(
             3.00639e12,
@@ -156,7 +163,7 @@ pub fn uranus(include_orbit: bool) -> Body {
             96.998857_f64.to_radians(),
             74.006_f64.to_radians(),
             142.2386_f64.to_radians(),
-            1.0,
+            mu,
         ))
     } else {
         None
@@ -167,9 +174,10 @@ pub fn uranus(include_orbit: bool) -> Body {
 
 /// Returns Neptune, the eighth planet from the Sun.
 ///
-/// `include_orbit`: Whether to include the orbit of Neptune around the Sun.
-pub fn neptune(include_orbit: bool) -> Body {
-    let orbit = if include_orbit {
+/// `parent_mu`: The gravitational parameter of the parent body, if any.
+/// If None, the celestial body will not be placed in an orbit.
+pub fn neptune(parent_mu: Option<f64>) -> Body {
+    let orbit = if let Some(mu) = parent_mu {
         // Source: Wikipedia
         Some(Orbit::with_apoapsis(
             4.54e12,
@@ -178,7 +186,7 @@ pub fn neptune(include_orbit: bool) -> Body {
             273.187_f64.to_radians(),
             131.783_f64.to_radians(),
             259.883_f64.to_radians(),
-            1.0,
+            mu,
         ))
     } else {
         None
