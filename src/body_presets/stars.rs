@@ -13,9 +13,14 @@ pub fn the_sun(include_orbit: bool) -> Body {
     let orbit = if include_orbit {
         // Source: Wikipedia
         Some(Orbit::with_apoapsis(
-            2.36518e20, 2.36518e20,
+            2.36518e20,
+            2.36518e20,
             // I can't seem to find the orientation of the Sun's orbit
-            0.0, 0.0, 0.0, 0.0, 1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
         ))
     } else {
         None

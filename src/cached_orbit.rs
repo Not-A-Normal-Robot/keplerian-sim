@@ -127,7 +127,7 @@ impl Orbit {
     /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
     /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
     /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
-    /// - `mu`: The gravitational parameter of the parent body.
+    /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
     pub fn new(
         eccentricity: f64,
         periapsis: f64,
@@ -171,7 +171,7 @@ impl Orbit {
     /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
     /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
     /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
-    /// - `mu`: The gravitational parameter of the parent body.
+    /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
     pub fn with_apoapsis(
         apoapsis: f64,
         periapsis: f64,
