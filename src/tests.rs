@@ -1401,7 +1401,7 @@ fn test_true_anom_to_ecc_anom() {
             "Just below parabolic orbit",
             Orbit::new(JUST_BELOW_ONE, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
         ),
-        // TODO: Post-Parabolic Support: Uncomment this when parabolic support is properly implemented
+        // TODO: POST-PARABOLIC SUPPORT: Uncomment this when parabolic support is properly implemented
         // (
         //     "Parabolic trajectory",
         //     Orbit::new(
@@ -1617,7 +1617,7 @@ fn test_velocity() {
         naive_speed_correlation_base_test(&orbit, what);
     }
 
-    // TODO: PARABOLA SUPPORT: Change to all-random instead of just nonparabolic
+    // TODO: POST-PARABOLA SUPPORT: Change to all-random instead of just nonparabolic
     for mut orbit in random_nonparabolic_iter(128) {
         orbit.set_gravitational_parameter(100.0 / orbit.get_semi_major_axis().abs(), crate::MuSetterMode::KeepElements);
         let what = &format!("random ({orbit:?})");

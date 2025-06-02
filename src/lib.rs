@@ -568,6 +568,9 @@ pub trait OrbitTrait {
     ///
     /// \- [Wikipedia](https://en.wikipedia.org/wiki/Eccentric_anomaly)
     /// 
+    /// # Time
+    /// The time is expressed in seconds.
+    ///
     /// # Performance
     /// The method to get the eccentric anomaly from the time
     /// uses numerical approach methods, and so it is not performant.  
@@ -629,6 +632,9 @@ pub trait OrbitTrait {
     /// This function returns +/- pi for parabolic orbits due to how the equation works,
     /// and so **may result in infinities when combined with other functions**.
     /// 
+    /// # Time
+    /// The time is expressed in seconds.
+    ///
     /// # Performance
     /// The true anomaly is derived from the eccentric anomaly, which
     /// uses numerical approach methods and so is not performant.  
@@ -654,6 +660,9 @@ pub trait OrbitTrait {
     ///
     /// \- [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
     /// 
+    /// # Time
+    /// The time is expressed in seconds.
+    ///
     /// # Performance
     /// This function is performant and is unlikely to be the culprit of
     /// any performance issues.
@@ -787,6 +796,10 @@ pub trait OrbitTrait {
     /// The angle is expressed in radians, and ranges from 0 to tau.  
     /// Anything out of range will get wrapped around.
     /// 
+    /// # Angle
+    /// The angle is expressed in radians, and ranges from 0 to tau.  
+    /// Anything out of range will get wrapped around.
+    /// 
     /// # Performance
     /// This function benefits significantly from being in the
     /// [cached version of the orbit struct][crate::Orbit].  
@@ -903,6 +916,9 @@ pub trait OrbitTrait {
 
     /// Gets the speed at a given time in the orbit.
     ///
+    /// # Time
+    /// The time is expressed in seconds.
+    ///
     /// # Performance
     /// The time will be converted into an eccentric anomaly, which uses
     /// numerical methods and so is not very performant.
@@ -951,8 +967,9 @@ pub trait OrbitTrait {
     /// it had an inclination and longitude of ascending node of 0.
     ///
     /// # Flat
-    /// This ignores "orbital tilting" parameters, namely the inclination and
-    /// the longitude of ascending node.
+    /// This ignores "orbital tilting" parameters, namely the inclination,
+    /// the argument of periapsis, and the longitude of
+    /// ascending node.
     ///
     /// # Performance
     /// The velocity is derived from the eccentric anomaly, which uses numerical
@@ -1005,8 +1022,9 @@ pub trait OrbitTrait {
     /// it had an inclination and longitude of ascending node of 0.
     ///
     /// # Flat
-    /// This ignores "orbital tilting" parameters, namely the inclination and
-    /// the longitude of ascending node.
+    /// This ignores "orbital tilting" parameters, namely the inclination,
+    /// the argument of periapsis, and the longitude of
+    /// ascending node.
     ///
     /// # Speed vs. Velocity
     /// Speed is not to be confused with velocity.  
@@ -1061,14 +1079,18 @@ pub trait OrbitTrait {
     /// it had an inclination and longitude of ascending node of 0.
     ///
     /// # Flat
-    /// This ignores "orbital tilting" parameters, namely the inclination and
-    /// the longitude of ascending node.
+    /// This ignores "orbital tilting" parameters, namely the inclination,
+    /// the argument of periapsis, and the longitude of
+    /// ascending node.
     ///
     /// # Speed vs. Velocity
     /// Speed is not to be confused with velocity.  
     /// Speed tells you how fast something is moving,
     /// while velocity tells you how fast *and in what direction* it's moving in.
     /// 
+    /// # Time
+    /// The time is expressed in seconds.
+    ///
     /// # Performance
     /// This method involves converting the time into an eccentric anomaly,
     /// which uses numerical methods and so is not performant.  
@@ -1085,16 +1107,12 @@ pub trait OrbitTrait {
         self.get_flat_velocity_at_eccentric_anomaly(self.get_eccentric_anomaly_at_time(t))
     }
 
-    // TODO: DOC: Make all docstrings sectioned like these
-    // TODO: DOC: Flat description section
-    // TODO: DOC: Angle/time description section
-    // TODO: DOC: Performance description section
-
     /// Gets the 2D position at a given angle (true anomaly) in the orbit.
     ///
     /// # Flat
-    /// This ignores "orbital tilting" parameters, namely the inclination and
-    /// the longitude of ascending node.
+    /// This ignores "orbital tilting" parameters, namely the inclination,
+    /// the argument of periapsis, and the longitude of
+    /// ascending node.
     ///
     /// # Angle
     /// The angle is expressed in radians, and ranges from 0 to tau.  
@@ -1126,12 +1144,13 @@ pub trait OrbitTrait {
         return (alt * cos, alt * sin);
     }
 
-    // TODO: Post-Parabolic Support: Update doc
+    // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
     /// Gets the 2D position at a given time in the orbit.
     ///
     /// # Flat
-    /// This ignores "orbital tilting" parameters, namely the inclination
-    /// and longitude of ascending node.
+    /// This ignores "orbital tilting" parameters, namely the inclination,
+    /// the argument of periapsis, and the longitude of
+    /// ascending node.
     ///
     /// # Time
     /// The time is expressed in seconds.
@@ -1156,12 +1175,13 @@ pub trait OrbitTrait {
         self.get_flat_position_at_angle(self.get_true_anomaly_at_time(t))
     }
 
-    // TODO: Post-Parabolic Support: Update doc
+    // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
     /// Gets the 2D position at a given eccentric anomaly in the orbit.
     ///
     /// # Flat
-    /// This ignores "orbital tilting" parameters, namely the inclination
-    /// and longitude of ascending node.
+    /// This ignores "orbital tilting" parameters, namely the inclination,
+    /// the argument of periapsis, and the longitude of
+    /// ascending node.
     ///
     /// # Time
     /// The time is expressed in seconds.
@@ -1271,6 +1291,9 @@ pub trait OrbitTrait {
 
     /// Gets the velocity at a given time in the orbit.
     ///
+    /// # Time
+    /// The time is expressed in seconds.
+    ///
     /// # Performance
     /// The velocity is derived from the eccentric anomaly, which uses numerical
     /// methods and so is not performant.  
@@ -1294,6 +1317,10 @@ pub trait OrbitTrait {
     }
 
     /// Gets the altitude of the body from its parent at a given angle (true anomaly) in the orbit.
+    /// 
+    /// # Angle
+    /// The angle is expressed in radians, and ranges from 0 to tau.  
+    /// Anything out of range will get wrapped around.
     /// 
     /// # Performance
     /// This function is performant, however, if you already
@@ -1329,6 +1356,10 @@ pub trait OrbitTrait {
     /// This function does not perform any checks on the validity
     /// of the `cos_true_anomaly` parameter. Invalid values result in
     /// possibly-nonsensical output values.
+    /// 
+    /// # Angle
+    /// The angle is expressed in radians, and ranges from 0 to tau.  
+    /// Anything out of range will get wrapped around.
     /// 
     /// # Performance
     /// This function, by itself, is performant and is unlikely
@@ -1402,11 +1433,14 @@ pub trait OrbitTrait {
         self.get_altitude_at_angle(self.get_true_anomaly_at_eccentric_anomaly(eccentric_anomaly))
     }
 
-    // TODO: Post-Parabolic Support: Update doc
+    // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
     /// Gets the altitude of the body from its parent at a given time in the orbit.
     /// 
     /// Note that due to floating-point imprecision, values of extreme
     /// magnitude may not be accurate.
+    ///
+    /// # Time
+    /// The time is expressed in seconds.
     ///
     /// # Performance
     /// This involves calculating the true anomaly at a given time, and so is not very performant.  
@@ -1419,9 +1453,6 @@ pub trait OrbitTrait {
     /// [`get_altitude_at_angle`][OrbitTrait::get_altitude_at_angle]
     /// functions instead.  
     /// Those do not use numerical methods and therefore are a lot faster.
-    /// 
-    /// # Time
-    /// The time is expressed in seconds.
     ///
     /// # Parabolic Support
     /// **This function returns infinity for parabolic orbits** due to how the equation for
@@ -1430,8 +1461,11 @@ pub trait OrbitTrait {
         self.get_altitude_at_angle(self.get_true_anomaly_at_time(t))
     }
 
-    // TODO: DOC: Post-Parabolic Support: Update doc
+    // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
     /// Gets the 3D position at a given time in the orbit.
+    ///
+    /// # Time
+    /// The time is expressed in seconds.
     ///
     /// # Performance
     /// This involves calculating the true anomaly at a given time,
@@ -1443,9 +1477,6 @@ pub trait OrbitTrait {
     /// [`get_position_at_angle`][OrbitTrait::get_position_at_angle]
     /// function instead.  
     /// That does not use numerical methods and therefore is a lot faster.
-    ///
-    /// # Time
-    /// The time is expressed in seconds.
     ///
     /// # Parabolic Support
     /// **This function returns non-finite numbers for parabolic orbits**
