@@ -15,9 +15,6 @@ pub struct Body {
 
     /// The orbit of the celestial body, if it is orbiting one.
     pub orbit: Option<Orbit>,
-
-    /// The orbit progress, between 0 and 1.
-    pub progress: f64,
 }
 
 impl Body {
@@ -39,7 +36,6 @@ impl Body {
             mass,
             radius,
             orbit,
-            progress: 0.0,
         };
     }
 
@@ -53,16 +49,15 @@ impl Body {
             mass: 5.972e24,
             radius: 6.371e6,
             orbit: None,
-            progress: 0.0,
         };
     }
 
     /// Releases the body from its orbit.
     pub fn release_from_orbit(&mut self) {
         self.orbit = None;
-        self.progress = 0.0;
     }
 
+    // TODO: This should be part of the OrbitTrait
     /// Get the amount of time it takes for the body to complete one orbit,
     /// given a gravitational constant.
     pub fn get_orbital_period(&self, g: f64) -> Option<f64> {
@@ -76,36 +71,5 @@ impl Body {
         let semi_major_axis = orbit.get_semi_major_axis();
 
         return Some(TAU * (semi_major_axis / mu).sqrt());
-    }
-    /// Progresses this body's orbit, given a time step and the gravitational
-    /// acceleration towards the parent body.
-    pub fn progress_orbit(&mut self, dt: f64, g: f64) -> Result<(), String> {
-        let orbit = self.orbit.as_ref().ok_or("Body is not in orbit")?;
-
-        if orbit.get_eccentricity() >= 1.0 {
-            self.progress += dt * g.sqrt();
-        } else {
-            let period = self.get_orbital_period(g).unwrap();
-            self.progress += dt / period;
-            self.progress = self.progress.rem_euclid(1.0);
-        }
-
-        return Ok(());
-    }
-    /// Gets the relative position of this body, in meters.
-    ///
-    /// The position is relative to the parent body, if there is one.  
-    /// If the body is not orbiting anything, this function will return
-    /// (0, 0, 0).
-    ///
-    /// Each coordinate is in meters.
-    pub fn get_relative_position(&self) -> (f64, f64, f64) {
-        let orbit = self.orbit.as_ref();
-
-        if orbit.is_none() {
-            return (0.0, 0.0, 0.0);
-        }
-
-        return orbit.unwrap().get_position_at_time(self.progress);
     }
 }
