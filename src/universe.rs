@@ -32,9 +32,9 @@ pub struct BodyRelation {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-struct BodyWrapper {
-    body: Body,
-    relations: BodyRelation,
+pub struct BodyWrapper {
+    pub body: Body,
+    pub relations: BodyRelation,
 }
 
 #[non_exhaustive]
@@ -161,17 +161,9 @@ impl Universe {
         bodies
     }
 
-    /// Gets a Vec of all bodies in the universe.
-    pub fn get_bodies(&self) -> Vec<&Body> {
-        self.bodies.values().map(|wrapper| &wrapper.body).collect()
-    }
-
-    /// Gets a Vec of all body relations in the universe.
-    pub fn get_body_relations(&self) -> Vec<&BodyRelation> {
-        self.bodies
-            .values()
-            .map(|wrapper| &wrapper.relations)
-            .collect()
+    /// Gets a reference to a HashMap of all bodies in the universe and their relations.
+    pub fn get_bodies(&self) -> &HashMap<Id, BodyWrapper> {
+        &self.bodies
     }
 
     /// Gets a mutable reference to a body in the universe.
