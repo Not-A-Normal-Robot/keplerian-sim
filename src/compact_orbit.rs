@@ -2,6 +2,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait};
+use std::f64::consts::{PI, TAU};
 
 /// A minimal struct representing a Keplerian orbit.
 ///
@@ -35,6 +36,9 @@ use crate::{ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait};
 ///
 ///     // Mean anomaly at epoch
 ///     0.0,
+///
+///     // Gravitational parameter of the parent body
+///     1.0,
 /// );
 ///
 /// let orbit = CompactOrbit::with_apoapsis(
@@ -57,6 +61,9 @@ use crate::{ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait};
 ///
 ///     // Mean anomaly at epoch
 ///     0.0,
+///
+///     // Gravitational parameter of the parent body
+///     1.0,
 /// );
 /// ```
 /// See [Orbit::new] and [Orbit::with_apoapsis] for more information.
@@ -123,6 +130,14 @@ pub struct CompactOrbit {
     ///
     /// In simple terms, this modifies the "offset" of the orbit progression.
     pub mean_anomaly: f64,
+
+    /// The gravitational parameter of the parent body.
+    ///
+    /// This is a constant value that represents the mass of the parent body
+    /// multiplied by the gravitational constant.
+    ///
+    /// In other words, mu = GM.
+    pub mu: f64,
 }
 
 // Initialization and cache management
@@ -140,6 +155,7 @@ impl CompactOrbit {
     /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
     /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
     /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
+    /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
     pub fn new(
         eccentricity: f64,
         periapsis: f64,
@@ -147,15 +163,17 @@ impl CompactOrbit {
         arg_pe: f64,
         long_asc_node: f64,
         mean_anomaly: f64,
+        mu: f64,
     ) -> CompactOrbit {
-        CompactOrbit {
+        return CompactOrbit {
             eccentricity,
             periapsis,
             inclination,
             arg_pe,
             long_asc_node,
             mean_anomaly,
-        }
+            mu,
+        };
     }
 
     /// Creates a new `CompactOrbit` instance with the given parameters.
@@ -173,6 +191,7 @@ impl CompactOrbit {
     /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
     /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
     /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
+    /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
     pub fn with_apoapsis(
         apoapsis: f64,
         periapsis: f64,
@@ -180,16 +199,18 @@ impl CompactOrbit {
         arg_pe: f64,
         long_asc_node: f64,
         mean_anomaly: f64,
+        mu: f64,
     ) -> CompactOrbit {
         let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
-        CompactOrbit::new(
+        return CompactOrbit::new(
             eccentricity,
             periapsis,
             inclination,
             arg_pe,
             long_asc_node,
             mean_anomaly,
-        )
+            mu,
+        );
     }
 }
 
@@ -222,11 +243,19 @@ impl OrbitTrait for CompactOrbit {
 
     fn set_apoapsis_force(&mut self, apoapsis: f64) {
         let mut apoapsis = apoapsis;
-        if apoapsis < self.periapsis && apoapsis > 0.0 {
+        if apoapsis < self.periapsis && apoapsis >= 0.0 {
             (apoapsis, self.periapsis) = (self.periapsis, apoapsis);
+            self.arg_pe = (self.arg_pe + PI).rem_euclid(TAU);
+            self.mean_anomaly = (self.mean_anomaly + PI).rem_euclid(TAU);
         }
 
-        self.eccentricity = (apoapsis - self.periapsis) / (apoapsis + self.periapsis);
+        if apoapsis < 0.0 && apoapsis > -self.periapsis {
+            // Even for hyperbolic orbits, apoapsis cannot be between 0 and -periapsis
+            // We will interpret this as an infinite apoapsis (parabolic trajectory)
+            self.eccentricity = 1.0;
+        } else {
+            self.eccentricity = (apoapsis - self.periapsis) / (apoapsis + self.periapsis);
+        }
     }
 
     fn get_transformation_matrix(&self) -> Matrix3x2 {
@@ -279,6 +308,11 @@ impl OrbitTrait for CompactOrbit {
         self.mean_anomaly
     }
 
+    #[inline]
+    fn get_gravitational_parameter(&self) -> f64 {
+        self.mu
+    }
+
     fn set_eccentricity(&mut self, value: f64) {
         self.eccentricity = value
     }
@@ -297,14 +331,77 @@ impl OrbitTrait for CompactOrbit {
     fn set_mean_anomaly_at_epoch(&mut self, value: f64) {
         self.mean_anomaly = value
     }
+
+    /// # Not Yet Implemented
+    /// This function sometimes panics when it encounters a todo macro.  
+    /// Refrain from using this function.
+    #[doc(hidden)]
+    fn set_gravitational_parameter(
+        &mut self,
+        gravitational_parameter: f64,
+        mode: crate::MuSetterMode,
+    ) {
+        let new_mu = gravitational_parameter;
+        match mode {
+            crate::MuSetterMode::KeepElements => {
+                self.mu = new_mu;
+            }
+            crate::MuSetterMode::KeepPositionAtTime(t) => {
+                // We need to keep the position at time t
+                // This means keeping the mean anomaly at that point, since the
+                // orbit shape does not change
+                // Current mean anomaly:
+                // M_1(t) = M_0_1 + t * sqrt(mu_1 / |a^3|)
+                //
+                // Mean anomaly after mu changes:
+                // M_2(t) = M_0_2 + t * sqrt(mu_2 / |a^3|)
+                //
+                // M_1(t) = M_2(t)
+                //
+                // We need to find M_0_2
+                //
+                // M_0_1 + t * sqrt(mu_1 / |a^3|) = M_0_2 + t * sqrt(mu_2 / |a^3|)
+                // M_0_2 + t * sqrt(mu_2 / |a^3|) = M_0_1 + t * sqrt(mu_1 / |a^3|)
+                // M_0_2 = M_0_1 + t * sqrt(mu_1 / |a^3|) - t * sqrt(mu_2 / |a^3|)
+                // M_0_2 = M_0_1 + t * (sqrt(mu_1 / |a^3|) - sqrt(mu_2 / |a^3|))
+                let inv_abs_a_cubed = self.get_semi_major_axis().powi(3).abs().recip();
+
+                self.mean_anomaly +=
+                    t * ((self.mu * inv_abs_a_cubed).sqrt() - (new_mu * inv_abs_a_cubed).sqrt());
+
+                self.mu = new_mu;
+            }
+            crate::MuSetterMode::KeepPositionAndVelocityAtTime(_t) => {
+                // We need to preserve the state vector at time t
+                //
+                // r_0(t), v_0(t) == r_1(t), v_1(t)
+                // ...todo: figure out a way to do this
+                // https://downloads.rene-schwarz.com/download/M002-Cartesian_State_Vectors_to_Keplerian_Orbit_Elements.pdf
+
+                todo!(
+                    "set_gravitational_parameter with MuSetterMode::KeepPositionAndVelocityAtTime"
+                )
+            }
+            crate::MuSetterMode::KeepPositionAtAngle(_t) => {
+                todo!("set_gravitational_parameter with MuSetterMode::KeepPositionAtAngle")
+            }
+            crate::MuSetterMode::KeepPositionAndVelocityAtAngle(_t) => {
+                todo!(
+                    "set_gravitational_parameter with MuSetterMode::KeepPositionAndVelocityAtAngle"
+                )
+            }
+        }
+    }
 }
 
 impl Default for CompactOrbit {
     /// Creates a unit orbit.
     ///
     /// The unit orbit is a perfect circle of radius 1 and no "tilt".
-    fn default() -> CompactOrbit {
-        Self::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0)
+    ///
+    /// It also uses a gravitational parameter of 1.
+    fn default() -> Self {
+        Self::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
     }
 }
 
@@ -317,6 +414,7 @@ impl From<Orbit> for CompactOrbit {
             arg_pe: cached.get_arg_pe(),
             long_asc_node: cached.get_long_asc_node(),
             mean_anomaly: cached.get_mean_anomaly_at_epoch(),
+            mu: cached.get_gravitational_parameter(),
         }
     }
 }

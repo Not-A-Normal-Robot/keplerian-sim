@@ -28,97 +28,108 @@ struct OrbitLog<'a> {
     altitude: f64,
 
     expected_speed: f64,
+    real_speed: f64,
+    real_flat_vel: DVec2,
+    real_vel: DVec3,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let orbits = [
         OrbitWrapper {
             name: "The Moon",
-            orbit: Orbit::with_apoapsis(405400.0, 362600.0, 5.145_f64.to_radians(), 0.0, 0.0, 0.0),
+            orbit: Orbit::with_apoapsis(
+                405400.0,
+                362600.0,
+                5.145_f64.to_radians(),
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+            ),
             time_mult: 1.0,
             time_offset: 0.0,
         },
         OrbitWrapper {
             name: "Eccentricity 0.85",
-            orbit: Orbit::new(0.85, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(0.85, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 1.0,
             time_offset: 0.0,
         },
         OrbitWrapper {
             name: "Eccentricity 0.99",
-            orbit: Orbit::new(0.99, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(0.99, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 1.0,
             time_offset: 0.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1",
-            orbit: Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.001",
-            orbit: Orbit::new(1.001, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1.001, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.002",
-            orbit: Orbit::new(1.002, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1.002, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.005",
-            orbit: Orbit::new(1.005, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1.005, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.01",
-            orbit: Orbit::new(1.01, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1.01, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.02",
-            orbit: Orbit::new(1.02, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1.02, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.1",
-            orbit: Orbit::new(1.1, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1.1, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1.5",
-            orbit: Orbit::new(1.5, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1.5, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 2.5",
-            orbit: Orbit::new(2.5, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(2.5, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 10.0,
             time_offset: -5.0,
         },
         OrbitWrapper {
             name: "Eccentricity 12",
-            orbit: Orbit::new(12.0, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(12.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 50.0,
             time_offset: -25.0,
         },
         OrbitWrapper {
             name: "Eccentricity 1000",
-            orbit: Orbit::new(1000.0, 1.0, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(1000.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 1000.0,
             time_offset: -500.0,
         },
         OrbitWrapper {
             name: "Escape trajectory",
-            orbit: Orbit::new(2.0, 1.496e11, 0.0, 0.0, 0.0, 0.0),
+            orbit: Orbit::new(2.0, 1.496e11, 0.0, 0.0, 0.0, 0.0, 1.0),
             time_mult: 100.0,
             time_offset: -5.0,
         },
@@ -146,6 +157,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let position = orbit.get_position_at_angle(angle);
 
             let expected_speed = (2.0 / altitude - 1.0 / orbit.get_semi_major_axis()).sqrt();
+            let real_speed = orbit.get_speed_at_angle(angle);
+            let real_vel = orbit.get_velocity_at_eccentric_anomaly(ecc_anom);
+            let real_flat_vel = orbit.get_flat_velocity_at_eccentric_anomaly(ecc_anom);
 
             logs.push(OrbitLog {
                 name,
@@ -158,6 +172,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 flat_position,
                 altitude,
                 expected_speed,
+                real_speed,
+                real_flat_vel,
+                real_vel,
             });
         }
     }
@@ -182,7 +199,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn create_csv(logs: &Vec<OrbitLog>) -> String {
     let mut string = String::new();
-    string += "orbit,iter,time,mean-anom,ecc-anom,angle,flat-x,flat-y,dfx,dfy,x,y,z,dx,dy,dz,altitude,d-altitude,speed,accel,expected-speed\n";
+    string += "orbit,iter,time,mean-anom,ecc-anom,angle,\
+        flat-x,flat-y,naive-dfx,naive-dfy,x,y,z,\
+        naive-dx,naive-dy,naive-dz,altitude,d-altitude,\
+        naive-speed,accel,expected-speed,real-speed,real-dfx,real-dfy,\
+        real-dx,real-dy,real-dz\n";
 
     let mut prev_orbit_type: &str = "";
     let mut prev_flat_pos: Option<DVec2> = None;
@@ -215,16 +236,30 @@ fn create_csv(logs: &Vec<OrbitLog>) -> String {
         let accel = speed - prev_speed.unwrap_or(NAN);
 
         string += &format!(
-            "{orbit},{iter},{time},{mean_anom},{ecc_anom},{angle},{flat_position},{df},{position},{d},{altitude},{d_altitude},{speed},{accel},{expected_speed}\n",
+            "{orbit},{iter},{time},{mean_anom},{ecc_anom},{angle},{flat_x},{flat_y},{dfx},{dfy},{x},{y},{z},{dx},{dy},{dz},{altitude},{d_altitude},{speed},{accel},{expected_speed},{real_speed},{real_dfx},{real_dfy},{real_dx},{real_dy},{real_dz}\n",
             orbit = log.name,
             iter = log.iter,
             time = log.time,
             mean_anom = log.mean_anom,
             ecc_anom = log.ecc_anom,
             angle = log.angle,
+            flat_x = log.flat_position.x,
+            flat_y = log.flat_position.y,
+            dfx = df.x,
+            dfy = df.y,
+            x = log.position.x,
+            y = log.position.y,
+            z = log.position.z,
+            dx = d.x,
+            dy = d.y,
+            dz = d.z,
             expected_speed = log.expected_speed,
-            flat_position = log.flat_position,
-            position = log.position
+            real_speed = log.real_speed,
+            real_dfx = log.real_flat_vel.x,
+            real_dfy = log.real_flat_vel.y,
+            real_dx = log.real_vel.x,
+            real_dy = log.real_vel.y,
+            real_dz = log.real_vel.z,
         );
 
         prev_flat_pos = Some(prev_flat_position);

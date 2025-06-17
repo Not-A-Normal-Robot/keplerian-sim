@@ -43,3 +43,11 @@ https://doi.org/10.1016/j.apm.2023.12.017
 ## Wikipedia and their editors
 https://en.wikipedia.org/wiki/Orbital_elements#Keplerian  
 ...and many more pages
+
+## Krafpy
+https://space.stackexchange.com/users/42584/krafpy
+for their answer on Space Stack Exchange:
+https://space.stackexchange.com/a/54418
+
+## All GitHub contributors
+Thanks for your issues and PRs!

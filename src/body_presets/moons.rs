@@ -10,9 +10,11 @@
 use crate::{Body, Orbit};
 
 /// Returns the Moon, the only natural satellite of Earth.
-/// `include_orbit`: Whether to include the orbit of the Moon around the Earth.
-pub fn luna(include_orbit: bool) -> Body {
-    let orbit = if include_orbit {
+///
+/// `parent_mu`: The gravitational parameter of the parent body, if any.
+/// If None, the celestial body will not be placed in an orbit.
+pub fn luna(parent_mu: Option<f64>) -> Body {
+    let orbit = if let Some(mu) = parent_mu {
         // Source: Wikipedia
         // ...except for the argument of periapsis and the longitude of ascending node,
         // where zero is used because Wikipedia doesn't provide the values,
@@ -24,20 +26,23 @@ pub fn luna(include_orbit: bool) -> Body {
             0.0,
             0.0,
             0.0,
+            mu,
         ))
     } else {
         None
     };
 
-    Body::new("Luna".to_string(), 7.342e22, 1.7371e6, orbit)
+    return Body::new("Luna".to_string(), 7.342e22, 1.7371e6, orbit);
 }
 
 pub use luna as the_moon;
 
 /// Returns (50000) Quaoar I, a.k.a. Weywot, the moon of the dwarf planet Quaoar.
-/// `include_orbit`: Whether to include the orbit of Weywot around Quaoar.
-pub fn weywot(include_orbit: bool) -> Body {
-    let orbit = if include_orbit {
+///
+/// `parent_mu`: The gravitational parameter of the parent body, if any.
+/// If None, the celestial body will not be placed in an orbit.
+pub fn weywot(parent_mu: Option<f64>) -> Body {
+    let orbit = if let Some(mu) = parent_mu {
         // Source: Wikipedia
         Some(Orbit::new(
             0.056,
@@ -49,6 +54,7 @@ pub fn weywot(include_orbit: bool) -> Body {
             1_f64.to_radians(),
             // I couldn't find the mean anomaly
             0.0,
+            mu,
         ))
     } else {
         None
@@ -75,9 +81,11 @@ pub fn weywot(include_orbit: bool) -> Body {
 }
 
 /// Returns (134340) Pluto I, a.k.a., Charon, the largest moon orbiting Pluto.
-/// `include_orbit`: Whether to include the orbit of Charon around Pluto.
-pub fn charon(include_orbit: bool) -> Body {
-    let orbit = if include_orbit {
+///
+/// `parent_mu`: The gravitational parameter of the parent body, if any.
+/// If None, the celestial body will not be placed in an orbit.
+pub fn charon(parent_mu: Option<f64>) -> Body {
+    let orbit = if let Some(mu) = parent_mu {
         // Source: Wikipedia
         Some(Orbit::with_apoapsis(
             1.959892e7,
@@ -88,18 +96,21 @@ pub fn charon(include_orbit: bool) -> Body {
             223.046_f64.to_radians(),
             // Could not find number for mean anomaly
             0.0,
+            mu,
         ))
     } else {
         None
     };
 
-    Body::new("Charon".to_string(), 1.5897e21, 6.06e5, orbit)
+    return Body::new("Charon".to_string(), 1.5897e21, 6.06e5, orbit);
 }
 
 /// Returns (136199) Eris I Dysnomia, the moon of the dwarf planet Eris.
-/// `include_orbit`: Whether to include the orbit of Dysnomia around Eris.
-pub fn dysnomia(include_orbit: bool) -> Body {
-    let orbit = if include_orbit {
+///
+/// `parent_mu`: The gravitational parameter of the parent body, if any.
+/// If None, the celestial body will not be placed in an orbit.
+pub fn dysnomia(parent_mu: Option<f64>) -> Body {
+    let orbit = if let Some(mu) = parent_mu {
         // Source: Wikipedia
         Some(Orbit::new(
             0.0062,
@@ -109,6 +120,7 @@ pub fn dysnomia(include_orbit: bool) -> Body {
             126.17_f64.to_radians(),
             // Could not find mean anomaly number
             0.0,
+            mu,
         ))
     } else {
         None

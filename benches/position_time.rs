@@ -21,6 +21,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         114.20783_f64.to_radians(),
         -11.26064_f64.to_radians(),
         358.617_f64.to_radians(),
+        1.0,
     );
 
     c.bench_function("pos time poll cached", |b| {
@@ -40,6 +41,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         114.20783_f64.to_radians(),
         -11.26064_f64.to_radians(),
         358.617_f64.to_radians(),
+        1.0,
     );
 
     c.bench_function("pos time poll hyp cached", |b| {
