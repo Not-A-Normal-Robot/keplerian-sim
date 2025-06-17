@@ -182,11 +182,11 @@ impl Matrix3x2 {
     /// assert_eq!(result, DVec3::new(1.0, 2.0, 3.0));
     /// ```
     pub fn dot_vec(&self, vec: DVec2) -> DVec3 {
-        return DVec3::new(
+        DVec3::new(
             vec.x * self.e11 + vec.y * self.e12,
             vec.x * self.e21 + vec.y * self.e22,
             vec.x * self.e31 + vec.y * self.e32,
-        );
+        )
     }
 }
 
@@ -891,7 +891,7 @@ pub trait OrbitTrait {
             // E = 2 * atan(tan(v / 2) / sqrt((1 + e)/(1 - e)))
             // E = 2 * atan(tan(v / 2) * sqrt((1 - e)/(1 + e)))
 
-            return 2.0 * ((true_anomaly * 0.5).tan() * ((1.0 - e) / (1.0 + e)).sqrt()).atan();
+            2.0 * ((true_anomaly * 0.5).tan() * ((1.0 - e) / (1.0 + e)).sqrt()).atan()
         } else {
             // From the presentation "Spacecraft Dynamics and Control"
             // by Matthew M. Peet
@@ -905,7 +905,7 @@ pub trait OrbitTrait {
             // tanh(H/2) = tan(f/2) * sqrt((e-1)/(e+1))
             // H/2 = atanh(tan(f/2) * sqrt((e-1)/(e+1)))
             // H = 2 atanh(tan(f/2) * sqrt((e-1)/(e+1)))
-            return 2.0 * ((true_anomaly * 0.5).tan() * ((e - 1.0) / (e + 1.0)).sqrt()).atanh();
+            2.0 * ((true_anomaly * 0.5).tan() * ((e - 1.0) / (e + 1.0)).sqrt()).atanh()
         }
     }
 
@@ -1293,7 +1293,7 @@ pub trait OrbitTrait {
         let r = altitude;
         let a = self.get_semi_major_axis();
 
-        return ((2.0 / r - a.recip()) * self.get_gravitational_parameter()).sqrt();
+        ((2.0 / r - a.recip()) * self.get_gravitational_parameter()).sqrt()
     }
 
     /// Gets the speed at a given time in the orbit.
@@ -1393,7 +1393,7 @@ pub trait OrbitTrait {
     fn get_flat_velocity_at_angle(&self, angle: f64) -> DVec2 {
         let eccentric_anomaly = self.get_eccentric_anomaly_at_true_anomaly(angle);
 
-        return self.get_flat_velocity_at_eccentric_anomaly(eccentric_anomaly);
+        self.get_flat_velocity_at_eccentric_anomaly(eccentric_anomaly)
     }
 
     /// Gets the velocity at a given eccentric anomaly in the orbit as if
@@ -1520,7 +1520,7 @@ pub trait OrbitTrait {
     fn get_flat_position_at_angle(&self, angle: f64) -> DVec2 {
         let alt = self.get_altitude_at_angle(angle);
         let (sin, cos) = angle.sin_cos();
-        return DVec2::new(alt * cos, alt * sin);
+        DVec2::new(alt * cos, alt * sin)
     }
 
     // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
@@ -1779,7 +1779,7 @@ pub trait OrbitTrait {
         semi_latus_rectum: f64,
         cos_true_anomaly: f64,
     ) -> f64 {
-        return (semi_latus_rectum / (1.0 + self.get_eccentricity() * cos_true_anomaly)).abs();
+        (semi_latus_rectum / (1.0 + self.get_eccentricity() * cos_true_anomaly)).abs()
     }
 
     /// Gets the 3D position at a given time in the orbit.
@@ -2295,7 +2295,7 @@ fn sinhcosh(x: f64) -> (f64, f64) {
     let e_x = x.exp();
     let e_neg_x = (-x).exp();
 
-    return ((e_x - e_neg_x) * 0.5, (e_x + e_neg_x) * 0.5);
+    ((e_x - e_neg_x) * 0.5, (e_x + e_neg_x) * 0.5)
 }
 
 /// Solve a cubic equation to get its real root.

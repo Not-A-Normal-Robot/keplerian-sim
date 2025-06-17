@@ -46,31 +46,42 @@ pub struct BodyWrapper {
     pub relations: BodyRelation,
 }
 
-#[non_exhaustive]
 #[derive(Clone, Debug)]
-pub enum BodyAddError {
-    ParentNotFound,
+pub struct BodyAddError {
+    cause: BodyAddErrorCause,
+    body: Box<Body>,
 }
 
-impl BodyAddError {
-    const ERROR_PARENT_NOT_FOUND: &'static str = "There was no body at the specified parent index.";
+#[non_exhaustive]
+#[derive(Clone, Debug)]
+pub enum BodyAddErrorCause {
+    ParentNotFound { parent_id: Id },
 }
+
+impl fmt::Display for BodyAddErrorCause {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BodyAddErrorCause::ParentNotFound { parent_id } => write!(
+                f,
+                "There was no body at the specified parent index of {parent_id}"
+            ),
+        }
+    }
+}
+
+impl Error for BodyAddErrorCause {}
 
 impl fmt::Display for BodyAddError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            BodyAddError::ParentNotFound => write!(f, "{}", Self::ERROR_PARENT_NOT_FOUND),
-        }
+        write!(
+            f,
+            "Failed to add body {:?} to the universe: {}",
+            *self.body, self.cause
+        )
     }
 }
 
-impl Error for BodyAddError {
-    fn description(&self) -> &str {
-        match self {
-            BodyAddError::ParentNotFound => Self::ERROR_PARENT_NOT_FOUND,
-        }
-    }
-}
+impl Error for BodyAddError {}
 
 impl Universe {
     /// Creates an empty universe.
@@ -78,27 +89,28 @@ impl Universe {
         let time_step = time_step.unwrap_or(3.6e3);
         let g = g.unwrap_or(6.67430e-11);
 
-        return Universe {
+        Universe {
             bodies: HashMap::new(),
             next_id: 0,
             time: 0.0,
             time_step,
             g,
-        };
+        }
     }
 
     /// Adds a body to the universe.
     /// `body`: The body to add into the universe.
     /// `satellite_of`: The index of the body that this body is orbiting.
     /// Returns: The index of the newly-added body.
-    pub fn add_body(
-        &mut self,
-        body: Body,
-        satellite_of: Option<Id>,
-    ) -> Result<Id, (BodyAddError, Body)> {
+    pub fn add_body(&mut self, body: Body, satellite_of: Option<Id>) -> Result<Id, BodyAddError> {
         if let Some(parent_index) = satellite_of {
             if !self.bodies.contains_key(&parent_index) {
-                return Err((BodyAddError::ParentNotFound, body));
+                return Err(BodyAddError {
+                    cause: BodyAddErrorCause::ParentNotFound {
+                        parent_id: parent_index,
+                    },
+                    body: Box::new(body),
+                });
             }
 
             // TODO: POST-MU SETTER: Set body orbit mu accordingly

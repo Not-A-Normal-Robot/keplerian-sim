@@ -165,7 +165,7 @@ impl CompactOrbit {
         mean_anomaly: f64,
         mu: f64,
     ) -> CompactOrbit {
-        return CompactOrbit {
+        CompactOrbit {
             eccentricity,
             periapsis,
             inclination,
@@ -173,7 +173,7 @@ impl CompactOrbit {
             long_asc_node,
             mean_anomaly,
             mu,
-        };
+        }
     }
 
     /// Creates a new `CompactOrbit` instance with the given parameters.
@@ -202,7 +202,7 @@ impl CompactOrbit {
         mu: f64,
     ) -> CompactOrbit {
         let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
-        return CompactOrbit::new(
+        CompactOrbit::new(
             eccentricity,
             periapsis,
             inclination,
@@ -210,7 +210,7 @@ impl CompactOrbit {
             long_asc_node,
             mean_anomaly,
             mu,
-        );
+        )
     }
 }
 

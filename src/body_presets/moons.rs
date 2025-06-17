@@ -14,12 +14,7 @@ use crate::{Body, Orbit};
 /// `parent_mu`: The gravitational parameter of the parent body, if any.
 /// If None, the celestial body will not be placed in an orbit.
 pub fn luna(parent_mu: Option<f64>) -> Body {
-    let orbit = if let Some(mu) = parent_mu {
-        // Source: Wikipedia
-        // ...except for the argument of periapsis and the longitude of ascending node,
-        // where zero is used because Wikipedia doesn't provide the values,
-        // as the Moon precesses too fast for them to be useful.
-        Some(Orbit::with_apoapsis(
+    let orbit = parent_mu.map(|mu| Orbit::with_apoapsis(
             405400.0,
             362600.0,
             5.145_f64.to_radians(),
@@ -27,12 +22,9 @@ pub fn luna(parent_mu: Option<f64>) -> Body {
             0.0,
             0.0,
             mu,
-        ))
-    } else {
-        None
-    };
+        ));
 
-    return Body::new("Luna".to_string(), 7.342e22, 1.7371e6, orbit);
+    Body::new("Luna".to_string(), 7.342e22, 1.7371e6, orbit)
 }
 
 pub use luna as the_moon;
@@ -42,9 +34,7 @@ pub use luna as the_moon;
 /// `parent_mu`: The gravitational parameter of the parent body, if any.
 /// If None, the celestial body will not be placed in an orbit.
 pub fn weywot(parent_mu: Option<f64>) -> Body {
-    let orbit = if let Some(mu) = parent_mu {
-        // Source: Wikipedia
-        Some(Orbit::new(
+    let orbit = parent_mu.map(|mu| Orbit::new(
             0.056,
             1.3289e7,
             // I only found inclination to the ecliptic.
@@ -55,10 +45,7 @@ pub fn weywot(parent_mu: Option<f64>) -> Body {
             // I couldn't find the mean anomaly
             0.0,
             mu,
-        ))
-    } else {
-        None
-    };
+        ));
 
     Body::new(
         "Weywot".to_string(),
@@ -85,9 +72,7 @@ pub fn weywot(parent_mu: Option<f64>) -> Body {
 /// `parent_mu`: The gravitational parameter of the parent body, if any.
 /// If None, the celestial body will not be placed in an orbit.
 pub fn charon(parent_mu: Option<f64>) -> Body {
-    let orbit = if let Some(mu) = parent_mu {
-        // Source: Wikipedia
-        Some(Orbit::with_apoapsis(
+    let orbit = parent_mu.map(|mu| Orbit::with_apoapsis(
             1.959892e7,
             1.959261e7,
             0.08_f64.to_radians(),
@@ -97,12 +82,9 @@ pub fn charon(parent_mu: Option<f64>) -> Body {
             // Could not find number for mean anomaly
             0.0,
             mu,
-        ))
-    } else {
-        None
-    };
+        ));
 
-    return Body::new("Charon".to_string(), 1.5897e21, 6.06e5, orbit);
+    Body::new("Charon".to_string(), 1.5897e21, 6.06e5, orbit)
 }
 
 /// Returns (136199) Eris I Dysnomia, the moon of the dwarf planet Eris.
@@ -110,9 +92,7 @@ pub fn charon(parent_mu: Option<f64>) -> Body {
 /// `parent_mu`: The gravitational parameter of the parent body, if any.
 /// If None, the celestial body will not be placed in an orbit.
 pub fn dysnomia(parent_mu: Option<f64>) -> Body {
-    let orbit = if let Some(mu) = parent_mu {
-        // Source: Wikipedia
-        Some(Orbit::new(
+    let orbit = parent_mu.map(|mu| Orbit::new(
             0.0062,
             3.7273e7,
             0.0,
@@ -121,10 +101,7 @@ pub fn dysnomia(parent_mu: Option<f64>) -> Body {
             // Could not find mean anomaly number
             0.0,
             mu,
-        ))
-    } else {
-        None
-    };
+        ));
 
     Body::new(
         "Dysnomia".to_string(),
