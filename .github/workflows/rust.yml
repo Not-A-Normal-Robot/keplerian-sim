@@ -34,3 +34,9 @@ jobs:
       
     - name: Run tests with MSRV
       run: cargo test --verbose
+      
+    - name: Switch to stable and run Clippy
+      run: |
+        rustup default stable
+        rustup component add clippy
+        cargo clippy -- -D warnings
