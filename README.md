@@ -4,14 +4,20 @@ A Rust library for simulating Keplerian orbits.
 **[Documentation](https://docs.rs/keplerian-sim/)**  
 **[Crate](https://crates.io/crates/keplerian-sim)**
 
-## Dependencies
+## External Dependencies
 You'll need Cargo and Rust to run the example binary. You can get it [at rustup.rs](https://rustup.rs/).
+
+## Minimum Supported Rust Version (MSRV)
+The current MSRV is **`1.81.0`**.  
+MSRV changes is out-of-scope for this crate's SemVer guarantees and may change in minor or major releases.  
+If this version number and the one in Cargo.toml do not match, then assume the one in Cargo.toml is the correct one, and create an issue regarding the mismatch.
 
 ## Running
 This project is a library crate, so you can't really 'run' that, but you can run the example binaries.  
 1. Clone the repo: `git clone https://github.com/Not-A-Normal-Robot/keplerian-sim`
 2. Check out the available example binaries: `cargo run --example`
-3. Run the example binary: `cargo run --example <binary_name>`
+3. See the list of example binaries: `cargo run --example`
+3. Run an example binary: `cargo run --example <binary_name>`
 
 For the examples that dump a CSV, you can use external tools to chart it.  
 One example is https://csvplot.com/.
