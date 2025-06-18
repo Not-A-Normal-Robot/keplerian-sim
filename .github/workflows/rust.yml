@@ -36,30 +36,31 @@ jobs:
       run: cargo test --verbose --no-fail-fast
       
     - name: Switch to stable and run Clippy
-      continue-on-error: true
+      if: always()
       run: |
         rustup default stable
+        rustup component add clippy rustfmt
         cargo clippy --verbose -- -D warnings
 
     - name: Check cargo docs
-      continue-on-error: true
+      if: always()
       run: |
         export RUSTDOCFLAGS="-D warnings"
         cargo doc --no-deps --document-private-items --verbose
 
     - name: Check formatting
-      continue-on-error: true
+      if: always()
       run: |
         cargo fmt --all -- --check
 
     - name: Run cargo audit
-      continue-on-error: true
+      if: always()
       run: |
         cargo install cargo-audit
         cargo audit --deny=warnings
         
     - name: Run cargo deny
-      continue-on-error: true
+      if: always()
       run: |
         cargo install cargo-deny
         cargo deny check --deny=warnings
