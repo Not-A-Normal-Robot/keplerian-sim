@@ -5,3 +5,4 @@ cachegrind.out*
 callgrind.out*
 flamegraph.svg
 perf.data*
+.vscode/
