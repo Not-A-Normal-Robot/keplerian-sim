@@ -5,6 +5,6 @@
 allow = [
     "MIT",
     "Apache-2.0", 
-    "GPL-3.0-or-later",
+    "GPL-3.0",
     "Unicode-3.0"
 ]
