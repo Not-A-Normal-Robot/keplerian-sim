@@ -17,7 +17,8 @@ use crate::{Body, Orbit};
 /// `parent_mu`: The gravitational parameter of the parent body, if any.
 /// If None, the celestial body will not be placed in an orbit.
 pub fn ceres(parent_mu: Option<f64>) -> Body {
-    let orbit = parent_mu.map(|mu| Orbit::with_apoapsis(
+    let orbit = parent_mu.map(|mu| {
+        Orbit::with_apoapsis(
             4.46e11,
             3.81e11,
             10.6_f64.to_radians(),
@@ -25,7 +26,8 @@ pub fn ceres(parent_mu: Option<f64>) -> Body {
             80.3_f64.to_radians(),
             291.4_f64.to_radians(),
             mu,
-        ));
+        )
+    });
 
     Body::new("Ceres".to_string(), 9.3839e20, 939.4 / 2.0, orbit)
 }
@@ -35,7 +37,8 @@ pub fn ceres(parent_mu: Option<f64>) -> Body {
 /// `parent_mu`: The gravitational parameter of the parent body, if any.
 /// If None, the celestial body will not be placed in an orbit.
 pub fn quaoar(parent_mu: Option<f64>) -> Body {
-    let orbit = parent_mu.map(|mu| Orbit::with_apoapsis(
+    let orbit = parent_mu.map(|mu| {
+        Orbit::with_apoapsis(
             6.805e12,
             6.268e12,
             7.9895_f64.to_radians(),
@@ -43,7 +46,8 @@ pub fn quaoar(parent_mu: Option<f64>) -> Body {
             188.927_f64.to_radians(),
             301.104_f64.to_radians(),
             mu,
-        ));
+        )
+    });
 
     Body::new("Quaoar".to_string(), 1.2e21, 5.45e5, orbit)
 }
@@ -53,7 +57,8 @@ pub fn quaoar(parent_mu: Option<f64>) -> Body {
 /// `parent_mu`: The gravitational parameter of the parent body, if any.
 /// If None, the celestial body will not be placed in an orbit.
 pub fn sedna(parent_mu: Option<f64>) -> Body {
-    let orbit = parent_mu.map(|mu| Orbit::with_apoapsis(
+    let orbit = parent_mu.map(|mu| {
+        Orbit::with_apoapsis(
             1.4e14,
             1.14e13,
             11.9307_f64.to_radians(),
@@ -61,7 +66,8 @@ pub fn sedna(parent_mu: Option<f64>) -> Body {
             144.248_f64.to_radians(),
             358.117_f64.to_radians(),
             mu,
-        ));
+        )
+    });
 
     Body::new(
         "Sedna".to_string(),
@@ -78,7 +84,8 @@ pub fn sedna(parent_mu: Option<f64>) -> Body {
 /// `parent_mu`: The gravitational parameter of the parent body, if any.
 /// If None, the celestial body will not be placed in an orbit.
 pub fn pluto(parent_mu: Option<f64>) -> Body {
-    let orbit = parent_mu.map(|mu| Orbit::with_apoapsis(
+    let orbit = parent_mu.map(|mu| {
+        Orbit::with_apoapsis(
             7.37593e12,
             4.43682e12,
             17.16_f64.to_radians(),
@@ -86,7 +93,8 @@ pub fn pluto(parent_mu: Option<f64>) -> Body {
             110.299_f64.to_radians(),
             14.53_f64.to_radians(),
             mu,
-        ));
+        )
+    });
 
     Body::new("Pluto".to_string(), 1.3025e22, 1.1883e6, orbit)
 }
@@ -96,7 +104,8 @@ pub fn pluto(parent_mu: Option<f64>) -> Body {
 /// `parent_mu`: The gravitational parameter of the parent body, if any.
 /// If None, the celestial body will not be placed in an orbit.
 pub fn haumea(parent_mu: Option<f64>) -> Body {
-    let orbit = parent_mu.map(|mu| Orbit::with_apoapsis(
+    let orbit = parent_mu.map(|mu| {
+        Orbit::with_apoapsis(
             7.717e12,
             5.1831e12,
             28.2137_f64.to_radians(),
@@ -104,7 +113,8 @@ pub fn haumea(parent_mu: Option<f64>) -> Body {
             122.167_f64.to_radians(),
             218.205_f64.to_radians(),
             mu,
-        ));
+        )
+    });
 
     Body::new("Haumea".to_string(), 4e21, 7.8e5, orbit)
 }
@@ -114,7 +124,8 @@ pub fn haumea(parent_mu: Option<f64>) -> Body {
 /// `parent_mu`: The gravitational parameter of the parent body, if any.
 /// If None, the celestial body will not be placed in an orbit.
 pub fn eris(parent_mu: Option<f64>) -> Body {
-    let orbit = parent_mu.map(|mu| Orbit::with_apoapsis(
+    let orbit = parent_mu.map(|mu| {
+        Orbit::with_apoapsis(
             1.4579e13,
             5.725e12,
             44.04_f64.to_radians(),
@@ -122,7 +133,8 @@ pub fn eris(parent_mu: Option<f64>) -> Body {
             35.951_f64.to_radians(),
             205.989_f64.to_radians(),
             mu,
-        ));
+        )
+    });
 
     Body::new("Eris".to_string(), 1.6466e22, 1.163e6, orbit)
 }
@@ -132,7 +144,8 @@ pub fn eris(parent_mu: Option<f64>) -> Body {
 /// `parent_mu`: The gravitational parameter of the parent body, if any.
 /// If None, the celestial body will not be placed in an orbit.
 pub fn makemake(parent_mu: Option<f64>) -> Body {
-    let orbit = parent_mu.map(|mu| Orbit::with_apoapsis(
+    let orbit = parent_mu.map(|mu| {
+        Orbit::with_apoapsis(
             7.8922e12,
             5.7003e12,
             28.9835_f64.to_radians(),
@@ -140,7 +153,8 @@ pub fn makemake(parent_mu: Option<f64>) -> Body {
             79.62_f64.to_radians(),
             165.514_f64.to_radians(),
             mu,
-        ));
+        )
+    });
 
     Body::new("Makemake".to_string(), 3.1e21, 7.15e5, orbit)
 }

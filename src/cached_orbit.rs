@@ -117,7 +117,7 @@ struct OrbitCachedCalculations {
 
     /// A value based on the orbit's eccentricity, used to calculate
     /// the true anomaly from the eccentric anomaly.  
-    /// https://en.wikipedia.org/wiki/True_anomaly#From_the_eccentric_anomaly
+    /// <https://en.wikipedia.org/wiki/True_anomaly#From_the_eccentric_anomaly>
     beta: f64,
 }
 // Initialization and cache management

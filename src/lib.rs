@@ -83,7 +83,7 @@ pub use universe::Universe;
 /// by Daniele Tommasini and David N. Olivieri,
 /// section 2.1.2, 'The "rational seed"'
 ///
-/// https://doi.org/10.1051/0004-6361/202141423
+/// <https://doi.org/10.1051/0004-6361/202141423>
 const B: f64 = 0.999999;
 
 /// A constant used for the Laguerre method.
