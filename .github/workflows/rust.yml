@@ -38,8 +38,7 @@ jobs:
     - name: Switch to stable and run Clippy
       if: always()
       run: |
-        rustup default stable
-        rustup upgrade stable
+        rustup override unset
         rustup component add clippy rustfmt
         cargo clippy --verbose -- -D warnings
 
