@@ -39,6 +39,7 @@ jobs:
       if: always()
       run: |
         rustup default stable
+        rustup upgrade stable
         rustup component add clippy rustfmt
         cargo clippy --verbose -- -D warnings
 
