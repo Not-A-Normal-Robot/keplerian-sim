@@ -5,7 +5,9 @@ A Rust library for simulating Keplerian orbits.
 **[Crate](https://crates.io/crates/keplerian-sim)**
 
 ## External Dependencies
-You'll need Cargo and Rust to run the example binary. You can get it [at rustup.rs](https://rustup.rs/).
+You'll need Cargo and Rust to run the example binary. You can get it [at rustup.rs](https://rustup.rs/).  
+You'll also need `rustfmt` to build the code, which you can install with `rustup component add rustfmt`.  
+You should not need to install `rustfmt` if you are a user of this library and only want to use it in your own project, as `rustfmt` is only used in `build.rs`, which is not included in the distributed crate in crates.io.
 
 ## Minimum Supported Rust Version (MSRV)
 <!-- When changing the MSRV, don't forget to change `Cargo.toml`! -->
