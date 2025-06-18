@@ -457,7 +457,7 @@ pub trait OrbitTrait {
     /// tilted orbital plane.
     ///
     /// # Performance
-    /// For [`CompactOrbit`][crate::CompactOrbit], this will perform a few trigonometric operations.  
+    /// For [`CompactOrbit`], this will perform a few trigonometric operations.  
     /// If you need this value often, consider using [the cached orbit struct][crate::Orbit] instead.
     ///
     /// # Example
@@ -783,7 +783,7 @@ pub trait OrbitTrait {
     /// From the paper  
     /// "An improved algorithm due to laguerre for the solution of Kepler's equation."  
     /// by Bruce A. Conway  
-    /// https://doi.org/10.1007/bf01230852
+    /// <https://doi.org/10.1007/bf01230852>
     fn get_eccentric_anomaly_elliptic(&self, mut mean_anomaly: f64) -> f64 {
         let mut sign = 1.0;
         // Use the symmetry and periodicity of the eccentric anomaly
