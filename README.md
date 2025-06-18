@@ -8,6 +8,7 @@ A Rust library for simulating Keplerian orbits.
 You'll need Cargo and Rust to run the example binary. You can get it [at rustup.rs](https://rustup.rs/).
 
 ## Minimum Supported Rust Version (MSRV)
+<!-- When changing the MSRV, don't forget to change `Cargo.toml`! -->
 The current MSRV is **`1.81.0`**.  
 MSRV changes is out-of-scope for this crate's SemVer guarantees and may change in minor or major releases.  
 If this version number and the one in Cargo.toml do not match, then assume the one in Cargo.toml is the correct one, and create an issue regarding the mismatch.
