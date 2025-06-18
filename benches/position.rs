@@ -10,7 +10,7 @@ fn poll_pos(orbit: &impl OrbitTrait) {
 
     for i in 0..POLL_ANGLES {
         let angle = i as f64 * multiplier;
-        black_box(orbit.get_position_at_angle(black_box(angle)));
+        black_box(orbit.get_position_at_true_anomaly(black_box(angle)));
     }
 }
 

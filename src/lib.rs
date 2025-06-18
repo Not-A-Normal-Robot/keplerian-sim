@@ -871,6 +871,7 @@ pub trait OrbitTrait {
     /// It is, however, faster than the numerical approach methods used by
     /// the mean anomaly to eccentric anomaly conversion.  
     /// It is still recommended to cache this value if you can.
+    #[doc(alias = "get_eccentric_anomaly_at_angle")]
     fn get_eccentric_anomaly_at_true_anomaly(&self, true_anomaly: f64) -> f64 {
         // TODO: PARABOLA SUPPORT: This does not play well with parabolic trajectories.
         // Implement inverse of Barker's Equation for parabolas.
@@ -1167,6 +1168,7 @@ pub trait OrbitTrait {
     /// Alternatively, if you already know the eccentric anomaly, use
     /// [`get_mean_anomaly_at_eccentric_anomaly`][Self::get_mean_anomaly_at_eccentric_anomaly]
     /// instead.
+    #[doc(alias = "get_mean_anomaly_at_angle")]
     fn get_mean_anomaly_at_true_anomaly(&self, true_anomaly: f64) -> f64 {
         let ecc_anom = self.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
         self.get_mean_anomaly_at_eccentric_anomaly(ecc_anom)
@@ -1199,12 +1201,13 @@ pub trait OrbitTrait {
     /// orbit.set_periapsis(100.0);
     /// orbit.set_eccentricity(0.0);
     ///
-    /// let pos = orbit.get_position_at_angle(0.0);
+    /// let pos = orbit.get_position_at_true_anomaly(0.0);
     ///
     /// assert_eq!(pos, DVec3::new(100.0, 0.0, 0.0));
     /// ```
-    fn get_position_at_angle(&self, angle: f64) -> DVec3 {
-        self.tilt_flat_position(self.get_flat_position_at_angle(angle))
+    #[doc(alias = "get_position_at_angle")]
+    fn get_position_at_true_anomaly(&self, angle: f64) -> DVec3 {
+        self.tilt_flat_position(self.get_flat_position_at_true_anomaly(angle))
     }
 
     /// Gets the speed at a given angle (true anomaly) in the orbit.
@@ -1234,13 +1237,14 @@ pub trait OrbitTrait {
     /// orbit.set_periapsis(100.0);
     /// orbit.set_eccentricity(0.5);
     ///
-    /// let speed_periapsis = orbit.get_speed_at_angle(0.0);
-    /// let speed_apoapsis = orbit.get_speed_at_angle(std::f64::consts::PI);
+    /// let speed_periapsis = orbit.get_speed_at_true_anomaly(0.0);
+    /// let speed_apoapsis = orbit.get_speed_at_true_anomaly(std::f64::consts::PI);
     ///
     /// assert!(speed_periapsis > speed_apoapsis);
     /// ```
-    fn get_speed_at_angle(&self, angle: f64) -> f64 {
-        self.get_speed_at_altitude(self.get_altitude_at_angle(angle))
+    #[doc(alias = "get_speed_at_angle")]
+    fn get_speed_at_true_anomaly(&self, angle: f64) -> f64 {
+        self.get_speed_at_altitude(self.get_altitude_at_true_anomaly(angle))
     }
 
     /// Gets the speed at a given altitude in the orbit.
@@ -1310,7 +1314,7 @@ pub trait OrbitTrait {
     /// then you should use the
     /// [`get_speed_at_eccentric_anomaly`][OrbitTrait::get_speed_at_eccentric_anomaly]
     /// and
-    /// [`get_speed_at_angle`][OrbitTrait::get_speed_at_angle]
+    /// [`get_speed_at_true_anomaly`][OrbitTrait::get_speed_at_true_anomaly]
     /// functions instead.  
     /// Those does not use numerical methods and therefore are a lot faster.
     ///
@@ -1319,7 +1323,7 @@ pub trait OrbitTrait {
     /// Speed tells you how fast something is moving,
     /// while velocity tells you how fast *and in what direction* it's moving in.
     fn get_speed_at_time(&self, t: f64) -> f64 {
-        self.get_speed_at_angle(self.get_true_anomaly_at_time(t))
+        self.get_speed_at_true_anomaly(self.get_true_anomaly_at_time(t))
     }
 
     /// Gets the speed at a given eccentric anomaly in the orbit.
@@ -1339,10 +1343,12 @@ pub trait OrbitTrait {
     ///
     /// Alternatively, if you already know the true anomaly,
     /// then you should use the
-    /// [`get_speed_at_angle`][OrbitTrait::get_speed_at_angle]
+    /// [`get_speed_at_true_anomaly`][OrbitTrait::get_speed_at_true_anomaly]
     /// function instead.
     fn get_speed_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> f64 {
-        self.get_speed_at_angle(self.get_true_anomaly_at_eccentric_anomaly(eccentric_anomaly))
+        self.get_speed_at_true_anomaly(
+            self.get_true_anomaly_at_eccentric_anomaly(eccentric_anomaly),
+        )
     }
 
     /// Gets the velocity at a given angle (true anomaly) in the orbit as if
@@ -1359,7 +1365,7 @@ pub trait OrbitTrait {
     /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you only want to know the speed, use
-    /// [`get_speed_at_angle`][OrbitTrait::get_speed_at_angle] instead.  
+    /// [`get_speed_at_true_anomaly`][OrbitTrait::get_speed_at_true_anomaly] instead.  
     /// And if you already know the eccentric anomaly, use
     /// [`get_flat_velocity_at_eccentric_anomaly`][OrbitTrait::get_flat_velocity_at_eccentric_anomaly]
     /// instead.
@@ -1377,8 +1383,8 @@ pub trait OrbitTrait {
     /// orbit.set_periapsis(100.0);
     /// orbit.set_eccentricity(0.5);
     ///
-    /// let vel_periapsis = orbit.get_flat_velocity_at_angle(0.0);
-    /// let vel_apoapsis = orbit.get_flat_velocity_at_angle(std::f64::consts::PI);
+    /// let vel_periapsis = orbit.get_flat_velocity_at_true_anomaly(0.0);
+    /// let vel_apoapsis = orbit.get_flat_velocity_at_true_anomaly(std::f64::consts::PI);
     ///
     /// let speed_periapsis = vel_periapsis.length();
     /// let speed_apoapsis = vel_apoapsis.length();
@@ -1390,7 +1396,8 @@ pub trait OrbitTrait {
     /// Speed is not to be confused with velocity.  
     /// Speed tells you how fast something is moving,
     /// while velocity tells you how fast *and in what direction* it's moving in.
-    fn get_flat_velocity_at_angle(&self, angle: f64) -> DVec2 {
+    #[doc(alias = "get_flat_velocity_at_angle")]
+    fn get_flat_velocity_at_true_anomaly(&self, angle: f64) -> DVec2 {
         let eccentric_anomaly = self.get_eccentric_anomaly_at_true_anomaly(angle);
 
         self.get_flat_velocity_at_eccentric_anomaly(eccentric_anomaly)
@@ -1478,7 +1485,7 @@ pub trait OrbitTrait {
     /// then you should use the
     /// [`get_flat_velocity_at_eccentric_anomaly`][OrbitTrait::get_flat_velocity_at_eccentric_anomaly]
     /// and
-    /// [`get_flat_velocity_at_angle`][OrbitTrait::get_flat_velocity_at_angle]
+    /// [`get_flat_velocity_at_true_anomaly`][OrbitTrait::get_flat_velocity_at_true_anomaly]
     /// functions instead.  
     /// Those do not use numerical methods and therefore are a lot faster.
     fn get_flat_velocity_at_time(&self, t: f64) -> DVec2 {
@@ -1501,7 +1508,7 @@ pub trait OrbitTrait {
     /// the altitude beforehand, you can simply use that and rotate it
     /// by the angle instead.  
     /// If you're looking to just get the altitude at a given angle,
-    /// consider using the [`get_altitude_at_angle`][OrbitTrait::get_altitude_at_angle]
+    /// consider using the [`get_altitude_at_true_anomaly`][OrbitTrait::get_altitude_at_true_anomaly]
     /// function instead.
     ///
     /// # Example
@@ -1513,12 +1520,13 @@ pub trait OrbitTrait {
     /// orbit.set_periapsis(100.0);
     /// orbit.set_eccentricity(0.0);
     ///
-    /// let pos = orbit.get_flat_position_at_angle(0.0);
+    /// let pos = orbit.get_flat_position_at_true_anomaly(0.0);
     ///
     /// assert_eq!(pos, DVec2::new(100.0, 0.0));
     /// ```
-    fn get_flat_position_at_angle(&self, angle: f64) -> DVec2 {
-        let alt = self.get_altitude_at_angle(angle);
+    #[doc(alias = "get_flat_position_at_angle")]
+    fn get_flat_position_at_true_anomaly(&self, angle: f64) -> DVec2 {
+        let alt = self.get_altitude_at_true_anomaly(angle);
         let (sin, cos) = angle.sin_cos();
         DVec2::new(alt * cos, alt * sin)
     }
@@ -1547,11 +1555,11 @@ pub trait OrbitTrait {
     /// consider using the
     /// [`get_flat_position_at_eccentric_anomaly`][OrbitTrait::get_flat_position_at_eccentric_anomaly]
     /// and
-    /// [`get_flat_position_at_angle`][OrbitTrait::get_flat_position_at_angle]
+    /// [`get_flat_position_at_true_anomaly`][OrbitTrait::get_flat_position_at_true_anomaly]
     /// functions instead.
     /// Those do not use numerical methods and therefore are a lot faster.
     fn get_flat_position_at_time(&self, t: f64) -> DVec2 {
-        self.get_flat_position_at_angle(self.get_true_anomaly_at_time(t))
+        self.get_flat_position_at_true_anomaly(self.get_true_anomaly_at_time(t))
     }
 
     // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
@@ -1576,10 +1584,10 @@ pub trait OrbitTrait {
     ///
     /// Alternatively, if you already know the true anomaly,
     /// consider using the
-    /// [`get_flat_position_at_angle`][OrbitTrait::get_flat_position_at_angle]
+    /// [`get_flat_position_at_true_anomaly`][OrbitTrait::get_flat_position_at_true_anomaly]
     /// function instead.
     fn get_flat_position_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> DVec2 {
-        self.get_flat_position_at_angle(
+        self.get_flat_position_at_true_anomaly(
             self.get_true_anomaly_at_eccentric_anomaly(eccentric_anomaly),
         )
     }
@@ -1592,7 +1600,7 @@ pub trait OrbitTrait {
     /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you only want to know the speed, use
-    /// [`get_speed_at_angle`][OrbitTrait::get_speed_at_angle] instead.  
+    /// [`get_speed_at_true_anomaly`][OrbitTrait::get_speed_at_true_anomaly] instead.  
     /// Or, if you already have the eccentric anomaly, use
     /// [`get_velocity_at_eccentric_anomaly`][OrbitTrait::get_velocity_at_eccentric_anomaly]
     /// instead.
@@ -1610,8 +1618,8 @@ pub trait OrbitTrait {
     /// orbit.set_periapsis(100.0);
     /// orbit.set_eccentricity(0.5);
     ///
-    /// let vel_periapsis = orbit.get_velocity_at_angle(0.0);
-    /// let vel_apoapsis = orbit.get_velocity_at_angle(std::f64::consts::PI);
+    /// let vel_periapsis = orbit.get_velocity_at_true_anomaly(0.0);
+    /// let vel_apoapsis = orbit.get_velocity_at_true_anomaly(std::f64::consts::PI);
     ///
     /// let speed_periapsis = vel_periapsis.length();
     /// let speed_apoapsis = vel_apoapsis.length();
@@ -1623,8 +1631,9 @@ pub trait OrbitTrait {
     /// Speed is not to be confused with velocity.  
     /// Speed tells you how fast something is moving,
     /// while velocity tells you how fast *and in what direction* it's moving in.
-    fn get_velocity_at_angle(&self, angle: f64) -> DVec3 {
-        self.tilt_flat_position(self.get_flat_velocity_at_angle(angle))
+    #[doc(alias = "get_velocity_at_angle")]
+    fn get_velocity_at_true_anomaly(&self, angle: f64) -> DVec3 {
+        self.tilt_flat_position(self.get_flat_velocity_at_true_anomaly(angle))
     }
 
     /// Gets the velocity at a given eccentric anomaly in the orbit.
@@ -1637,8 +1646,8 @@ pub trait OrbitTrait {
     /// orbit.set_periapsis(100.0);
     /// orbit.set_eccentricity(0.5);
     ///
-    /// let vel_periapsis = orbit.get_velocity_at_angle(0.0);
-    /// let vel_apoapsis = orbit.get_velocity_at_angle(std::f64::consts::PI);
+    /// let vel_periapsis = orbit.get_velocity_at_true_anomaly(0.0);
+    /// let vel_apoapsis = orbit.get_velocity_at_true_anomaly(std::f64::consts::PI);
     /// ```
     ///
     /// # Speed vs. Velocity
@@ -1676,7 +1685,7 @@ pub trait OrbitTrait {
     /// Or, if you already have the eccentric anomaly or true anomaly, use the
     /// [`get_velocity_at_eccentric_anomaly`][OrbitTrait::get_velocity_at_eccentric_anomaly]
     /// and
-    /// [`get_velocity_at_angle`][OrbitTrait::get_velocity_at_angle]
+    /// [`get_velocity_at_true_anomaly`][OrbitTrait::get_velocity_at_true_anomaly]
     /// functions instead.  
     /// These functions do not require numerical methods and therefore are a lot faster.
     ///
@@ -1699,7 +1708,7 @@ pub trait OrbitTrait {
     /// This function is performant, however, if you already
     /// know the orbit's semi-latus rectum or the cosine of the true anomaly,
     /// you can use the
-    /// [`get_altitude_at_angle_unchecked`][Self::get_altitude_at_angle_unchecked]
+    /// [`get_altitude_at_true_anomaly_unchecked`][Self::get_altitude_at_true_anomaly_unchecked]
     /// function to skip a few steps in the calculation.
     ///
     /// # Example
@@ -1710,12 +1719,16 @@ pub trait OrbitTrait {
     /// orbit.set_periapsis(100.0);
     /// orbit.set_eccentricity(0.0);
     ///
-    /// let altitude = orbit.get_altitude_at_angle(0.0);
+    /// let altitude = orbit.get_altitude_at_true_anomaly(0.0);
     ///
     /// assert_eq!(altitude, 100.0);
     /// ```
-    fn get_altitude_at_angle(&self, true_anomaly: f64) -> f64 {
-        self.get_altitude_at_angle_unchecked(self.get_semi_latus_rectum(), true_anomaly.cos())
+    #[doc(alias = "get_altitude_at_angle")]
+    fn get_altitude_at_true_anomaly(&self, true_anomaly: f64) -> f64 {
+        self.get_altitude_at_true_anomaly_unchecked(
+            self.get_semi_latus_rectum(),
+            true_anomaly.cos(),
+        )
     }
 
     /// Gets the altitude of the body from its parent given the
@@ -1753,28 +1766,28 @@ pub trait OrbitTrait {
     /// # let cos_true_anomaly = true_anomaly.cos();
     ///
     /// // Scenario 1: If you know just the semi-latus rectum
-    /// let scenario_1 = orbit.get_altitude_at_angle_unchecked(
+    /// let scenario_1 = orbit.get_altitude_at_true_anomaly_unchecked(
     ///     semi_latus_rectum, // We pass in our precalculated SLR...
     ///     true_anomaly.cos() // but calculate the cosine
     /// );
     ///
     /// // Scenario 2: If you know just the cosine of the true anomaly
-    /// let scenario_2 = orbit.get_altitude_at_angle_unchecked(
+    /// let scenario_2 = orbit.get_altitude_at_true_anomaly_unchecked(
     ///     orbit.get_semi_latus_rectum(), // We calculate the SLR...
     ///     cos_true_anomaly // but use our precalculated cosine
     /// );
     ///
     /// // Scenario 3: If you know both the semi-latus rectum:
-    /// let scenario_3 = orbit.get_altitude_at_angle_unchecked(
+    /// let scenario_3 = orbit.get_altitude_at_true_anomaly_unchecked(
     ///     semi_latus_rectum, // We pass in our precalculated SLR...
     ///     cos_true_anomaly // AND use our precalculated cosine
     /// );
     ///
     /// assert_eq!(scenario_1, scenario_2);
     /// assert_eq!(scenario_2, scenario_3);
-    /// assert_eq!(scenario_3, orbit.get_altitude_at_angle(true_anomaly));
+    /// assert_eq!(scenario_3, orbit.get_altitude_at_true_anomaly(true_anomaly));
     /// ```
-    fn get_altitude_at_angle_unchecked(
+    fn get_altitude_at_true_anomaly_unchecked(
         &self,
         semi_latus_rectum: f64,
         cos_true_anomaly: f64,
@@ -1802,7 +1815,7 @@ pub trait OrbitTrait {
     /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you already know the true anomaly, use the
-    /// [`get_altitude_at_angle`][OrbitTrait::get_altitude_at_angle]
+    /// [`get_altitude_at_true_anomaly`][OrbitTrait::get_altitude_at_true_anomaly]
     /// function instead.
     ///
     /// # Example
@@ -1818,7 +1831,9 @@ pub trait OrbitTrait {
     /// assert_eq!(altitude, 100.0);
     /// ```
     fn get_altitude_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> f64 {
-        self.get_altitude_at_angle(self.get_true_anomaly_at_eccentric_anomaly(eccentric_anomaly))
+        self.get_altitude_at_true_anomaly(
+            self.get_true_anomaly_at_eccentric_anomaly(eccentric_anomaly),
+        )
     }
 
     // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
@@ -1838,7 +1853,7 @@ pub trait OrbitTrait {
     /// consider using the
     /// [`get_altitude_at_eccentric_anomaly`][OrbitTrait::get_altitude_at_eccentric_anomaly]
     /// and
-    /// [`get_altitude_at_angle`][OrbitTrait::get_altitude_at_angle]
+    /// [`get_altitude_at_true_anomaly`][OrbitTrait::get_altitude_at_true_anomaly]
     /// functions instead.  
     /// Those do not use numerical methods and therefore are a lot faster.
     ///
@@ -1846,7 +1861,7 @@ pub trait OrbitTrait {
     /// **This function returns infinity for parabolic orbits** due to how the equation for
     /// true anomaly works.
     fn get_altitude_at_time(&self, t: f64) -> f64 {
-        self.get_altitude_at_angle(self.get_true_anomaly_at_time(t))
+        self.get_altitude_at_true_anomaly(self.get_true_anomaly_at_time(t))
     }
 
     // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
@@ -1875,7 +1890,7 @@ pub trait OrbitTrait {
     ///
     /// Alternatively, if you already know the true anomaly,
     /// consider using the
-    /// [`get_position_at_angle`][OrbitTrait::get_position_at_angle]
+    /// [`get_position_at_true_anomaly`][OrbitTrait::get_position_at_true_anomaly]
     /// function instead.  
     /// That does not use numerical methods and therefore is a lot faster.
     ///
@@ -1883,7 +1898,7 @@ pub trait OrbitTrait {
     /// **This function returns non-finite numbers for parabolic orbits**
     /// due to how the equation for true anomaly works.
     fn get_position_at_time(&self, t: f64) -> DVec3 {
-        self.get_position_at_angle(self.get_true_anomaly_at_time(t))
+        self.get_position_at_true_anomaly(self.get_true_anomaly_at_time(t))
     }
 
     /// Tilts a 2D position into 3D, using the orbital parameters.

@@ -152,12 +152,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let ecc_anom = orbit.get_eccentric_anomaly_at_time(time);
             let angle = orbit.get_true_anomaly_at_eccentric_anomaly(ecc_anom);
 
-            let altitude = orbit.get_altitude_at_angle(angle);
-            let flat_position = orbit.get_flat_position_at_angle(angle);
-            let position = orbit.get_position_at_angle(angle);
+            let altitude = orbit.get_altitude_at_true_anomaly(angle);
+            let flat_position = orbit.get_flat_position_at_true_anomaly(angle);
+            let position = orbit.get_position_at_true_anomaly(angle);
 
             let expected_speed = (2.0 / altitude - 1.0 / orbit.get_semi_major_axis()).sqrt();
-            let real_speed = orbit.get_speed_at_angle(angle);
+            let real_speed = orbit.get_speed_at_true_anomaly(angle);
             let real_vel = orbit.get_velocity_at_eccentric_anomaly(ecc_anom);
             let real_flat_vel = orbit.get_flat_velocity_at_eccentric_anomaly(ecc_anom);
 

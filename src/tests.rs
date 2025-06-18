@@ -44,14 +44,14 @@ fn assert_almost_eq_vec2(a: DVec2, b: DVec2, what: &str) {
 
 fn assert_orbit_positions_3d(orbit: &impl OrbitTrait, tests: &[(&str, f64, DVec3)]) {
     for (what, angle, expected) in tests.iter() {
-        let pos = orbit.get_position_at_angle(*angle);
+        let pos = orbit.get_position_at_true_anomaly(*angle);
         assert_almost_eq_vec3(pos, *expected, what);
     }
 }
 
 fn assert_orbit_positions_2d(orbit: &impl OrbitTrait, tests: &[(&str, f64, DVec2)]) {
     for (what, angle, expected) in tests.iter() {
-        let pos = orbit.get_flat_position_at_angle(*angle);
+        let pos = orbit.get_flat_position_at_true_anomaly(*angle);
         assert_almost_eq_vec2(pos, *expected, what);
     }
 }
@@ -61,7 +61,7 @@ fn poll_orbit(orbit: &impl OrbitTrait) -> Vec<DVec3> {
 
     for i in 0..ORBIT_POLL_ANGLES {
         let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
-        vec.push(orbit.get_position_at_angle(angle));
+        vec.push(orbit.get_position_at_true_anomaly(angle));
     }
 
     return vec;
@@ -71,7 +71,7 @@ fn poll_flat(orbit: &impl OrbitTrait) -> Vec<DVec2> {
 
     for i in 0..ORBIT_POLL_ANGLES {
         let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
-        vec.push(orbit.get_flat_position_at_angle(angle));
+        vec.push(orbit.get_flat_position_at_true_anomaly(angle));
     }
 
     return vec;
@@ -355,8 +355,8 @@ fn tilted_90deg() {
 fn apoapsis_of_two() {
     let orbit = Orbit::with_apoapsis(2.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
 
-    let point_at_apoapsis = orbit.get_position_at_angle(PI);
-    let point_at_periapsis = orbit.get_position_at_angle(0.0);
+    let point_at_apoapsis = orbit.get_position_at_true_anomaly(PI);
+    let point_at_periapsis = orbit.get_position_at_true_anomaly(0.0);
 
     assert_almost_eq_vec3(point_at_apoapsis, DVec3::new(-2.0, 0.0, 0.0), "Ap");
     assert_almost_eq_vec3(point_at_periapsis, DVec3::new(1.0, 0.0, 0.0), "Pe");
@@ -366,8 +366,8 @@ fn apoapsis_of_two() {
 fn huge_apoapsis() {
     let orbit = Orbit::with_apoapsis(10000.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
 
-    let point_at_apoapsis = orbit.get_position_at_angle(PI);
-    let point_at_periapsis = orbit.get_position_at_angle(0.0);
+    let point_at_apoapsis = orbit.get_position_at_true_anomaly(PI);
+    let point_at_periapsis = orbit.get_position_at_true_anomaly(0.0);
 
     assert_almost_eq_vec3(point_at_apoapsis, DVec3::new(-10000.0, 0.0, 0.0), "Ap");
     assert_almost_eq_vec3(point_at_periapsis, DVec3::new(1.0, 0.0, 0.0), "Pe");
@@ -415,7 +415,7 @@ fn almost_parabolic() {
         );
     }
 
-    let position_at_periapsis = orbit.get_position_at_angle(TAU);
+    let position_at_periapsis = orbit.get_position_at_true_anomaly(TAU);
 
     assert_almost_eq_vec3(
         position_at_periapsis,
@@ -423,7 +423,7 @@ fn almost_parabolic() {
         "Periapsis",
     );
 
-    let position_at_apoapsis = orbit.get_position_at_angle(PI);
+    let position_at_apoapsis = orbit.get_position_at_true_anomaly(PI);
 
     assert!(
         position_at_apoapsis.x.abs() > 1e12,
@@ -435,8 +435,8 @@ fn almost_parabolic() {
 fn parabolic() {
     let orbit = Orbit::new(1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
 
-    let point_near_infinity = orbit.get_position_at_angle(PI - 1e-7);
-    let point_at_periapsis = orbit.get_position_at_angle(0.0);
+    let point_near_infinity = orbit.get_position_at_true_anomaly(PI - 1e-7);
+    let point_at_periapsis = orbit.get_position_at_true_anomaly(0.0);
 
     assert!(
         point_near_infinity.length() > 1e9,
@@ -453,7 +453,7 @@ fn parabolic() {
     );
     assert_almost_eq_vec3(point_at_periapsis, DVec3::new(1.0, 0.0, 0.0), "Pe");
 
-    let point_at_asymptote = orbit.get_position_at_angle(PI);
+    let point_at_asymptote = orbit.get_position_at_true_anomaly(PI);
 
     assert!(
         point_at_asymptote.x.is_nan(),
@@ -614,7 +614,7 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
 
             for i in 0..ORBIT_POLL_ANGLES {
                 let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
-                let altitude = orbit.get_altitude_at_angle(angle);
+                let altitude = orbit.get_altitude_at_true_anomaly(angle);
                 vec.push(altitude);
             }
 
@@ -625,7 +625,7 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
 
             for i in 0..ORBIT_POLL_ANGLES {
                 let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
-                let altitude = compact_orbit.get_altitude_at_angle(angle);
+                let altitude = compact_orbit.get_altitude_at_true_anomaly(angle);
                 vec.push(altitude);
             }
 
@@ -636,7 +636,7 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
 
             for i in 0..ORBIT_POLL_ANGLES {
                 let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
-                let altitude = reexpanded_orbit.get_altitude_at_angle(angle);
+                let altitude = reexpanded_orbit.get_altitude_at_true_anomaly(angle);
                 vec.push(altitude);
             }
 
@@ -962,12 +962,12 @@ fn _orbit_mu_setter_base_test(orbit: impl OrbitTrait + Clone) {
     for i in 0..1024 {
         let angle = i as f64 * 0.15f64;
         let mut o = orbit.clone();
-        let pos_before = orbit.get_position_at_angle(angle);
+        let pos_before = orbit.get_position_at_true_anomaly(angle);
         o.set_gravitational_parameter(
             o.get_gravitational_parameter() * random_mult(),
             crate::MuSetterMode::KeepPositionAtAngle(angle),
         );
-        let pos_after = orbit.get_position_at_angle(angle);
+        let pos_after = orbit.get_position_at_true_anomaly(angle);
 
         assert_almost_eq_vec3(
             pos_before,
@@ -979,14 +979,14 @@ fn _orbit_mu_setter_base_test(orbit: impl OrbitTrait + Clone) {
     for i in 0..1024 {
         let angle = i as f64 * 0.15f64;
         let mut o = orbit.clone();
-        let pos_before = orbit.get_position_at_angle(angle);
-        let vel_before = orbit.get_velocity_at_angle(angle);
+        let pos_before = orbit.get_position_at_true_anomaly(angle);
+        let vel_before = orbit.get_velocity_at_true_anomaly(angle);
         o.set_gravitational_parameter(
             orbit.get_gravitational_parameter() * random_mult(),
             crate::MuSetterMode::KeepPositionAndVelocityAtAngle(angle),
         );
-        let pos_after = orbit.get_position_at_angle(angle);
-        let vel_after = orbit.get_velocity_at_angle(angle);
+        let pos_after = orbit.get_position_at_true_anomaly(angle);
+        let vel_after = orbit.get_velocity_at_true_anomaly(angle);
         assert_almost_eq_vec3(
             pos_before,
             pos_after,
@@ -1543,9 +1543,9 @@ fn test_altitude() {
         for i in 0..ORBIT_POLL_ANGLES {
             let angle = (i as f64) * TAU / (ORBIT_POLL_ANGLES as f64);
 
-            let pos = orbit.get_position_at_angle(angle);
-            let flat_pos = orbit.get_flat_position_at_angle(angle);
-            let altitude = orbit.get_altitude_at_angle(angle);
+            let pos = orbit.get_position_at_true_anomaly(angle);
+            let flat_pos = orbit.get_flat_position_at_true_anomaly(angle);
+            let altitude = orbit.get_altitude_at_true_anomaly(angle);
 
             let pos_alt = (pos.x.powi(2) + pos.y.powi(2) + pos.z.powi(2)).sqrt();
 
