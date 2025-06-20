@@ -1,8 +1,6 @@
 use core::f64::NAN;
 use glam::{DVec2, DVec3};
 use keplerian_sim::{Orbit, OrbitTrait};
-use keplerian_sim::{Orbit, OrbitTrait};
-use std::fs;
 use std::{env::args, fs, process::exit};
 
 const DEFAULT_SIMULATION_TICKS: usize = 10_000;
@@ -29,7 +27,8 @@ fn get_sim_ticks() -> usize {
                     );
                     exit(1);
                 }
-            }
+            };
+            cur_val_is_ticks = false;
         }
     }
 
