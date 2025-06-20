@@ -103,22 +103,8 @@ pub struct Orbit {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 struct OrbitCachedCalculations {
-    /// The semi-major axis of the orbit, in meters.
-    semi_major_axis: f64,
-
-    /// The semi-minor axis of the orbit, in meters.
-    semi_minor_axis: f64,
-
-    /// The linear eccentricity of the orbit, in meters.
-    linear_eccentricity: f64,
-
     /// The transformation matrix to tilt the 2D planar orbit into 3D space.
     transformation_matrix: Matrix3x2,
-
-    /// A value based on the orbit's eccentricity, used to calculate
-    /// the true anomaly from the eccentric anomaly.  
-    /// <https://en.wikipedia.org/wiki/True_anomaly#From_the_eccentric_anomaly>
-    beta: f64,
 }
 // Initialization and cache management
 impl Orbit {
@@ -145,13 +131,7 @@ impl Orbit {
         mean_anomaly: f64,
         mu: f64,
     ) -> Orbit {
-        let cache = Self::get_cached_calculations(
-            eccentricity,
-            periapsis,
-            inclination,
-            arg_pe,
-            long_asc_node,
-        );
+        let cache = Self::get_cached_calculations(inclination, arg_pe, long_asc_node);
         Orbit {
             eccentricity,
             periapsis,
@@ -201,36 +181,27 @@ impl Orbit {
         )
     }
 
+    /// Updates the cached values in the orbit struct.
+    ///
+    /// Should only be called when the following things change:
+    /// 1. Inclination
+    /// 2. Argument of Periapsis
+    /// 3. Longitude of Ascending Node
     fn update_cache(&mut self) {
-        self.cache = Self::get_cached_calculations(
-            self.eccentricity,
-            self.periapsis,
-            self.inclination,
-            self.arg_pe,
-            self.long_asc_node,
-        );
+        self.cache =
+            Self::get_cached_calculations(self.inclination, self.arg_pe, self.long_asc_node);
     }
 
     fn get_cached_calculations(
-        eccentricity: f64,
-        periapsis: f64,
         inclination: f64,
         arg_pe: f64,
         long_asc_node: f64,
     ) -> OrbitCachedCalculations {
-        let semi_major_axis = periapsis / (1.0 - eccentricity);
-        let semi_minor_axis = semi_major_axis * (1.0 - eccentricity * eccentricity).abs().sqrt();
-        let linear_eccentricity = semi_major_axis * eccentricity;
         let transformation_matrix =
             Self::get_transformation_matrix(inclination, arg_pe, long_asc_node);
-        let beta = eccentricity / (1.0 + (1.0 - eccentricity * eccentricity).sqrt());
 
         OrbitCachedCalculations {
-            semi_major_axis,
-            semi_minor_axis,
-            linear_eccentricity,
             transformation_matrix,
-            beta,
         }
     }
 
@@ -257,18 +228,6 @@ impl Orbit {
 
 // The actual orbit position calculations
 impl OrbitTrait for Orbit {
-    fn get_semi_major_axis(&self) -> f64 {
-        self.cache.semi_major_axis
-    }
-
-    fn get_semi_minor_axis(&self) -> f64 {
-        self.cache.semi_minor_axis
-    }
-
-    fn get_linear_eccentricity(&self) -> f64 {
-        self.cache.linear_eccentricity
-    }
-
     fn set_apoapsis(&mut self, apoapsis: f64) -> Result<(), ApoapsisSetterError> {
         if apoapsis < 0.0 {
             Err(ApoapsisSetterError::ApoapsisNegative)
@@ -276,7 +235,6 @@ impl OrbitTrait for Orbit {
             Err(ApoapsisSetterError::ApoapsisLessThanPeriapsis)
         } else {
             self.eccentricity = (apoapsis - self.periapsis) / (apoapsis + self.periapsis);
-            self.update_cache();
 
             Ok(())
         }
@@ -288,6 +246,7 @@ impl OrbitTrait for Orbit {
             (apoapsis, self.periapsis) = (self.periapsis, apoapsis);
             self.arg_pe = (self.arg_pe + PI).rem_euclid(TAU);
             self.mean_anomaly = (self.mean_anomaly + PI).rem_euclid(TAU);
+            self.update_cache();
         }
 
         if apoapsis < 0.0 && apoapsis > -self.periapsis {
@@ -297,7 +256,6 @@ impl OrbitTrait for Orbit {
         } else {
             self.eccentricity = (apoapsis - self.periapsis) / (apoapsis + self.periapsis);
         }
-        self.update_cache();
     }
 
     fn get_transformation_matrix(&self) -> Matrix3x2 {
@@ -339,13 +297,13 @@ impl OrbitTrait for Orbit {
         self.mu
     }
 
+    #[inline]
     fn set_eccentricity(&mut self, value: f64) {
         self.eccentricity = value;
-        self.update_cache();
     }
+    #[inline]
     fn set_periapsis(&mut self, value: f64) {
         self.periapsis = value;
-        self.update_cache();
     }
     fn set_inclination(&mut self, value: f64) {
         self.inclination = value;
@@ -359,9 +317,9 @@ impl OrbitTrait for Orbit {
         self.long_asc_node = value;
         self.update_cache();
     }
+    #[inline]
     fn set_mean_anomaly_at_epoch(&mut self, value: f64) {
         self.mean_anomaly = value;
-        self.update_cache();
     }
 
     /// # Not Yet Implemented
