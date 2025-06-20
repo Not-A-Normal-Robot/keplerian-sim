@@ -110,7 +110,7 @@ const N_U32: u32 = 5;
 /// > No value of n was found to yield consistently better convergence properties than the
 /// > choice of n = 5 though specific cases were found where other choices would give
 /// > faster convergence.
-const N_F64: f64 = 5.0;
+const N_F64: f64 = N_U32 as f64;
 
 /// The maximum number of iterations for the numerical approach algorithms.
 ///
