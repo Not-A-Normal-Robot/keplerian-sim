@@ -51,7 +51,7 @@ fn assert_orbit_positions_3d(orbit: &impl OrbitTrait, tests: &[(&str, f64, DVec3
 
 fn assert_orbit_positions_2d(orbit: &impl OrbitTrait, tests: &[(&str, f64, DVec2)]) {
     for (what, angle, expected) in tests.iter() {
-        let pos = orbit.get_flat_position_at_true_anomaly(*angle);
+        let pos = orbit.get_pqw_position_at_true_anomaly(*angle);
         assert_almost_eq_vec2(pos, *expected, what);
     }
 }
@@ -71,7 +71,7 @@ fn poll_flat(orbit: &impl OrbitTrait) -> Vec<DVec2> {
 
     for i in 0..ORBIT_POLL_ANGLES {
         let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
-        vec.push(orbit.get_flat_position_at_true_anomaly(angle));
+        vec.push(orbit.get_pqw_position_at_true_anomaly(angle));
     }
 
     return vec;
@@ -81,7 +81,7 @@ fn poll_transform(orbit: &impl OrbitTrait) -> Vec<DVec3> {
 
     for i in 0..ORBIT_POLL_ANGLES {
         let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
-        vec.push(orbit.tilt_flat_position(DVec2::new(1.0 * angle.cos(), 1.0 * angle.sin())));
+        vec.push(orbit.transform_pqw_vector(DVec2::new(1.0 * angle.cos(), 1.0 * angle.sin())));
     }
 
     return vec;
@@ -107,7 +107,7 @@ fn poll_flat_vel(orbit: &impl OrbitTrait) -> Vec<DVec2> {
     (0..ORBIT_POLL_ANGLES)
         .into_iter()
         .map(|i| (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64))
-        .map(|t| orbit.get_flat_velocity_at_time(t))
+        .map(|t| orbit.get_pqw_velocity_at_time(t))
         .collect()
 }
 fn poll_vel(orbit: &impl OrbitTrait) -> Vec<DVec3> {
@@ -301,7 +301,7 @@ fn unit_orbit_transformation() {
     let tests = [(1.0, 1.0), (1.0, 0.0), (0.0, 1.0), (0.0, 0.0)];
 
     for point in tests {
-        let transformed = orbit.tilt_flat_position(DVec2::new(point.0, point.1));
+        let transformed = orbit.transform_pqw_vector(DVec2::new(point.0, point.1));
 
         assert_eq!(transformed.x, point.0);
         assert_eq!(transformed.y, point.1);
@@ -345,7 +345,7 @@ fn tilted_90deg() {
     ];
 
     for (what, point, expected) in tests.iter() {
-        let transformed = orbit.tilt_flat_position(DVec2::new(point.0, point.1));
+        let transformed = orbit.transform_pqw_vector(DVec2::new(point.0, point.1));
 
         assert_almost_eq_vec3(transformed, *expected, what);
     }
@@ -822,7 +822,7 @@ fn speed_velocity_base_test(orbit: &impl OrbitTrait, what: &str) {
         let t = (i as f64) * TAU / (ORBIT_POLL_ANGLES as f64);
 
         let speed = orbit.get_speed_at_time(t);
-        let flat_vel = orbit.get_flat_velocity_at_time(t);
+        let flat_vel = orbit.get_pqw_velocity_at_time(t);
         let vel = orbit.get_velocity_at_time(t);
 
         let flat_vel_mag = flat_vel.length();
@@ -1544,7 +1544,7 @@ fn test_altitude() {
             let angle = (i as f64) * TAU / (ORBIT_POLL_ANGLES as f64);
 
             let pos = orbit.get_position_at_true_anomaly(angle);
-            let flat_pos = orbit.get_flat_position_at_true_anomaly(angle);
+            let flat_pos = orbit.get_pqw_position_at_true_anomaly(angle);
             let altitude = orbit.get_altitude_at_true_anomaly(angle);
 
             let pos_alt = (pos.x.powi(2) + pos.y.powi(2) + pos.z.powi(2)).sqrt();

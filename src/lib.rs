@@ -124,7 +124,7 @@ const PI_SQUARED: f64 = PI * PI;
 /// This struct is used to store the transformation matrix
 /// for transforming a 2D vector into a 3D vector.
 ///
-/// Namely, it is used in the [`tilt_flat_position`][OrbitTrait::tilt_flat_position]
+/// Namely, it is used in the [`transform_pqw_vector`][OrbitTrait::transform_pqw_vector]
 /// method to tilt a 2D position into 3D, using the orbital parameters.
 ///
 /// Each element is named `eXY`, where `X` is the row and `Y` is the column.
@@ -1176,9 +1176,6 @@ pub trait OrbitTrait {
 
     /// Gets the 3D position at a given angle (true anomaly) in the orbit.
     ///
-    /// The angle is expressed in radians, and ranges from 0 to tau.  
-    /// Anything out of range will get wrapped around.
-    ///
     /// # Angle
     /// The angle is expressed in radians, and ranges from 0 to tau.  
     /// Anything out of range will get wrapped around.
@@ -1188,7 +1185,7 @@ pub trait OrbitTrait {
     /// [cached version of the orbit struct][crate::Orbit].  
     /// If you already know the altitude at the angle, you can
     /// rotate the altitude using the true anomaly, then tilt
-    /// it using the [`tilt_flat_position`][OrbitTrait::tilt_flat_position]
+    /// it using the [`transform_pqw_vector`][OrbitTrait::transform_pqw_vector]
     /// function instead.
     ///
     /// # Example
@@ -1207,7 +1204,25 @@ pub trait OrbitTrait {
     /// ```
     #[doc(alias = "get_position_at_angle")]
     fn get_position_at_true_anomaly(&self, angle: f64) -> DVec3 {
-        self.tilt_flat_position(self.get_flat_position_at_true_anomaly(angle))
+        self.transform_pqw_vector(self.get_pqw_position_at_true_anomaly(angle))
+    }
+
+    /// Gets the 3D position at a given eccentric anomaly in the orbit.
+    ///
+    /// # Performance
+    /// This function benefits significantly from being in the
+    /// [cached version of the orbit struct][crate::Orbit].  
+    /// This function is not too performant as it uses a few trigonometric
+    /// operations. It is recommended to cache this value if you can.
+    ///
+    /// Alternatively, if you already know the true anomaly, you can use the
+    /// [`get_position_at_true_anomaly`][OrbitTrait::get_position_at_true_anomaly]
+    /// function instead.  
+    /// Or, if you only need the altitude, use the
+    /// [`get_altitude_at_eccentric_anomaly`][OrbitTrait::get_altitude_at_eccentric_anomaly]
+    /// function instead.
+    fn get_position_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> DVec3 {
+        self.transform_pqw_vector(self.get_pqw_position_at_eccentric_anomaly(eccentric_anomaly))
     }
 
     /// Gets the speed at a given angle (true anomaly) in the orbit.
@@ -1351,13 +1366,19 @@ pub trait OrbitTrait {
         )
     }
 
-    /// Gets the velocity at a given angle (true anomaly) in the orbit as if
-    /// it had an inclination and longitude of ascending node of 0.
+    /// Gets the velocity at a given angle (true anomaly) in the orbit
+    /// in the [perifocal coordinate system](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
     ///
-    /// # Flat
-    /// This ignores "orbital tilting" parameters, namely the inclination,
-    /// the argument of periapsis, and the longitude of
-    /// ascending node.
+    /// # Perifocal Coordinate System
+    /// This function returns a vector in the perifocal coordinate (PQW) system, where
+    /// the first element points to the periapsis, and the second element has a
+    /// true anomaly 90 degrees past the periapsis. The third element points perpendicular
+    /// to the orbital plane, and is always zero in this case, and so it is omitted.
+    ///
+    /// Learn more about the PQW system: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
+    ///
+    /// If you want to get the vector in the regular coordinate system instead, use
+    /// [`get_velocity_at_true_anomaly`][OrbitTrait::get_velocity_at_true_anomaly] instead.
     ///
     /// # Performance
     /// The velocity is derived from the eccentric anomaly, which uses numerical
@@ -1367,7 +1388,7 @@ pub trait OrbitTrait {
     /// Alternatively, if you only want to know the speed, use
     /// [`get_speed_at_true_anomaly`][OrbitTrait::get_speed_at_true_anomaly] instead.  
     /// And if you already know the eccentric anomaly, use
-    /// [`get_flat_velocity_at_eccentric_anomaly`][OrbitTrait::get_flat_velocity_at_eccentric_anomaly]
+    /// [`get_pqw_velocity_at_eccentric_anomaly`][OrbitTrait::get_pqw_velocity_at_eccentric_anomaly]
     /// instead.
     /// These functions do not require numerical methods and therefore are a lot faster.
     ///
@@ -1383,8 +1404,8 @@ pub trait OrbitTrait {
     /// orbit.set_periapsis(100.0);
     /// orbit.set_eccentricity(0.5);
     ///
-    /// let vel_periapsis = orbit.get_flat_velocity_at_true_anomaly(0.0);
-    /// let vel_apoapsis = orbit.get_flat_velocity_at_true_anomaly(std::f64::consts::PI);
+    /// let vel_periapsis = orbit.get_pqw_velocity_at_true_anomaly(0.0);
+    /// let vel_apoapsis = orbit.get_pqw_velocity_at_true_anomaly(std::f64::consts::PI);
     ///
     /// let speed_periapsis = vel_periapsis.length();
     /// let speed_apoapsis = vel_apoapsis.length();
@@ -1397,19 +1418,26 @@ pub trait OrbitTrait {
     /// Speed tells you how fast something is moving,
     /// while velocity tells you how fast *and in what direction* it's moving in.
     #[doc(alias = "get_flat_velocity_at_angle")]
-    fn get_flat_velocity_at_true_anomaly(&self, angle: f64) -> DVec2 {
+    #[doc(alias = "get_pqw_velocity_at_angle")]
+    fn get_pqw_velocity_at_true_anomaly(&self, angle: f64) -> DVec2 {
         let eccentric_anomaly = self.get_eccentric_anomaly_at_true_anomaly(angle);
 
-        self.get_flat_velocity_at_eccentric_anomaly(eccentric_anomaly)
+        self.get_pqw_velocity_at_eccentric_anomaly(eccentric_anomaly)
     }
 
-    /// Gets the velocity at a given eccentric anomaly in the orbit as if
-    /// it had an inclination and longitude of ascending node of 0.
+    /// Gets the velocity at a given eccentric anomaly in the orbit
+    /// in the [perifocal coordinate system](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
     ///
-    /// # Flat
-    /// This ignores "orbital tilting" parameters, namely the inclination,
-    /// the argument of periapsis, and the longitude of
-    /// ascending node.
+    /// # Perifocal Coordinate System
+    /// This function returns a vector in the perifocal coordinate (PQW) system, where
+    /// the first element points to the periapsis, and the second element has a
+    /// true anomaly 90 degrees past the periapsis. The third element points perpendicular
+    /// to the orbital plane, and is always zero in this case, and so it is omitted.
+    ///
+    /// Learn more about the PQW system: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
+    ///
+    /// If you want to get the vector in the regular coordinate system instead, use
+    /// [`get_velocity_at_eccentric_anomaly`][OrbitTrait::get_velocity_at_eccentric_anomaly] instead.
     ///
     /// # Speed vs. Velocity
     /// Speed is not to be confused with velocity.  
@@ -1423,7 +1451,8 @@ pub trait OrbitTrait {
     /// If you want to just get the speed, consider using the
     /// [`get_speed_at_eccentric_anomaly`][OrbitTrait::get_speed_at_eccentric_anomaly]
     /// function instead.
-    fn get_flat_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> DVec2 {
+    #[doc(alias = "get_flat_velocity_at_eccentric_anomaly")]
+    fn get_pqw_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> DVec2 {
         // TODO: PARABOLA SUPPORT: This does not play well with parabolic trajectories.
         if self.get_eccentricity() < 1.0 {
             // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
@@ -1460,13 +1489,19 @@ pub trait OrbitTrait {
         }
     }
 
-    /// Gets the velocity at a given time in the orbit if
-    /// it had an inclination and longitude of ascending node of 0.
+    /// Gets the velocity at a given time in the orbit
+    /// in the [perifocal coordinate system](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
     ///
-    /// # Flat
-    /// This ignores "orbital tilting" parameters, namely the inclination,
-    /// the argument of periapsis, and the longitude of
-    /// ascending node.
+    /// # Perifocal Coordinate System
+    /// This function returns a vector in the perifocal coordinate (PQW) system, where
+    /// the first element points to the periapsis, and the second element has a
+    /// true anomaly 90 degrees past the periapsis. The third element points perpendicular
+    /// to the orbital plane, and is always zero in this case, and so it is omitted.
+    ///
+    /// Learn more about the PQW system: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
+    ///
+    /// If you want to get the vector in the regular coordinate system instead, use
+    /// [`get_velocity_at_time`][OrbitTrait::get_velocity_at_time] instead.
     ///
     /// # Speed vs. Velocity
     /// Speed is not to be confused with velocity.  
@@ -1483,21 +1518,29 @@ pub trait OrbitTrait {
     ///
     /// Alternatively, if you already know the eccentric anomaly or the true anomaly,
     /// then you should use the
-    /// [`get_flat_velocity_at_eccentric_anomaly`][OrbitTrait::get_flat_velocity_at_eccentric_anomaly]
+    /// [`get_pqw_velocity_at_eccentric_anomaly`][OrbitTrait::get_pqw_velocity_at_eccentric_anomaly]
     /// and
-    /// [`get_flat_velocity_at_true_anomaly`][OrbitTrait::get_flat_velocity_at_true_anomaly]
+    /// [`get_pqw_velocity_at_true_anomaly`][OrbitTrait::get_pqw_velocity_at_true_anomaly]
     /// functions instead.  
     /// Those do not use numerical methods and therefore are a lot faster.
-    fn get_flat_velocity_at_time(&self, t: f64) -> DVec2 {
-        self.get_flat_velocity_at_eccentric_anomaly(self.get_eccentric_anomaly_at_time(t))
+    #[doc(alias = "get_flat_velocity_at_time")]
+    fn get_pqw_velocity_at_time(&self, t: f64) -> DVec2 {
+        self.get_pqw_velocity_at_eccentric_anomaly(self.get_eccentric_anomaly_at_time(t))
     }
 
-    /// Gets the 2D position at a given angle (true anomaly) in the orbit.
+    /// Gets the position at a given angle (true anomaly) in the orbit
+    /// in the [perifocal coordinate system](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
     ///
-    /// # Flat
-    /// This ignores "orbital tilting" parameters, namely the inclination,
-    /// the argument of periapsis, and the longitude of
-    /// ascending node.
+    /// # Perifocal Coordinate System
+    /// This function returns a vector in the perifocal coordinate (PQW) system, where
+    /// the first element points to the periapsis, and the second element has a
+    /// true anomaly 90 degrees past the periapsis. The third element points perpendicular
+    /// to the orbital plane, and is always zero in this case, and so it is omitted.
+    ///
+    /// Learn more about the PQW system: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
+    ///
+    /// If you want to get the vector in the regular coordinate system instead, use
+    /// [`get_position_at_true_anomaly`][OrbitTrait::get_position_at_true_anomaly] instead.
     ///
     /// # Angle
     /// The angle is expressed in radians, and ranges from 0 to tau.  
@@ -1520,24 +1563,32 @@ pub trait OrbitTrait {
     /// orbit.set_periapsis(100.0);
     /// orbit.set_eccentricity(0.0);
     ///
-    /// let pos = orbit.get_flat_position_at_true_anomaly(0.0);
+    /// let pos = orbit.get_pqw_position_at_true_anomaly(0.0);
     ///
     /// assert_eq!(pos, DVec2::new(100.0, 0.0));
     /// ```
     #[doc(alias = "get_flat_position_at_angle")]
-    fn get_flat_position_at_true_anomaly(&self, angle: f64) -> DVec2 {
+    #[doc(alias = "get_pqw_position_at_angle")]
+    fn get_pqw_position_at_true_anomaly(&self, angle: f64) -> DVec2 {
         let alt = self.get_altitude_at_true_anomaly(angle);
         let (sin, cos) = angle.sin_cos();
         DVec2::new(alt * cos, alt * sin)
     }
 
     // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
-    /// Gets the 2D position at a given time in the orbit.
+    /// Gets the position at a given time in the orbit
+    /// in the [perifocal coordinate system](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
     ///
-    /// # Flat
-    /// This ignores "orbital tilting" parameters, namely the inclination,
-    /// the argument of periapsis, and the longitude of
-    /// ascending node.
+    /// # Perifocal Coordinate System
+    /// This function returns a vector in the perifocal coordinate (PQW) system, where
+    /// the first element points to the periapsis, and the second element has a
+    /// true anomaly 90 degrees past the periapsis. The third element points perpendicular
+    /// to the orbital plane, and is always zero in this case, and so it is omitted.
+    ///
+    /// Learn more about the PQW system: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
+    ///
+    /// If you want to get the vector in the regular coordinate system instead, use
+    /// [`get_position_at_time`][OrbitTrait::get_position_at_time] instead.
     ///
     /// # Time
     /// The time is expressed in seconds.
@@ -1553,22 +1604,30 @@ pub trait OrbitTrait {
     ///
     /// Alternatively, if you already know the eccentric anomaly or the true anomaly,
     /// consider using the
-    /// [`get_flat_position_at_eccentric_anomaly`][OrbitTrait::get_flat_position_at_eccentric_anomaly]
+    /// [`get_pqw_position_at_eccentric_anomaly`][OrbitTrait::get_pqw_position_at_eccentric_anomaly]
     /// and
-    /// [`get_flat_position_at_true_anomaly`][OrbitTrait::get_flat_position_at_true_anomaly]
+    /// [`get_pqw_position_at_true_anomaly`][OrbitTrait::get_pqw_position_at_true_anomaly]
     /// functions instead.
     /// Those do not use numerical methods and therefore are a lot faster.
-    fn get_flat_position_at_time(&self, t: f64) -> DVec2 {
-        self.get_flat_position_at_true_anomaly(self.get_true_anomaly_at_time(t))
+    #[doc(alias = "get_flat_position_at_time")]
+    fn get_pqw_position_at_time(&self, t: f64) -> DVec2 {
+        self.get_pqw_position_at_true_anomaly(self.get_true_anomaly_at_time(t))
     }
 
     // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
-    /// Gets the 2D position at a given eccentric anomaly in the orbit.
+    /// Gets the position at a given eccentric anomaly in the orbit
+    /// in the [perifocal coordinate system](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
     ///
-    /// # Flat
-    /// This ignores "orbital tilting" parameters, namely the inclination,
-    /// the argument of periapsis, and the longitude of
-    /// ascending node.
+    /// # Perifocal Coordinate System
+    /// This function returns a vector in the perifocal coordinate (PQW) system, where
+    /// the first element points to the periapsis, and the second element has a
+    /// true anomaly 90 degrees past the periapsis. The third element points perpendicular
+    /// to the orbital plane, and is always zero in this case, and so it is omitted.
+    ///
+    /// Learn more about the PQW system: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
+    ///
+    /// If you want to get the vector in the regular coordinate system instead, use
+    /// [`get_position_at_eccentric_anomaly`][OrbitTrait::get_position_at_eccentric_anomaly] instead.
     ///
     /// # Time
     /// The time is expressed in seconds.
@@ -1584,10 +1643,11 @@ pub trait OrbitTrait {
     ///
     /// Alternatively, if you already know the true anomaly,
     /// consider using the
-    /// [`get_flat_position_at_true_anomaly`][OrbitTrait::get_flat_position_at_true_anomaly]
+    /// [`get_pqw_position_at_true_anomaly`][OrbitTrait::get_pqw_position_at_true_anomaly]
     /// function instead.
-    fn get_flat_position_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> DVec2 {
-        self.get_flat_position_at_true_anomaly(
+    #[doc(alias = "get_flat_position_at_eccentric_anomaly")]
+    fn get_pqw_position_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> DVec2 {
+        self.get_pqw_position_at_true_anomaly(
             self.get_true_anomaly_at_eccentric_anomaly(eccentric_anomaly),
         )
     }
@@ -1633,7 +1693,7 @@ pub trait OrbitTrait {
     /// while velocity tells you how fast *and in what direction* it's moving in.
     #[doc(alias = "get_velocity_at_angle")]
     fn get_velocity_at_true_anomaly(&self, angle: f64) -> DVec3 {
-        self.tilt_flat_position(self.get_flat_velocity_at_true_anomaly(angle))
+        self.transform_pqw_vector(self.get_pqw_velocity_at_true_anomaly(angle))
     }
 
     /// Gets the velocity at a given eccentric anomaly in the orbit.
@@ -1667,7 +1727,7 @@ pub trait OrbitTrait {
     /// This function benefits significantly from being in the
     /// [cached version of the orbit struct][crate::Orbit].
     fn get_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> DVec3 {
-        self.tilt_flat_position(self.get_flat_velocity_at_eccentric_anomaly(eccentric_anomaly))
+        self.transform_pqw_vector(self.get_pqw_velocity_at_eccentric_anomaly(eccentric_anomaly))
     }
 
     /// Gets the velocity at a given time in the orbit.
@@ -1795,23 +1855,10 @@ pub trait OrbitTrait {
         (semi_latus_rectum / (1.0 + self.get_eccentricity() * cos_true_anomaly)).abs()
     }
 
-    /// Gets the 3D position at a given time in the orbit.
-    ///
-    /// This involves calculating the true anomaly at a given time,
-    /// and so is not very performant.  
-    /// It is recommended to cache this value when possible.
-    ///
-    /// For closed orbits (with an eccentricity less than 1), the
-    /// `t` (time) value ranges from 0 to 1.  
-    /// Anything out of range will get wrapped around.
-    ///
-    /// For open orbits (with an eccentricity of at least 1), the
-    /// `t` (time) value is unbounded.  
-    /// Gets the altitude of the body from its parent at a given eccentric anomaly in the orbit.
+    /// Gets the altitude at a given eccentric anomaly in the orbit.
     ///
     /// # Performance
-    /// This function is not too performant as it uses a few trigonometric
-    /// operations.  
+    /// This function is not too performant as it uses a few trigonometric operations.
     /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you already know the true anomaly, use the
@@ -1875,18 +1922,8 @@ pub trait OrbitTrait {
     /// and so is not very performant.  
     /// It is recommended to cache this value when possible.
     ///
-    /// This ignores "orbital tilting" parameters, namely the inclination
-    /// and longitude of ascending node.
-    ///
-    /// For closed orbits (with an eccentricity less than 1), the
-    /// `t` (time) value ranges from 0 to 1.  
-    /// Anything out of range will get wrapped around.
-    ///
-    /// For open orbits (with an eccentricity of at least 1), the
-    /// `t` (time) value is unbounded.  
-    /// Note that due to floating-point imprecision, values of extreme
-    /// magnitude may not be accurate.
-    ///
+    /// This function benefits significantly from being in the
+    /// [cached version of the orbit struct][crate::Orbit].  
     ///
     /// Alternatively, if you already know the true anomaly,
     /// consider using the
@@ -1901,18 +1938,22 @@ pub trait OrbitTrait {
         self.get_position_at_true_anomaly(self.get_true_anomaly_at_time(t))
     }
 
-    /// Tilts a 2D position into 3D, using the orbital parameters.
+    /// Transforms a position from the perifocal coordinate (PQW) system into
+    /// 3D, using the orbital parameters.
     ///
-    /// This uses the "orbital tilting" parameters, namely the inclination
-    /// and longitude of ascending node, to tilt that position into the same
-    /// plane that the orbit resides in.
+    /// # Perifocal Coordinate (PQW) System
+    /// The perifocal coordinate (PQW) system is a frame of reference using
+    /// the basis vectors p-hat, q-hat, and w-hat, where p-hat points to the
+    /// periapsis, q-hat has a true anomaly 90 degrees more than p-hat, and
+    /// w-hat points perpendicular to the orbital plane.
     ///
+    /// Learn more: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
     ///
     /// # Performance
     /// This function performs 10x faster in the cached version of the
     /// [`Orbit`] struct, as it doesn't need to recalculate the transformation
     /// matrix needed to transform 2D vector.
-    fn tilt_flat_position(&self, position: DVec2) -> DVec3 {
+    fn transform_pqw_vector(&self, position: DVec2) -> DVec3 {
         self.get_transformation_matrix().dot_vec(position)
     }
 

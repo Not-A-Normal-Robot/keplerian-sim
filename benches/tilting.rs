@@ -8,7 +8,7 @@ const POLL_ANGLES: usize = 1024;
 #[inline(always)]
 fn poll_tilt(orbit: &impl OrbitTrait, points: &[DVec2]) {
     for &point in points {
-        black_box(orbit.tilt_flat_position(black_box(point)));
+        black_box(orbit.transform_pqw_vector(black_box(point)));
     }
 }
 
