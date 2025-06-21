@@ -5,7 +5,7 @@
 //! that orbits a planet, dwarf planet, or small Solar System body
 //! (or sometimes another natural satellite).
 //!
-//! \- [Wikipedia](https://en.wikipedia.org/wiki/Natural_satellite)
+//! — [Wikipedia](https://en.wikipedia.org/wiki/Natural_satellite)
 
 use crate::{Body, Orbit};
 

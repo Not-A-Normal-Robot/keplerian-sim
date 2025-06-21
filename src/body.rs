@@ -47,20 +47,6 @@ impl Body {
     pub fn release_from_orbit(&mut self) {
         self.orbit = None;
     }
-
-    // TODO: This should be part of the OrbitTrait
-    /// Get the amount of time it takes for the body to complete one orbit,
-    /// given a gravitational constant.
-    pub fn get_orbital_period(&self, g: f64) -> Option<f64> {
-        let orbit = self.orbit.as_ref()?;
-        let mu = g * self.mass;
-
-        Some(if orbit.get_eccentricity() >= 1.0 {
-            f64::INFINITY
-        } else {
-            TAU * (orbit.get_semi_major_axis() / mu).sqrt()
-        })
-    }
 }
 
 impl Default for Body {

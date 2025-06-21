@@ -91,7 +91,7 @@ fn poll_eccentric_anomaly(orbit: &impl OrbitTrait) -> Vec<f64> {
 
     for i in 0..ORBIT_POLL_ANGLES {
         let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
-        vec.push(orbit.get_eccentric_anomaly(angle));
+        vec.push(orbit.get_eccentric_anomaly_at_mean_anomaly(angle));
     }
 
     return vec;
@@ -519,7 +519,7 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
 
             for i in 0..ORBIT_POLL_ANGLES {
                 let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
-                let true_anomaly = orbit.get_true_anomaly(angle);
+                let true_anomaly = orbit.get_true_anomaly_at_mean_anomaly(angle);
                 vec.push(true_anomaly);
             }
 
@@ -530,7 +530,7 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
 
             for i in 0..ORBIT_POLL_ANGLES {
                 let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
-                let true_anomaly = compact_orbit.get_true_anomaly(angle);
+                let true_anomaly = compact_orbit.get_true_anomaly_at_mean_anomaly(angle);
                 vec.push(true_anomaly);
             }
 
@@ -541,7 +541,7 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
 
             for i in 0..ORBIT_POLL_ANGLES {
                 let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
-                vec.push(reexpanded_orbit.get_true_anomaly(angle));
+                vec.push(reexpanded_orbit.get_true_anomaly_at_mean_anomaly(angle));
             }
 
             vec
@@ -1316,7 +1316,7 @@ fn test_hyperbolic_eccentric_anomaly() {
 
             let angle = 4.0 * angle.powi(3); // Test a wider range of angles
 
-            let ecc_anom = orbit.get_eccentric_anomaly(angle);
+            let ecc_anom = orbit.get_eccentric_anomaly_at_mean_anomaly(angle);
 
             let expected = slowly_get_real_hyperbolic_eccentric_anomaly(orbit, angle);
 
@@ -1619,7 +1619,7 @@ fn test_velocity() {
         naive_speed_correlation_base_test(&orbit, what);
     }
 
-    // TODO: POST-PARABOLA SUPPORT: Change to all-random instead of just nonparabolic
+    // TODO: POST-PARABOLIC SUPPORT: Change to all-random instead of just nonparabolic
     for mut orbit in random_nonparabolic_iter(128) {
         orbit.set_gravitational_parameter(
             100.0 / orbit.get_semi_major_axis().abs(),

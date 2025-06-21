@@ -181,21 +181,13 @@ impl Universe {
         self.bodies.get_mut(&index).map(|wrapper| &mut wrapper.body)
     }
 
-    /// Gets an immutable reference to a body in the unvierse.
+    /// Gets an immutable reference to a body in the universe.
     pub fn get_body(&self, index: Id) -> Option<&Body> {
         self.bodies.get(&index).map(|wrapper| &wrapper.body)
     }
 
-    /// Gets the index of a body with a given name.
-    ///
-    ///
+    /// Gets the first index of a body with a given name, if any.
     pub fn get_body_index_with_name(&self, name: &str) -> Option<Id> {
-        // for (i, wrapper) in self.bodies.iter() {
-        //     if wrapper.body.name == name {
-        //         return Some(i);
-        //     }
-        // }
-        // return None;
         self.bodies
             .iter()
             .find(|(_, w)| w.body.name == name)

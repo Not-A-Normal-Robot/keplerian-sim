@@ -475,31 +475,28 @@ pub trait OrbitTrait {
     /// ```
     fn get_transformation_matrix(&self) -> Matrix3x2;
 
+    // TODO: POST-PARABOLIC SUPPORT: Add note about parabolic eccentric anomaly (?), remove parabolic support sections
     /// Gets the eccentric anomaly at a given mean anomaly in the orbit.
     ///
     /// When the orbit is open (has an eccentricity of at least 1),
     /// the [hyperbolic eccentric anomaly](https://space.stackexchange.com/questions/27602/what-is-hyperbolic-eccentric-anomaly-f)
     /// would be returned instead.
     ///
-    /// The eccentric anomaly is an angular parameter that defines the position
-    /// of a body that is moving along an elliptic Kepler orbit.
-    ///
-    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Eccentric_anomaly)
+    /// # Parabolic Support
+    /// This function doesn't yet support parabolic trajectories. It may return `NaN`s
+    /// or nonsensical values.
     ///
     /// # Performance
     /// The method to get the eccentric anomaly from the mean anomaly
     /// uses numerical approach methods, and so it is not performant.  
     /// It is recommended to cache this value if you can.
     ///
-    /// When the orbit is open (has an eccentricity of at least 1),
-    /// the [hyperbolic eccentric anomaly](https://space.stackexchange.com/questions/27602/what-is-hyperbolic-eccentric-anomaly-f)
-    /// would be returned instead.
-    ///
     /// The eccentric anomaly is an angular parameter that defines the position
     /// of a body that is moving along an elliptic Kepler orbit.
     ///
-    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Eccentric_anomaly)
-    fn get_eccentric_anomaly(&self, mean_anomaly: f64) -> f64 {
+    /// — [Wikipedia](https://en.wikipedia.org/wiki/Eccentric_anomaly)
+    fn get_eccentric_anomaly_at_mean_anomaly(&self, mean_anomaly: f64) -> f64 {
+        // TODO: PARABOLIC SUPPORT: This function doesn't consider parabolic support yet.
         if self.get_eccentricity() < 1.0 {
             self.get_eccentric_anomaly_elliptic(mean_anomaly)
         } else {
@@ -513,6 +510,11 @@ pub trait OrbitTrait {
     /// This function uses plenty of floating-point operations, including
     /// divisions, natural logarithms, squareroots, and cuberoots, and thus
     /// it is not very performant.
+    ///
+    /// # Unchecked Operation
+    /// This function does not check whether or not the orbit is hyperbolic. If
+    /// this function is called on a non-hyperbolic orbit (i.e., elliptic or parabolic),
+    /// invalid values may be returned.
     ///
     /// # Approximate Guess
     /// This function returns a "good" initial guess for the hyperbolic eccentric anomaly.  
@@ -863,7 +865,11 @@ pub trait OrbitTrait {
     /// The eccentric anomaly is an angular parameter that defines the position
     /// of a body that is moving along an elliptic Kepler orbit.
     ///
-    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Eccentric_anomaly)
+    /// — [Wikipedia](https://en.wikipedia.org/wiki/Eccentric_anomaly)
+    ///
+    /// # Parabolic Support
+    /// This function doesn't support parabolic trajectories yet.  
+    /// `NaN`s or nonsensical values may be returned.
     ///
     /// # Performance
     /// The method to get the eccentric anomaly from the true anomaly
@@ -873,7 +879,7 @@ pub trait OrbitTrait {
     /// It is still recommended to cache this value if you can.
     #[doc(alias = "get_eccentric_anomaly_at_angle")]
     fn get_eccentric_anomaly_at_true_anomaly(&self, true_anomaly: f64) -> f64 {
-        // TODO: PARABOLA SUPPORT: This does not play well with parabolic trajectories.
+        // TODO: PARABOLIC SUPPORT: This does not play well with parabolic trajectories.
         // Implement inverse of Barker's Equation for parabolas.
         let e = self.get_eccentricity();
         let true_anomaly = true_anomaly.rem_euclid(TAU);
@@ -919,7 +925,7 @@ pub trait OrbitTrait {
     /// The eccentric anomaly is an angular parameter that defines the position
     /// of a body that is moving along an elliptic Kepler orbit.
     ///
-    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Eccentric_anomaly)
+    /// — [Wikipedia](https://en.wikipedia.org/wiki/Eccentric_anomaly)
     ///
     /// # Time
     /// The time is expressed in seconds.
@@ -929,7 +935,7 @@ pub trait OrbitTrait {
     /// uses numerical approach methods, and so it is not performant.  
     /// It is recommended to cache this value if you can.
     fn get_eccentric_anomaly_at_time(&self, t: f64) -> f64 {
-        self.get_eccentric_anomaly(self.get_mean_anomaly_at_time(t))
+        self.get_eccentric_anomaly_at_mean_anomaly(self.get_mean_anomaly_at_time(t))
     }
 
     /// Gets the true anomaly at a given eccentric anomaly in the orbit.
@@ -944,7 +950,7 @@ pub trait OrbitTrait {
     /// and the current position of the body, as seen from the main focus
     /// of the ellipse.
     ///
-    /// \- [Wikipedia](https://en.wikipedia.org/wiki/True_anomaly)
+    /// — [Wikipedia](https://en.wikipedia.org/wiki/True_anomaly)
     ///
     /// # Performance  
     /// This function is faster than the function which takes mean anomaly as input,
@@ -986,7 +992,7 @@ pub trait OrbitTrait {
     /// and the current position of the body, as seen from the main focus
     /// of the ellipse.
     ///
-    /// \- [Wikipedia](https://en.wikipedia.org/wiki/True_anomaly)
+    /// — [Wikipedia](https://en.wikipedia.org/wiki/True_anomaly)
     ///
     /// # Performance
     /// The true anomaly is derived from the eccentric anomaly, which
@@ -996,8 +1002,10 @@ pub trait OrbitTrait {
     /// Alternatively, if you already know the eccentric anomaly, you should use
     /// [`get_true_anomaly_at_eccentric_anomaly`][Self::get_true_anomaly_at_eccentric_anomaly]
     /// instead.
-    fn get_true_anomaly(&self, mean_anomaly: f64) -> f64 {
-        self.get_true_anomaly_at_eccentric_anomaly(self.get_eccentric_anomaly(mean_anomaly))
+    fn get_true_anomaly_at_mean_anomaly(&self, mean_anomaly: f64) -> f64 {
+        self.get_true_anomaly_at_eccentric_anomaly(
+            self.get_eccentric_anomaly_at_mean_anomaly(mean_anomaly),
+        )
     }
 
     /// Gets the true anomaly at a given time in the orbit.
@@ -1006,7 +1014,7 @@ pub trait OrbitTrait {
     /// and the current position of the body, as seen from the main focus
     /// of the ellipse.
     ///
-    /// \- [Wikipedia](https://en.wikipedia.org/wiki/True_anomaly)
+    /// — [Wikipedia](https://en.wikipedia.org/wiki/True_anomaly)
     ///
     /// This function returns +/- pi for parabolic orbits due to how the equation works,
     /// and so **may result in infinities when combined with other functions**.
@@ -1027,7 +1035,7 @@ pub trait OrbitTrait {
     /// [`get_true_anomaly`][Self::get_true_anomaly] instead.  
     /// It won't help performance much, but it's not zero.
     fn get_true_anomaly_at_time(&self, t: f64) -> f64 {
-        self.get_true_anomaly(self.get_mean_anomaly_at_time(t))
+        self.get_true_anomaly_at_mean_anomaly(self.get_mean_anomaly_at_time(t))
     }
 
     /// Gets the mean anomaly at a given time in the orbit.
@@ -1037,7 +1045,7 @@ pub trait OrbitTrait {
     /// expressed as an angle which can be used in calculating the position
     /// of that body in the classical two-body problem.
     ///
-    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
+    /// — [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
     ///
     /// # Time
     /// The time is expressed in seconds.
@@ -1057,17 +1065,21 @@ pub trait OrbitTrait {
     /// expressed as an angle which can be used in calculating the position
     /// of that body in the classical two-body problem.
     ///
-    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
+    /// — [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
+    ///
+    /// # Parabolic Support
+    /// This function doesn't consider parabolic trajectories yet.  
+    /// `NaN`s or nonsensical values may be returned.
     ///
     /// # Performance
     /// This function is a wrapper around
-    /// [`get_mean_anomaly_at_elliptic_eccentric_anomaly`][Self::get_mean_anomaly_at_elliptic_eccentric_anomaly]
+    /// [`get_mean_anomaly_at_elliptic_eccentric_anomaly`][OrbitTrait::get_mean_anomaly_at_elliptic_eccentric_anomaly]
     /// and
-    /// [`get_mean_anomaly_at_hyperbolic_eccentric_anomaly`][Self::get_mean_anomaly_at_hyperbolic_eccentric_anomaly].  
+    /// [`get_mean_anomaly_at_hyperbolic_eccentric_anomaly`][OrbitTrait::get_mean_anomaly_at_hyperbolic_eccentric_anomaly].  
     /// It does some trigonometry, but if you know `sin(eccentric_anomaly)` or `sinh(eccentric_anomaly)`
     /// beforehand, this can be skipped by directly using those inner functions.
     fn get_mean_anomaly_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> f64 {
-        // TODO: PARABOLA SUPPORT: This function doesn't consider parabolas yet.
+        // TODO: PARABOLIC SUPPORT: This function doesn't consider parabolas yet.
         if self.get_eccentricity() < 1.0 {
             self.get_mean_anomaly_at_elliptic_eccentric_anomaly(
                 eccentric_anomaly,
@@ -1089,7 +1101,7 @@ pub trait OrbitTrait {
     /// expressed as an angle which can be used in calculating the position
     /// of that body in the classical two-body problem.
     ///
-    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
+    /// — [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
     ///
     /// # Unchecked Operation
     /// This function does no checks on the validity of the value given
@@ -1123,7 +1135,7 @@ pub trait OrbitTrait {
     /// expressed as an angle which can be used in calculating the position
     /// of that body in the classical two-body problem.
     ///
-    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
+    /// — [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
     ///
     /// # Unchecked Operation
     /// This function does no checks on the validity of the value given
@@ -1156,7 +1168,7 @@ pub trait OrbitTrait {
     /// expressed as an angle which can be used in calculating the position
     /// of that body in the classical two-body problem.
     ///
-    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
+    /// — [Wikipedia](https://en.wikipedia.org/wiki/Mean_anomaly)
     ///
     /// # Performance
     /// The method to get the eccentric anomaly from the true anomaly
@@ -1331,7 +1343,7 @@ pub trait OrbitTrait {
     /// and
     /// [`get_speed_at_true_anomaly`][OrbitTrait::get_speed_at_true_anomaly]
     /// functions instead.  
-    /// Those does not use numerical methods and therefore are a lot faster.
+    /// Those do not use numerical methods and therefore are a lot faster.
     ///
     /// # Speed vs. Velocity
     /// Speed is not to be confused with velocity.  
@@ -1444,6 +1456,10 @@ pub trait OrbitTrait {
     /// Speed tells you how fast something is moving,
     /// while velocity tells you how fast *and in what direction* it's moving in.
     ///
+    /// # Parabolic Support
+    /// This function doesn't consider parabolic trajectories yet.  
+    /// `NaN`s or parabolic trajectories may be returned.
+    ///
     /// # Performance
     /// This function is not too performant as it uses some trigonometric
     /// operations.  
@@ -1453,7 +1469,7 @@ pub trait OrbitTrait {
     /// function instead.
     #[doc(alias = "get_flat_velocity_at_eccentric_anomaly")]
     fn get_pqw_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> DVec2 {
-        // TODO: PARABOLA SUPPORT: This does not play well with parabolic trajectories.
+        // TODO: PARABOLIC SUPPORT: This does not play well with parabolic trajectories.
         if self.get_eccentricity() < 1.0 {
             // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
             // Equation 8:
@@ -2263,6 +2279,7 @@ pub trait OrbitTrait {
     /// gravitational constant G times the mass of the parent body M.
     ///
     /// In other words, mu = GM.
+    #[doc(alias = "get_mu")]
     fn get_gravitational_parameter(&self) -> f64;
 
     /// Sets the gravitational parameter of the parent body.
@@ -2271,7 +2288,25 @@ pub trait OrbitTrait {
     /// gravitational constant G times the mass of the parent body M.
     ///
     /// In other words, mu = GM.
+    #[doc(alias = "set_mu")]
     fn set_gravitational_parameter(&mut self, gravitational_parameter: f64, mode: MuSetterMode);
+
+    /// Gets the time it takes to complete one revolution of the orbit.
+    ///
+    /// This function returns infinite values for parabolic trajectories and
+    /// NaN for hyperbolic trajectories.
+    ///
+    /// # Time
+    /// The time is measured in seconds.
+    ///
+    /// # Performance
+    /// This function is performant and should not be the cause of any
+    /// performance issues.
+    fn get_orbital_period(&self) -> f64 {
+        // T = 2pi * sqrt(a^3 / GM)
+        // https://en.wikipedia.org/wiki/Orbital_period
+        TAU * (self.get_semi_major_axis().powi(3) / self.get_gravitational_parameter()).sqrt()
+    }
 }
 
 /// A mode to describe how the gravitational parameter setter should behave.

@@ -10,7 +10,7 @@ fn poll_true_cached(orbit: &Orbit) {
 
     for i in 0..POLL_ANGLES {
         let angle = i as f64 * multiplier;
-        black_box(orbit.get_true_anomaly(black_box(angle)));
+        black_box(orbit.get_true_anomaly_at_mean_anomaly(black_box(angle)));
     }
 }
 
@@ -20,7 +20,7 @@ fn poll_true_compact(orbit: &CompactOrbit) {
 
     for i in 0..POLL_ANGLES {
         let angle = i as f64 * multiplier;
-        black_box(orbit.get_true_anomaly(black_box(angle)));
+        black_box(orbit.get_true_anomaly_at_mean_anomaly(black_box(angle)));
     }
 }
 

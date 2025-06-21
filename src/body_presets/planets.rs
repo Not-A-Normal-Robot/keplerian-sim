@@ -7,7 +7,7 @@
 //!     equilibrium (nearly round) shape, and  
 //! (c) has cleared the neighbourhood around its orbit.
 //!
-//! \- [International Astronomical Union](https://en.wikipedia.org/wiki/IAU_definition_of_planet#Final_definition)
+//! — [International Astronomical Union](https://en.wikipedia.org/wiki/IAU_definition_of_planet#Final_definition)
 
 use crate::{Body, Orbit};
 

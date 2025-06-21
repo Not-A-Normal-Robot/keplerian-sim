@@ -8,7 +8,7 @@
 //! (c) has not cleared the neighbourhood around its orbit, and  
 //! (d) is not a satellite.
 //!
-//! \- [International Astronomical Union](https://en.wikipedia.org/wiki/IAU_definition_of_planet#Final_definition)
+//! — [International Astronomical Union](https://en.wikipedia.org/wiki/IAU_definition_of_planet#Final_definition)
 
 use crate::{Body, Orbit};
 

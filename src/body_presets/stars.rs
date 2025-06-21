@@ -2,7 +2,7 @@
 //!
 //! "A star is a luminous spheroid of plasma held together by self-gravity."  
 //!
-//! \- [Wikipedia](https://en.wikipedia.org/wiki/Star)
+//! — [Wikipedia](https://en.wikipedia.org/wiki/Star)
 
 use crate::{Body, Orbit};
 
