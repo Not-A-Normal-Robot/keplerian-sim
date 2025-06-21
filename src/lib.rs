@@ -1000,7 +1000,7 @@ pub trait OrbitTrait {
     /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you already know the eccentric anomaly, you should use
-    /// [`get_true_anomaly_at_eccentric_anomaly`][Self::get_true_anomaly_at_eccentric_anomaly]
+    /// [`get_true_anomaly_at_eccentric_anomaly`][OrbitTrait::get_true_anomaly_at_eccentric_anomaly]
     /// instead.
     fn get_true_anomaly_at_mean_anomaly(&self, mean_anomaly: f64) -> f64 {
         self.get_true_anomaly_at_eccentric_anomaly(
@@ -1028,11 +1028,12 @@ pub trait OrbitTrait {
     /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you already know the eccentric anomaly, you should use
-    /// [`get_true_anomaly_at_eccentric_anomaly`][Self::get_true_anomaly_at_eccentric_anomaly]
+    /// [`get_true_anomaly_at_eccentric_anomaly`][OrbitTrait::get_true_anomaly_at_eccentric_anomaly]
     /// instead.
     ///
     /// If you already know the mean anomaly, consider using
-    /// [`get_true_anomaly`][Self::get_true_anomaly] instead.  
+    /// [`get_true_anomaly_at_mean_anomaly`][OrbitTrait::get_true_anomaly_at_mean_anomaly]
+    /// instead.  
     /// It won't help performance much, but it's not zero.
     fn get_true_anomaly_at_time(&self, t: f64) -> f64 {
         self.get_true_anomaly_at_mean_anomaly(self.get_mean_anomaly_at_time(t))
@@ -1178,7 +1179,7 @@ pub trait OrbitTrait {
     /// It is still recommended to cache this value if you can.
     ///
     /// Alternatively, if you already know the eccentric anomaly, use
-    /// [`get_mean_anomaly_at_eccentric_anomaly`][Self::get_mean_anomaly_at_eccentric_anomaly]
+    /// [`get_mean_anomaly_at_eccentric_anomaly`][OrbitTrait::get_mean_anomaly_at_eccentric_anomaly]
     /// instead.
     #[doc(alias = "get_mean_anomaly_at_angle")]
     fn get_mean_anomaly_at_true_anomaly(&self, true_anomaly: f64) -> f64 {
@@ -1784,7 +1785,7 @@ pub trait OrbitTrait {
     /// This function is performant, however, if you already
     /// know the orbit's semi-latus rectum or the cosine of the true anomaly,
     /// you can use the
-    /// [`get_altitude_at_true_anomaly_unchecked`][Self::get_altitude_at_true_anomaly_unchecked]
+    /// [`get_altitude_at_true_anomaly_unchecked`][OrbitTrait::get_altitude_at_true_anomaly_unchecked]
     /// function to skip a few steps in the calculation.
     ///
     /// # Example

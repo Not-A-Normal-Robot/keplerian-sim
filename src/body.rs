@@ -1,5 +1,4 @@
-use crate::{Orbit, OrbitTrait};
-use core::f64::consts::TAU;
+use crate::Orbit;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
