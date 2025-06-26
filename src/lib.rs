@@ -2296,7 +2296,7 @@ pub trait OrbitTrait {
         trig_ecc_anom: (f64, f64),
         sincos_angle: (f64, f64),
     ) -> StateVectors {
-        let outer_mult = sqrt_abs_gm_a * altitude;
+        let outer_mult = sqrt_abs_gm_a / altitude;
         let pqw_velocity =
             self.get_pqw_velocity_at_eccentric_anomaly_unchecked(outer_mult, q_mult, trig_ecc_anom);
         let pqw_position = self.get_pqw_position_at_true_anomaly_unchecked(altitude, sincos_angle);
