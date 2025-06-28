@@ -64,8 +64,8 @@ fn poll_orbit(orbit: &impl OrbitTrait) -> Vec<DVec3> {
     let mut vec: Vec<DVec3> = Vec::with_capacity(ORBIT_POLL_ANGLES);
 
     for i in 0..ORBIT_POLL_ANGLES {
-        let angle = (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64);
-        vec.push(orbit.get_position_at_true_anomaly(angle));
+        let time = (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64);
+        vec.push(orbit.get_position_at_time(time));
     }
 
     return vec;
