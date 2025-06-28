@@ -4,13 +4,17 @@ extern crate std;
 
 use glam::{DVec2, DVec3};
 
-use crate::{CompactOrbit, Orbit, OrbitTrait};
+use crate::{CompactOrbit, Orbit, OrbitTrait, StateVectors};
 use std::f64::consts::{PI, TAU};
 
 const ALMOST_EQ_TOLERANCE: f64 = 1e-6;
 const ORBIT_POLL_ANGLES: usize = 4096;
 
 fn assert_almost_eq(a: f64, b: f64, what: &str) {
+    if a.is_nan() && b.is_nan() {
+        return;
+    }
+
     let dist = (a - b).abs();
     let msg = format!(
         "Almost-eq assertion failed for '{what}'!\n\
@@ -60,7 +64,7 @@ fn poll_orbit(orbit: &impl OrbitTrait) -> Vec<DVec3> {
     let mut vec: Vec<DVec3> = Vec::with_capacity(ORBIT_POLL_ANGLES);
 
     for i in 0..ORBIT_POLL_ANGLES {
-        let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
+        let angle = (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64);
         vec.push(orbit.get_position_at_true_anomaly(angle));
     }
 
@@ -70,7 +74,7 @@ fn poll_flat(orbit: &impl OrbitTrait) -> Vec<DVec2> {
     let mut vec: Vec<DVec2> = Vec::with_capacity(ORBIT_POLL_ANGLES);
 
     for i in 0..ORBIT_POLL_ANGLES {
-        let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
+        let angle = (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64);
         vec.push(orbit.get_pqw_position_at_true_anomaly(angle));
     }
 
@@ -80,7 +84,7 @@ fn poll_transform(orbit: &impl OrbitTrait) -> Vec<DVec3> {
     let mut vec: Vec<DVec3> = Vec::with_capacity(ORBIT_POLL_ANGLES);
 
     for i in 0..ORBIT_POLL_ANGLES {
-        let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
+        let angle = (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64);
         vec.push(orbit.transform_pqw_vector(DVec2::new(1.0 * angle.cos(), 1.0 * angle.sin())));
     }
 
@@ -90,7 +94,7 @@ fn poll_eccentric_anomaly(orbit: &impl OrbitTrait) -> Vec<f64> {
     let mut vec: Vec<f64> = Vec::with_capacity(ORBIT_POLL_ANGLES);
 
     for i in 0..ORBIT_POLL_ANGLES {
-        let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
+        let angle = (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64);
         vec.push(orbit.get_eccentric_anomaly_at_mean_anomaly(angle));
     }
 
@@ -99,22 +103,29 @@ fn poll_eccentric_anomaly(orbit: &impl OrbitTrait) -> Vec<f64> {
 fn poll_speed(orbit: &impl OrbitTrait) -> Vec<f64> {
     (0..ORBIT_POLL_ANGLES)
         .into_iter()
-        .map(|i| (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64))
+        .map(|i| (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64))
         .map(|t| orbit.get_speed_at_time(t))
         .collect()
 }
 fn poll_flat_vel(orbit: &impl OrbitTrait) -> Vec<DVec2> {
     (0..ORBIT_POLL_ANGLES)
         .into_iter()
-        .map(|i| (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64))
+        .map(|i| (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64))
         .map(|t| orbit.get_pqw_velocity_at_time(t))
         .collect()
 }
 fn poll_vel(orbit: &impl OrbitTrait) -> Vec<DVec3> {
     (0..ORBIT_POLL_ANGLES)
         .into_iter()
-        .map(|i| (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64))
+        .map(|i| (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64))
         .map(|t| orbit.get_velocity_at_time(t))
+        .collect()
+}
+fn poll_sv(orbit: &impl OrbitTrait) -> Vec<StateVectors> {
+    (0..ORBIT_POLL_ANGLES)
+        .into_iter()
+        .map(|i| (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64))
+        .map(|t| orbit.get_state_vectors_at_time(t))
         .collect()
 }
 fn unit_orbit() -> Orbit {
@@ -504,11 +515,13 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
 
         for i in 0..original_ecc.len() {
             assert_eq!(
-                original_ecc[i], compact_ecc[i],
+                original_ecc[i].to_bits(),
+                compact_ecc[i].to_bits(),
                 "{compact_message} (eccentric anomaly)"
             );
             assert_eq!(
-                original_ecc[i], reexpanded_ecc[i],
+                original_ecc[i].to_bits(),
+                reexpanded_ecc[i].to_bits(),
                 "{reexpanded_message} (eccentric anomaly)"
             );
         }
@@ -811,6 +824,65 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
             reexpanded_vels
                 .iter()
                 .map(|DVec3 { x, y, z }| (x.to_bits(), y.to_bits(), z.to_bits()))
+                .collect::<Vec<_>>(),
+            "{reexpanded_message}",
+        );
+    }
+    {
+        let original_svs = poll_sv(&orbit);
+        let compact_svs = poll_sv(&compact_orbit);
+        let reexpanded_svs = poll_sv(&reexpanded_orbit);
+
+        let compact_message = format!("{compact_message} (velocity)");
+        let reexpanded_message = format!("{reexpanded_message} (velocity)");
+
+        assert_eq!(
+            original_svs
+                .iter()
+                .map(|s| (
+                    s.position.x.to_bits(),
+                    s.position.y.to_bits(),
+                    s.position.z.to_bits(),
+                    s.velocity.x.to_bits(),
+                    s.velocity.y.to_bits(),
+                    s.velocity.z.to_bits(),
+                ))
+                .collect::<Vec<_>>(),
+            compact_svs
+                .iter()
+                .map(|s| (
+                    s.position.x.to_bits(),
+                    s.position.y.to_bits(),
+                    s.position.z.to_bits(),
+                    s.velocity.x.to_bits(),
+                    s.velocity.y.to_bits(),
+                    s.velocity.z.to_bits(),
+                ))
+                .collect::<Vec<_>>(),
+            "{compact_message}",
+        );
+        assert_eq!(
+            original_svs
+                .iter()
+                .map(|s| (
+                    s.position.x.to_bits(),
+                    s.position.y.to_bits(),
+                    s.position.z.to_bits(),
+                    s.velocity.x.to_bits(),
+                    s.velocity.y.to_bits(),
+                    s.velocity.z.to_bits(),
+                ))
+                .collect::<Vec<_>>(),
+            reexpanded_svs
+                .iter()
+                .map(|s| (
+                    s.position.x.to_bits(),
+                    s.position.y.to_bits(),
+                    s.position.z.to_bits(),
+                    s.velocity.x.to_bits(),
+                    s.velocity.y.to_bits(),
+                    s.velocity.z.to_bits(),
+                ))
                 .collect::<Vec<_>>(),
             "{reexpanded_message}",
         );
@@ -1629,6 +1701,39 @@ fn test_velocity() {
         speed_velocity_base_test(&orbit, what);
         // We purposely leave out naive speed correlation because some fuzzed orbits
         // are just too extreme for the naive method to be accurate
+    }
+}
+
+fn state_vectors_getters_base_test(orbit: Orbit) {
+    let p = poll_orbit(&orbit);
+    let v = poll_vel(&orbit);
+
+    let sv = poll_sv(&orbit);
+
+    for i in 0..ORBIT_POLL_ANGLES {
+        let p1 = p[i];
+        let v1 = v[i];
+        let StateVectors {
+            position: p2,
+            velocity: v2,
+        } = sv[i];
+
+        assert_almost_eq_vec3(p1, p2, &format!("Positions of {orbit:?} at i={i}"));
+        assert_almost_eq_vec3(v1, v2, &format!("Velocities of {orbit:?} at i={i}"));
+        // TODO: Use strict equality after position getters switch to using the unchecked version
+    }
+}
+
+// TODO: Orbit conversion tests for state vectors
+#[test]
+fn test_state_vectors_getters() {
+    // TODO: POST-PARABOLIC SUPPORT: Change to all-random instead of just nonparabolic
+    for mut orbit in random_nonparabolic_iter(128) {
+        orbit.set_gravitational_parameter(
+            rand::random_range(0.1..10.0),
+            crate::MuSetterMode::KeepElements,
+        );
+        state_vectors_getters_base_test(orbit);
     }
 }
 

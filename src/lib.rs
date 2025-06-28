@@ -2159,9 +2159,177 @@ pub trait OrbitTrait {
     /// Gets the 3D position and velocity at a given eccentric anomaly in the orbit.
     ///
     /// # Performance
-    /// TODO
+    /// This function uses several trigonometric functions, and so it is not too performant.  
+    /// It is recommended to cache this value if you can.
+    ///
+    /// This is, however, faster than individually calling the position and velocity getters
+    /// separately, as this will reuse calculations whenever possible.
+    ///
+    /// If you need *only one* of the vectors, though, you should instead call the dedicated
+    /// getters:  
+    /// [`get_velocity_at_eccentric_anomaly`][OrbitTrait::get_velocity_at_eccentric_anomaly]  
+    /// [`get_position_at_eccentric_anomaly`][OrbitTrait::get_position_at_eccentric_anomaly]  
+    ///
+    /// This function should give similar performance to the getter from the true anomaly:  
+    /// [`get_state_vectors_at_true_anomaly`][OrbitTrait::get_state_vectors_at_true_anomaly]
+    ///
+    /// In case you really want to, an unchecked version of this function is available:  
+    /// [`get_state_vectors_from_unchecked_parts`][OrbitTrait::get_state_vectors_from_unchecked_parts]
     fn get_state_vectors_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> StateVectors {
-        todo!();
+        let semi_major_axis = self.get_semi_major_axis();
+        let sqrt_abs_gm_a = (semi_major_axis * self.get_gravitational_parameter())
+            .abs()
+            .sqrt();
+        let true_anomaly = self.get_true_anomaly_at_eccentric_anomaly(eccentric_anomaly);
+        let sincos_angle = true_anomaly.sin_cos();
+        let eccentricity = self.get_eccentricity();
+
+        // 1 minus e^2
+        let _1me2 = 1.0 - eccentricity.powi(2);
+
+        // inlined version of [self.get_semi_latus_rectum] with pre-known values
+        let semi_latus_rectum = if eccentricity == 1.0 {
+            2.0 * self.get_periapsis()
+        } else {
+            semi_major_axis * _1me2
+        };
+
+        let altitude =
+            self.get_altitude_at_true_anomaly_unchecked(semi_latus_rectum, sincos_angle.1);
+
+        let q_mult = _1me2.abs().sqrt();
+
+        // TODO: PARABOLIC SUPPORT: This function doesn't yet consider parabolic orbits.
+        let trig_ecc_anom = if eccentricity < 1.0 {
+            eccentric_anomaly.sin_cos()
+        } else {
+            sinhcosh(eccentric_anomaly)
+        };
+
+        self.get_state_vectors_from_unchecked_parts(
+            sqrt_abs_gm_a,
+            altitude,
+            q_mult,
+            trig_ecc_anom,
+            sincos_angle,
+        )
+    }
+
+    /// Gets the 3D position and velocity at a given angle (true anomaly) in the orbit.
+    ///
+    /// # Angle
+    /// The angle is expressed in radians, and ranges from 0 to tau.  
+    /// Anything out of range will get wrapped around.
+    ///
+    /// # Performance
+    /// This function uses several trigonometric functions, and so it is not too performant.  
+    /// It is recommended to cache this value if you can.
+    ///
+    /// This is, however, faster than individually calling the position and velocity getters
+    /// separately, as this will reuse calculations whenever possible.
+    ///
+    /// If you need *only one* of the vectors, though, you should instead call the dedicated
+    /// getters:  
+    /// [`get_velocity_at_true_anomaly`][OrbitTrait::get_velocity_at_true_anomaly]
+    /// [`get_position_at_true_anomaly`][OrbitTrait::get_position_at_true_anomaly]
+    ///
+    /// This function should give similar performance to the getter from the eccentric anomaly:  
+    /// [`get_state_vectors_at_eccentric_anomaly`][OrbitTrait::get_state_vectors_at_true_anomaly]
+    ///
+    /// In case you really want to, an unchecked version of this function is available:  
+    /// [`get_state_vectors_from_unchecked_parts`][OrbitTrait::get_state_vectors_from_unchecked_parts]
+    fn get_state_vectors_at_true_anomaly(&self, true_anomaly: f64) -> StateVectors {
+        let semi_major_axis = self.get_semi_major_axis();
+        let sqrt_abs_gm_a = (semi_major_axis * self.get_gravitational_parameter())
+            .abs()
+            .sqrt();
+        let eccentric_anomaly = self.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
+        let sincos_angle = true_anomaly.sin_cos();
+        let eccentricity = self.get_eccentricity();
+
+        // 1 minus e^2
+        let _1me2 = 1.0 - eccentricity.powi(2);
+
+        // inlined version of [self.get_semi_latus_rectum] with pre-known values
+        let semi_latus_rectum = if eccentricity == 1.0 {
+            2.0 * self.get_periapsis()
+        } else {
+            semi_major_axis * _1me2
+        };
+
+        let altitude =
+            self.get_altitude_at_true_anomaly_unchecked(semi_latus_rectum, sincos_angle.1);
+
+        let q_mult = _1me2.abs().sqrt();
+
+        // TODO: PARABOLIC SUPPORT: This function doesn't yet consider parabolic orbits.
+        let trig_ecc_anom = if eccentricity < 1.0 {
+            eccentric_anomaly.sin_cos()
+        } else {
+            sinhcosh(eccentric_anomaly)
+        };
+
+        self.get_state_vectors_from_unchecked_parts(
+            sqrt_abs_gm_a,
+            altitude,
+            q_mult,
+            trig_ecc_anom,
+            sincos_angle,
+        )
+    }
+
+    /// Gets the 3D position and velocity at a given mean anomaly in the orbit.
+    ///
+    /// # Performance
+    /// This function involves converting the mean anomaly to an eccentric anomaly,
+    /// which involves numerical approach methods and are therefore not performant.  
+    /// It is recommended to cache this value if you can.  
+    ///
+    /// Alternatively, if you already know the eccentric anomaly or true anomaly,
+    /// use the following functions instead, which do not use numerical methods and
+    /// therefore are significantly faster:  
+    /// [`get_state_vectors_at_eccentric_anomaly`][OrbitTrait::get_state_vectors_at_eccentric_anomaly]
+    /// [`get_state_vectors_at_true_anomaly`][OrbitTrait::get_state_vectors_at_true_anomaly]
+    ///
+    /// This function is faster than individually calling the position and velocity getters
+    /// separately, as this will reuse calculations whenever possible.
+    fn get_state_vectors_at_mean_anomaly(&self, mean_anomaly: f64) -> StateVectors {
+        self.get_state_vectors_at_eccentric_anomaly(
+            self.get_eccentric_anomaly_at_mean_anomaly(mean_anomaly),
+        )
+    }
+
+    /// Gets the 3D position and velocity at a given time in the orbit.
+    ///
+    /// # Time
+    /// The time is measured in seconds.
+    ///
+    /// # Performance
+    /// This function involves converting a mean anomaly (derived from the time)
+    /// into an eccentric anomaly.  
+    /// This involves numerical approach methods and are therefore not performant.  
+    /// It is recommended to cache this value if you can.
+    ///
+    /// Alternatively, if you already know the eccentric anomaly or true anomaly,
+    /// use the following functions instead, which do not use numerical methods and
+    /// therefore are significantly faster:  
+    /// [`get_state_vectors_at_eccentric_anomaly`][OrbitTrait::get_state_vectors_at_eccentric_anomaly]
+    /// [`get_state_vectors_at_true_anomaly`][OrbitTrait::get_state_vectors_at_true_anomaly]
+    ///
+    /// If you only know the mean anomaly, then that may help with performance a little bit,
+    /// in which case you can use
+    /// [`get_state_vectors_at_mean_anomaly`][OrbitTrait::get_state_vectors_at_mean_anomaly]
+    /// instead.
+    ///
+    /// This function is faster than individually calling the position and velocity getters
+    /// separately, as this will reuse calculations whenever possible.
+    ///
+    /// If you need *only one* of the vectors, though, you should instead call the dedicated
+    /// getters:  
+    /// [`get_velocity_at_time`][OrbitTrait::get_velocity_at_time]
+    /// [`get_position_at_time`][OrbitTrait::get_position_at_time]
+    fn get_state_vectors_at_time(&self, t: f64) -> StateVectors {
+        self.get_state_vectors_at_mean_anomaly(self.get_mean_anomaly_at_time(t))
     }
 
     /// Gets the 3D position and velocity at a certain point in the orbit.
