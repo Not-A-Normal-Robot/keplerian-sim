@@ -1211,6 +1211,13 @@ pub trait OrbitTrait {
     /// # Performance
     /// This function benefits significantly from being in the
     /// [cached version of the orbit struct][crate::Orbit].  
+    ///
+    /// If you want to get both the position and velocity vectors, you can
+    /// use the
+    /// [`get_state_vectors_at_true_anomaly`][OrbitTrait::get_state_vectors_at_true_anomaly]
+    /// function instead. It prevents redundant calculations and is therefore
+    /// faster than calling the position and velocity functions separately.
+    ///
     /// If you already know the altitude at the angle, you can
     /// rotate the altitude using the true anomaly, then tilt
     /// it using the [`transform_pqw_vector`][OrbitTrait::transform_pqw_vector]
@@ -1249,6 +1256,12 @@ pub trait OrbitTrait {
     /// Or, if you only need the altitude, use the
     /// [`get_altitude_at_eccentric_anomaly`][OrbitTrait::get_altitude_at_eccentric_anomaly]
     /// function instead.
+    ///
+    /// If you want to get both the position and velocity vectors, you can
+    /// use the
+    /// [`get_state_vectors_at_eccentric_anomaly`][OrbitTrait::get_state_vectors_at_eccentric_anomaly]
+    /// function instead. It prevents redundant calculations and is therefore
+    /// faster than calling the position and velocity functions separately.
     fn get_position_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> DVec3 {
         self.transform_pqw_vector(self.get_pqw_position_at_eccentric_anomaly(eccentric_anomaly))
     }
@@ -1409,8 +1422,7 @@ pub trait OrbitTrait {
     /// [`get_velocity_at_true_anomaly`][OrbitTrait::get_velocity_at_true_anomaly] instead.
     ///
     /// # Performance
-    /// The velocity is derived from the eccentric anomaly, which uses numerical
-    /// methods and so is not very performant.  
+    /// This function is not too performant as it uses some trigonometric operations.
     /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you only want to know the speed, use
@@ -1418,7 +1430,6 @@ pub trait OrbitTrait {
     /// And if you already know the eccentric anomaly, use
     /// [`get_pqw_velocity_at_eccentric_anomaly`][OrbitTrait::get_pqw_velocity_at_eccentric_anomaly]
     /// instead.
-    /// These functions do not require numerical methods and therefore are a lot faster.
     ///
     /// # Angle
     /// The angle is expressed in radians, and ranges from 0 to tau.  
@@ -1871,8 +1882,7 @@ pub trait OrbitTrait {
     /// Gets the velocity at a given angle (true anomaly) in the orbit.
     ///
     /// # Performance
-    /// The velocity is derived from the eccentric anomaly, which uses numerical
-    /// methods and so is not very performant.  
+    /// This function is not too performant as it uses some trigonometric operations.
     /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you only want to know the speed, use
@@ -1881,6 +1891,12 @@ pub trait OrbitTrait {
     /// [`get_velocity_at_eccentric_anomaly`][OrbitTrait::get_velocity_at_eccentric_anomaly]
     /// instead.
     /// These functions do not require numerical methods and therefore are a lot faster.
+    ///
+    /// If you want to get both the position and velocity vectors, you can
+    /// use the
+    /// [`get_state_vectors_at_true_anomaly`][OrbitTrait::get_state_vectors_at_true_anomaly]
+    /// function instead. It prevents redundant calculations and is therefore
+    /// faster than calling the position and velocity functions separately.
     ///
     /// # Angle
     /// The angle is expressed in radians, and ranges from 0 to tau.  
@@ -1940,6 +1956,12 @@ pub trait OrbitTrait {
     /// [`get_speed_at_eccentric_anomaly`][OrbitTrait::get_speed_at_eccentric_anomaly]
     /// function instead.
     ///
+    /// If you want to get both the position and velocity vectors, you can
+    /// use the
+    /// [`get_state_vectors_at_eccentric_anomaly`][OrbitTrait::get_state_vectors_at_eccentric_anomaly]
+    /// function instead. It prevents redundant calculations and is therefore
+    /// faster than calling the position and velocity functions separately.
+    ///
     /// This function benefits significantly from being in the
     /// [cached version of the orbit struct][crate::Orbit].
     fn get_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> DVec3 {
@@ -1964,6 +1986,12 @@ pub trait OrbitTrait {
     /// [`get_velocity_at_true_anomaly`][OrbitTrait::get_velocity_at_true_anomaly]
     /// functions instead.  
     /// These functions do not require numerical methods and therefore are a lot faster.
+    ///
+    /// If you want to get both the position and velocity vectors, you can
+    /// use the
+    /// [`get_state_vectors_at_time`][OrbitTrait::get_state_vectors_at_time]
+    /// function instead. It prevents redundant calculations and is therefore
+    /// faster than calling the position and velocity functions separately.
     ///
     /// # Speed vs. Velocity
     /// Speed is not to be confused with velocity.  
@@ -2147,6 +2175,12 @@ pub trait OrbitTrait {
     /// function instead.  
     /// That does not use numerical methods and therefore is a lot faster.
     ///
+    /// If you want to get both the position and velocity vectors, you can
+    /// use the
+    /// [`get_state_vectors_at_time`][OrbitTrait::get_state_vectors_at_time]
+    /// function instead. It prevents redundant calculations and is therefore
+    /// faster than calling the position and velocity functions separately.
+    ///
     /// # Parabolic Support
     /// **This function returns non-finite numbers for parabolic orbits**
     /// due to how the equation for true anomaly works.
@@ -2155,7 +2189,6 @@ pub trait OrbitTrait {
     }
 
     // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
-    // TODO: DOC: Add performance remarks to the standalone functions in case user wants to get both
     /// Gets the 3D position and velocity at a given eccentric anomaly in the orbit.
     ///
     /// # Performance
@@ -2175,6 +2208,10 @@ pub trait OrbitTrait {
     ///
     /// In case you really want to, an unchecked version of this function is available:  
     /// [`get_state_vectors_from_unchecked_parts`][OrbitTrait::get_state_vectors_from_unchecked_parts]
+    ///
+    /// # Parabolic Support
+    /// This function doesn't support parabolic trajectories yet.  
+    /// `NaN`s or nonsensical values may be returned.
     fn get_state_vectors_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> StateVectors {
         let semi_major_axis = self.get_semi_major_axis();
         let sqrt_abs_gm_a = (semi_major_axis * self.get_gravitational_parameter())
@@ -2238,6 +2275,10 @@ pub trait OrbitTrait {
     ///
     /// In case you really want to, an unchecked version of this function is available:  
     /// [`get_state_vectors_from_unchecked_parts`][OrbitTrait::get_state_vectors_from_unchecked_parts]
+    ///
+    /// # Parabolic Support
+    /// This function doesn't support parabolic trajectories yet.  
+    /// `NaN`s or nonsensical values may be returned.
     fn get_state_vectors_at_true_anomaly(&self, true_anomaly: f64) -> StateVectors {
         let semi_major_axis = self.get_semi_major_axis();
         let sqrt_abs_gm_a = (semi_major_axis * self.get_gravitational_parameter())
@@ -2293,6 +2334,10 @@ pub trait OrbitTrait {
     ///
     /// This function is faster than individually calling the position and velocity getters
     /// separately, as this will reuse calculations whenever possible.
+    ///
+    /// # Parabolic Support
+    /// This function doesn't support parabolic trajectories yet.  
+    /// `NaN`s or nonsensical values may be returned.
     fn get_state_vectors_at_mean_anomaly(&self, mean_anomaly: f64) -> StateVectors {
         self.get_state_vectors_at_eccentric_anomaly(
             self.get_eccentric_anomaly_at_mean_anomaly(mean_anomaly),
@@ -2328,6 +2373,10 @@ pub trait OrbitTrait {
     /// getters:  
     /// [`get_velocity_at_time`][OrbitTrait::get_velocity_at_time]
     /// [`get_position_at_time`][OrbitTrait::get_position_at_time]
+    ///
+    /// # Parabolic Support
+    /// This function doesn't support parabolic trajectories yet.  
+    /// `NaN`s or nonsensical values may be returned.
     fn get_state_vectors_at_time(&self, t: f64) -> StateVectors {
         self.get_state_vectors_at_mean_anomaly(self.get_mean_anomaly_at_time(t))
     }
@@ -2379,6 +2428,10 @@ pub trait OrbitTrait {
     /// # Performance
     /// This function, by itself, is very performant and should not
     /// be the cause of any performance issues.
+    ///
+    /// # Parabolic Support
+    /// This function doesn't support parabolic trajectories yet.  
+    /// `NaN`s or nonsensical values may be returned.
     ///
     /// # Example
     /// ```
