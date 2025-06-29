@@ -10,6 +10,10 @@ use std::f64::consts::{PI, TAU};
 const ALMOST_EQ_TOLERANCE: f64 = 1e-6;
 const ORBIT_POLL_ANGLES: usize = 4096;
 
+fn dvec3_to_bits(v: DVec3) -> (u64, u64, u64) {
+    (v.x.to_bits(), v.y.to_bits(), v.z.to_bits())
+}
+
 fn assert_almost_eq(a: f64, b: f64, what: &str) {
     if a.is_nan() && b.is_nan() {
         return;
@@ -1718,9 +1722,16 @@ fn state_vectors_getters_base_test(orbit: Orbit) {
             velocity: v2,
         } = sv[i];
 
-        assert_almost_eq_vec3(p1, p2, &format!("Positions of {orbit:?} at i={i}"));
-        assert_almost_eq_vec3(v1, v2, &format!("Velocities of {orbit:?} at i={i}"));
-        // TODO: Use strict equality after position getters switch to using the unchecked version
+        assert_eq!(
+            dvec3_to_bits(p1),
+            dvec3_to_bits(p2),
+            "Positions of {orbit:?} at i={i}"
+        );
+        assert_eq!(
+            dvec3_to_bits(v1),
+            dvec3_to_bits(v2),
+            "Velocities of {orbit:?} at i={i}"
+        );
     }
 }
 
