@@ -190,6 +190,21 @@ impl Matrix3x2 {
     }
 }
 
+/// A struct representing a position and velocity at a point in the orbit.
+///
+/// The position and velocity vectors are three-dimensional.
+///
+/// The position vector is in meters, while the velocity vector is in
+/// meters per second.
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct StateVectors {
+    /// The 3D position at a point in the orbit, in meters.
+    pub position: DVec3,
+    /// The 3D velocity at a point in the orbit, in meters per second.
+    pub velocity: DVec3,
+}
+
 /// A trait that defines the methods that a Keplerian orbit must implement.
 ///
 /// This trait is implemented by both [`Orbit`] and [`CompactOrbit`].
@@ -1196,6 +1211,13 @@ pub trait OrbitTrait {
     /// # Performance
     /// This function benefits significantly from being in the
     /// [cached version of the orbit struct][crate::Orbit].  
+    ///
+    /// If you want to get both the position and velocity vectors, you can
+    /// use the
+    /// [`get_state_vectors_at_true_anomaly`][OrbitTrait::get_state_vectors_at_true_anomaly]
+    /// function instead. It prevents redundant calculations and is therefore
+    /// faster than calling the position and velocity functions separately.
+    ///
     /// If you already know the altitude at the angle, you can
     /// rotate the altitude using the true anomaly, then tilt
     /// it using the [`transform_pqw_vector`][OrbitTrait::transform_pqw_vector]
@@ -1234,6 +1256,12 @@ pub trait OrbitTrait {
     /// Or, if you only need the altitude, use the
     /// [`get_altitude_at_eccentric_anomaly`][OrbitTrait::get_altitude_at_eccentric_anomaly]
     /// function instead.
+    ///
+    /// If you want to get both the position and velocity vectors, you can
+    /// use the
+    /// [`get_state_vectors_at_eccentric_anomaly`][OrbitTrait::get_state_vectors_at_eccentric_anomaly]
+    /// function instead. It prevents redundant calculations and is therefore
+    /// faster than calling the position and velocity functions separately.
     fn get_position_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> DVec3 {
         self.transform_pqw_vector(self.get_pqw_position_at_eccentric_anomaly(eccentric_anomaly))
     }
@@ -1394,8 +1422,7 @@ pub trait OrbitTrait {
     /// [`get_velocity_at_true_anomaly`][OrbitTrait::get_velocity_at_true_anomaly] instead.
     ///
     /// # Performance
-    /// The velocity is derived from the eccentric anomaly, which uses numerical
-    /// methods and so is not very performant.  
+    /// This function is not too performant as it uses some trigonometric operations.
     /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you only want to know the speed, use
@@ -1403,7 +1430,6 @@ pub trait OrbitTrait {
     /// And if you already know the eccentric anomaly, use
     /// [`get_pqw_velocity_at_eccentric_anomaly`][OrbitTrait::get_pqw_velocity_at_eccentric_anomaly]
     /// instead.
-    /// These functions do not require numerical methods and therefore are a lot faster.
     ///
     /// # Angle
     /// The angle is expressed in radians, and ranges from 0 to tau.  
@@ -1433,9 +1459,23 @@ pub trait OrbitTrait {
     #[doc(alias = "get_flat_velocity_at_angle")]
     #[doc(alias = "get_pqw_velocity_at_angle")]
     fn get_pqw_velocity_at_true_anomaly(&self, angle: f64) -> DVec2 {
+        // TODO: PARABOLIC SUPPORT: This does not play well with parabolic trajectories.
+        let outer_mult = (self.get_semi_major_axis() * self.get_gravitational_parameter())
+            .abs()
+            .sqrt()
+            / self.get_altitude_at_true_anomaly(angle);
+
+        let q_mult = (1.0 - self.get_eccentricity().powi(2)).abs().sqrt();
+
         let eccentric_anomaly = self.get_eccentric_anomaly_at_true_anomaly(angle);
 
-        self.get_pqw_velocity_at_eccentric_anomaly(eccentric_anomaly)
+        let trig_ecc_anom = if self.get_eccentricity() < 1.0 {
+            eccentric_anomaly.sin_cos()
+        } else {
+            sinhcosh(eccentric_anomaly)
+        };
+
+        self.get_pqw_velocity_at_eccentric_anomaly_unchecked(outer_mult, q_mult, trig_ecc_anom)
     }
 
     /// Gets the velocity at a given eccentric anomaly in the orbit
@@ -1468,42 +1508,171 @@ pub trait OrbitTrait {
     /// If you want to just get the speed, consider using the
     /// [`get_speed_at_eccentric_anomaly`][OrbitTrait::get_speed_at_eccentric_anomaly]
     /// function instead.
+    ///
+    /// Alternatively, if you already know some values (such as the altitude), consider
+    /// using the unchecked version of the function instead:  
+    /// [`get_pqw_velocity_at_eccentric_anomaly_unchecked`][OrbitTrait::get_pqw_velocity_at_eccentric_anomaly_unchecked]
     #[doc(alias = "get_flat_velocity_at_eccentric_anomaly")]
     fn get_pqw_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> DVec2 {
         // TODO: PARABOLIC SUPPORT: This does not play well with parabolic trajectories.
-        if self.get_eccentricity() < 1.0 {
-            // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
-            // Equation 8:
-            //                                   [      -sin E       ]
-            // vector_o'(t) = sqrt(GM * a) / r * [ sqrt(1-e^2) cos E ]
-            //                                   [         0         ]
+        let outer_mult = (self.get_semi_major_axis() * self.get_gravitational_parameter())
+            .abs()
+            .sqrt()
+            / self.get_altitude_at_eccentric_anomaly(eccentric_anomaly);
 
-            let multiplier = (self.get_semi_major_axis() * self.get_gravitational_parameter())
-                .sqrt()
-                / self.get_altitude_at_eccentric_anomaly(eccentric_anomaly);
+        let q_mult = (1.0 - self.get_eccentricity().powi(2)).abs().sqrt();
 
-            let (sin, cos) = eccentric_anomaly.sin_cos();
-
-            DVec2::new(
-                -sin * multiplier,
-                (1.0 - self.get_eccentricity().powi(2)).sqrt() * cos * multiplier,
-            )
+        let trig_ecc_anom = if self.get_eccentricity() < 1.0 {
+            eccentric_anomaly.sin_cos()
         } else {
-            // https://space.stackexchange.com/a/54418
-            //                                    [      -sinh F       ]
-            // vector_o'(t) = sqrt(-GM * a) / r * [ sqrt(e^2-1) cosh F ]
-            //                                    [         0          ]
-            let multiplier = (-self.get_semi_major_axis() * self.get_gravitational_parameter())
-                .sqrt()
-                / self.get_altitude_at_eccentric_anomaly(eccentric_anomaly);
+            sinhcosh(eccentric_anomaly)
+        };
 
-            let (sinh, cosh) = sinhcosh(eccentric_anomaly);
+        self.get_pqw_velocity_at_eccentric_anomaly_unchecked(outer_mult, q_mult, trig_ecc_anom)
+    }
 
-            DVec2::new(
-                -sinh * multiplier,
-                (self.get_eccentricity().powi(2) - 1.0).sqrt() * cosh * multiplier,
-            )
-        }
+    /// Gets the velocity at a given eccentric anomaly in the orbit
+    /// in the [perifocal coordinate system](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
+    ///
+    /// # Unchecked Operation
+    /// This function does not check the validity of the
+    /// inputs passed to this function, and it also doesn't check
+    /// that the orbit is elliptic.  
+    /// It is your responsibility to make sure the inputs passed in are valid.  
+    /// Failing to do so may result in nonsensical outputs.
+    ///
+    /// # Parameters
+    /// ## `outer_mult`
+    /// This parameter is a multiplier for the entire 2D vector.  
+    /// If the orbit is elliptic (e < 1), it should be calculated by
+    /// the formula `sqrt(GM * a) / r`, where `GM` is the gravitational
+    /// parameter, `a` is the semi-major axis, and `r` is the altitude of
+    /// the orbit at that point.  
+    /// If the orbit is hyperbolic (e > 1), it should instead be calculated by
+    /// the formula `sqrt(-GM * a) / r`.  
+    /// For the general case, the formula `sqrt(abs(GM * a)) / r` can be used instead.
+    ///
+    /// ## `q_mult`
+    /// This parameter is a multiplier for the second element in the PQW vector.  
+    /// For elliptic orbits, it should be calculated by the formula `sqrt(1 - e^2)`,
+    /// where `e` is the eccentricity of the orbit.  
+    /// For hyperbolic orbits, it should be calculated by the formula `sqrt(e^2 - 1)`,
+    /// where `e` is the eccentricity of the orbit.  
+    /// Alternatively, for the general case, you can use the formula `sqrt(abs(1 - e^2))`.
+    ///
+    /// ## `trig_ecc_anom`
+    /// **For elliptic orbits**, this parameter should be a tuple containing the sine and cosine
+    /// values of the eccentric anomaly, respectively.  
+    /// **For hyperbolic orbits**, this parameter should be a tuple containing the **hyperbolic**
+    /// sine and **hyperbolic** cosine values of the eccentric anomaly, respectively.
+    ///
+    /// # Perifocal Coordinate System
+    /// This function returns a vector in the perifocal coordinate (PQW) system, where
+    /// the first element points to the periapsis, and the second element has a
+    /// true anomaly 90 degrees past the periapsis. The third element points perpendicular
+    /// to the orbital plane, and is always zero in this case, and so it is omitted.
+    ///
+    /// Learn more about the PQW system: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
+    ///
+    /// You can convert from the PQW system to the regular 3D space using
+    /// [`transform_pqw_vector`][OrbitTrait::transform_pqw_vector].
+    ///
+    /// # Speed vs. Velocity
+    /// Speed is not to be confused with velocity.  
+    /// Speed tells you how fast something is moving,
+    /// while velocity tells you how fast *and in what direction* it's moving in.
+    ///
+    /// # Parabolic Support
+    /// This function doesn't consider parabolic trajectories yet.  
+    /// `NaN`s or parabolic trajectories may be returned.
+    ///
+    /// # Performance
+    /// This function is very performant and should not be the cause of any
+    /// performance issues.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait, sinhcosh};
+    ///
+    /// # fn main() {
+    /// let orbit = Orbit::default();
+    ///
+    /// let eccentric_anomaly: f64 = 1.25;
+    ///
+    /// let pqw_vel = orbit.get_pqw_velocity_at_eccentric_anomaly(eccentric_anomaly);
+    ///
+    /// let gm = orbit.get_gravitational_parameter();
+    /// let a = orbit.get_semi_major_axis();
+    /// let altitude = orbit.get_altitude_at_eccentric_anomaly(eccentric_anomaly);
+    /// let outer_mult = (gm * a).sqrt() / altitude;
+    ///
+    /// let q_mult = (1.0 - orbit.get_eccentricity().powi(2)).sqrt();
+    ///
+    /// let trig_ecc_anom = eccentric_anomaly.sin_cos();
+    ///
+    /// let pqw_vel_2 = orbit
+    ///     .get_pqw_velocity_at_eccentric_anomaly_unchecked(outer_mult, q_mult, trig_ecc_anom);
+    ///
+    /// assert_eq!(pqw_vel, pqw_vel_2);
+    /// }
+    /// ```
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait, sinhcosh};
+    ///
+    /// # fn main() {
+    /// let mut hyperbolic = Orbit::default();
+    /// hyperbolic.set_eccentricity(3.0);
+    ///
+    /// let eccentric_anomaly: f64 = 2.35;
+    ///
+    /// let pqw_vel = hyperbolic.get_pqw_velocity_at_eccentric_anomaly(eccentric_anomaly);
+    ///
+    /// let gm = hyperbolic.get_gravitational_parameter();
+    /// let a = hyperbolic.get_semi_major_axis();
+    /// let altitude = hyperbolic.get_altitude_at_eccentric_anomaly(eccentric_anomaly);
+    /// let outer_mult = (-gm * a).sqrt() / altitude;
+    ///
+    /// let q_mult = (hyperbolic.get_eccentricity().powi(2) - 1.0).sqrt();
+    ///
+    /// let trig_ecc_anom = sinhcosh(eccentric_anomaly);
+    ///
+    /// let pqw_vel_2 = hyperbolic
+    ///     .get_pqw_velocity_at_eccentric_anomaly_unchecked(outer_mult, q_mult, trig_ecc_anom);
+    ///
+    /// assert_eq!(pqw_vel, pqw_vel_2);
+    /// # }
+    /// ```
+    fn get_pqw_velocity_at_eccentric_anomaly_unchecked(
+        &self,
+        outer_mult: f64,
+        q_mult: f64,
+        trig_ecc_anom: (f64, f64),
+    ) -> DVec2 {
+        // ==== ELLIPTIC CASE: ====
+        // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+        // Equation 8:
+        //                                   [      -sin E       ]
+        // vector_o'(t) = sqrt(GM * a) / r * [ sqrt(1-e^2) cos E ]
+        //                                   [         0         ]
+        //
+        // outer_mult = sqrt(GM * a) / r
+        // trig_ecc_anom = eccentric_anomaly.sin_cos()
+        // q_mult = sqrt(1 - e^2)
+        //
+        //
+        // ==== HYPERBOLIC CASE: ====
+        // https://space.stackexchange.com/a/54418
+        //                                    [      -sinh F       ]
+        // vector_o'(t) = sqrt(-GM * a) / r * [ sqrt(e^2-1) cosh F ]
+        //                                    [         0          ]
+        //
+        // outer_mult = sqrt(GM * a) / r
+        // trig_ecc_anom = (eccentric_anomaly.sinh(), eccentric_anomaly.cosh())
+        // q_mult = sqrt(e^2 - 1)
+        DVec2::new(
+            outer_mult * -trig_ecc_anom.0,
+            outer_mult * q_mult * trig_ecc_anom.1,
+        )
     }
 
     /// Gets the velocity at a given time in the orbit
@@ -1565,8 +1734,9 @@ pub trait OrbitTrait {
     ///
     /// # Performance
     /// This function is somewhat performant. However, if you already know
-    /// the altitude beforehand, you can simply use that and rotate it
-    /// by the angle instead.  
+    /// the altitude beforehand, you might be interested in the unchecked
+    /// version of this function:
+    /// [`get_pqw_position_at_true_anomaly_unchecked`][OrbitTrait::get_pqw_position_at_true_anomaly_unchecked]  
     /// If you're looking to just get the altitude at a given angle,
     /// consider using the [`get_altitude_at_true_anomaly`][OrbitTrait::get_altitude_at_true_anomaly]
     /// function instead.
@@ -1590,6 +1760,67 @@ pub trait OrbitTrait {
         let alt = self.get_altitude_at_true_anomaly(angle);
         let (sin, cos) = angle.sin_cos();
         DVec2::new(alt * cos, alt * sin)
+    }
+
+    /// Gets the position at a certain point in the orbit
+    /// in the [perifocal coordinate system](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
+    ///
+    /// # Unchecked Operation
+    /// This function does not check on the validity of the parameters.  
+    /// Invalid values may lead to nonsensical results.
+    ///
+    /// # Parameters
+    /// ## `altitude`
+    /// The altitude at that certain point in the orbit.
+    /// ## `sincos_angle`
+    /// A tuple containing the sine and cosine (respectively) of the true anomaly
+    /// of the point in the orbit.
+    ///
+    /// # Perifocal Coordinate System
+    /// This function returns a vector in the perifocal coordinate (PQW) system, where
+    /// the first element points to the periapsis, and the second element has a
+    /// true anomaly 90 degrees past the periapsis. The third element points perpendicular
+    /// to the orbital plane, and is always zero in this case, and so it is omitted.
+    ///
+    /// Learn more about the PQW system: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
+    ///
+    /// To convert from the PQW coordinates to regular 3D space, use the
+    /// [`transform_pqw_vector`][OrbitTrait::transform_pqw_vector] function.
+    ///
+    /// # Angle
+    /// The angle is expressed in radians, and ranges from 0 to tau.  
+    /// Anything out of range will get wrapped around.
+    ///
+    /// # Performance
+    /// This function is very performant and should not be the cause of any performance
+    /// issues.
+    ///
+    /// # Example
+    /// ```
+    /// use glam::DVec2;
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// let mut orbit = Orbit::default();
+    /// orbit.set_periapsis(100.0);
+    /// orbit.set_eccentricity(0.0);
+    ///
+    /// let true_anomaly = 1.06;
+    ///
+    /// let pos = orbit.get_pqw_position_at_true_anomaly(true_anomaly);
+    ///
+    /// let altitude = orbit.get_altitude_at_true_anomaly(true_anomaly);
+    /// let sincos_angle = true_anomaly.sin_cos();
+    ///
+    /// let pos2 = orbit.get_pqw_position_at_true_anomaly_unchecked(altitude, sincos_angle);
+    ///
+    /// assert_eq!(pos, pos2);
+    /// ```
+    fn get_pqw_position_at_true_anomaly_unchecked(
+        &self,
+        altitude: f64,
+        sincos_angle: (f64, f64),
+    ) -> DVec2 {
+        DVec2::new(altitude * sincos_angle.1, altitude * sincos_angle.0)
     }
 
     // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
@@ -1672,8 +1903,7 @@ pub trait OrbitTrait {
     /// Gets the velocity at a given angle (true anomaly) in the orbit.
     ///
     /// # Performance
-    /// The velocity is derived from the eccentric anomaly, which uses numerical
-    /// methods and so is not very performant.  
+    /// This function is not too performant as it uses some trigonometric operations.
     /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you only want to know the speed, use
@@ -1682,6 +1912,12 @@ pub trait OrbitTrait {
     /// [`get_velocity_at_eccentric_anomaly`][OrbitTrait::get_velocity_at_eccentric_anomaly]
     /// instead.
     /// These functions do not require numerical methods and therefore are a lot faster.
+    ///
+    /// If you want to get both the position and velocity vectors, you can
+    /// use the
+    /// [`get_state_vectors_at_true_anomaly`][OrbitTrait::get_state_vectors_at_true_anomaly]
+    /// function instead. It prevents redundant calculations and is therefore
+    /// faster than calling the position and velocity functions separately.
     ///
     /// # Angle
     /// The angle is expressed in radians, and ranges from 0 to tau.  
@@ -1741,6 +1977,12 @@ pub trait OrbitTrait {
     /// [`get_speed_at_eccentric_anomaly`][OrbitTrait::get_speed_at_eccentric_anomaly]
     /// function instead.
     ///
+    /// If you want to get both the position and velocity vectors, you can
+    /// use the
+    /// [`get_state_vectors_at_eccentric_anomaly`][OrbitTrait::get_state_vectors_at_eccentric_anomaly]
+    /// function instead. It prevents redundant calculations and is therefore
+    /// faster than calling the position and velocity functions separately.
+    ///
     /// This function benefits significantly from being in the
     /// [cached version of the orbit struct][crate::Orbit].
     fn get_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> DVec3 {
@@ -1765,6 +2007,12 @@ pub trait OrbitTrait {
     /// [`get_velocity_at_true_anomaly`][OrbitTrait::get_velocity_at_true_anomaly]
     /// functions instead.  
     /// These functions do not require numerical methods and therefore are a lot faster.
+    ///
+    /// If you want to get both the position and velocity vectors, you can
+    /// use the
+    /// [`get_state_vectors_at_time`][OrbitTrait::get_state_vectors_at_time]
+    /// function instead. It prevents redundant calculations and is therefore
+    /// faster than calling the position and velocity functions separately.
     ///
     /// # Speed vs. Velocity
     /// Speed is not to be confused with velocity.  
@@ -1948,11 +2196,356 @@ pub trait OrbitTrait {
     /// function instead.  
     /// That does not use numerical methods and therefore is a lot faster.
     ///
+    /// If you want to get both the position and velocity vectors, you can
+    /// use the
+    /// [`get_state_vectors_at_time`][OrbitTrait::get_state_vectors_at_time]
+    /// function instead. It prevents redundant calculations and is therefore
+    /// faster than calling the position and velocity functions separately.
+    ///
     /// # Parabolic Support
     /// **This function returns non-finite numbers for parabolic orbits**
     /// due to how the equation for true anomaly works.
     fn get_position_at_time(&self, t: f64) -> DVec3 {
         self.get_position_at_true_anomaly(self.get_true_anomaly_at_time(t))
+    }
+
+    // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
+    /// Gets the 3D position and velocity at a given eccentric anomaly in the orbit.
+    ///
+    /// # Performance
+    /// This function uses several trigonometric functions, and so it is not too performant.  
+    /// It is recommended to cache this value if you can.
+    ///
+    /// This is, however, faster than individually calling the position and velocity getters
+    /// separately, as this will reuse calculations whenever possible.
+    ///
+    /// If you need *only one* of the vectors, though, you should instead call the dedicated
+    /// getters:  
+    /// [`get_velocity_at_eccentric_anomaly`][OrbitTrait::get_velocity_at_eccentric_anomaly]  
+    /// [`get_position_at_eccentric_anomaly`][OrbitTrait::get_position_at_eccentric_anomaly]  
+    ///
+    /// This function should give similar performance to the getter from the true anomaly:  
+    /// [`get_state_vectors_at_true_anomaly`][OrbitTrait::get_state_vectors_at_true_anomaly]
+    ///
+    /// In case you really want to, an unchecked version of this function is available:  
+    /// [`get_state_vectors_from_unchecked_parts`][OrbitTrait::get_state_vectors_from_unchecked_parts]
+    ///
+    /// # Parabolic Support
+    /// This function doesn't support parabolic trajectories yet.  
+    /// `NaN`s or nonsensical values may be returned.
+    fn get_state_vectors_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> StateVectors {
+        let semi_major_axis = self.get_semi_major_axis();
+        let sqrt_abs_gm_a = (semi_major_axis * self.get_gravitational_parameter())
+            .abs()
+            .sqrt();
+        let true_anomaly = self.get_true_anomaly_at_eccentric_anomaly(eccentric_anomaly);
+        let sincos_angle = true_anomaly.sin_cos();
+        let eccentricity = self.get_eccentricity();
+
+        // 1 minus e^2
+        let _1me2 = 1.0 - eccentricity.powi(2);
+
+        // inlined version of [self.get_semi_latus_rectum] with pre-known values
+        let semi_latus_rectum = if eccentricity == 1.0 {
+            2.0 * self.get_periapsis()
+        } else {
+            semi_major_axis * _1me2
+        };
+
+        let altitude =
+            self.get_altitude_at_true_anomaly_unchecked(semi_latus_rectum, sincos_angle.1);
+
+        let q_mult = _1me2.abs().sqrt();
+
+        // TODO: PARABOLIC SUPPORT: This function doesn't yet consider parabolic orbits.
+        let trig_ecc_anom = if eccentricity < 1.0 {
+            eccentric_anomaly.sin_cos()
+        } else {
+            sinhcosh(eccentric_anomaly)
+        };
+
+        self.get_state_vectors_from_unchecked_parts(
+            sqrt_abs_gm_a,
+            altitude,
+            q_mult,
+            trig_ecc_anom,
+            sincos_angle,
+        )
+    }
+
+    /// Gets the 3D position and velocity at a given angle (true anomaly) in the orbit.
+    ///
+    /// # Angle
+    /// The angle is expressed in radians, and ranges from 0 to tau.  
+    /// Anything out of range will get wrapped around.
+    ///
+    /// # Performance
+    /// This function uses several trigonometric functions, and so it is not too performant.  
+    /// It is recommended to cache this value if you can.
+    ///
+    /// This is, however, faster than individually calling the position and velocity getters
+    /// separately, as this will reuse calculations whenever possible.
+    ///
+    /// If you need *only one* of the vectors, though, you should instead call the dedicated
+    /// getters:  
+    /// [`get_velocity_at_true_anomaly`][OrbitTrait::get_velocity_at_true_anomaly]
+    /// [`get_position_at_true_anomaly`][OrbitTrait::get_position_at_true_anomaly]
+    ///
+    /// This function should give similar performance to the getter from the eccentric anomaly:  
+    /// [`get_state_vectors_at_eccentric_anomaly`][OrbitTrait::get_state_vectors_at_true_anomaly]
+    ///
+    /// In case you really want to, an unchecked version of this function is available:  
+    /// [`get_state_vectors_from_unchecked_parts`][OrbitTrait::get_state_vectors_from_unchecked_parts]
+    ///
+    /// # Parabolic Support
+    /// This function doesn't support parabolic trajectories yet.  
+    /// `NaN`s or nonsensical values may be returned.
+    fn get_state_vectors_at_true_anomaly(&self, true_anomaly: f64) -> StateVectors {
+        let semi_major_axis = self.get_semi_major_axis();
+        let sqrt_abs_gm_a = (semi_major_axis * self.get_gravitational_parameter())
+            .abs()
+            .sqrt();
+        let eccentric_anomaly = self.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
+        let sincos_angle = true_anomaly.sin_cos();
+        let eccentricity = self.get_eccentricity();
+
+        // 1 minus e^2
+        let _1me2 = 1.0 - eccentricity.powi(2);
+
+        // inlined version of [self.get_semi_latus_rectum] with pre-known values
+        let semi_latus_rectum = if eccentricity == 1.0 {
+            2.0 * self.get_periapsis()
+        } else {
+            semi_major_axis * _1me2
+        };
+
+        let altitude =
+            self.get_altitude_at_true_anomaly_unchecked(semi_latus_rectum, sincos_angle.1);
+
+        let q_mult = _1me2.abs().sqrt();
+
+        // TODO: PARABOLIC SUPPORT: This function doesn't yet consider parabolic orbits.
+        let trig_ecc_anom = if eccentricity < 1.0 {
+            eccentric_anomaly.sin_cos()
+        } else {
+            sinhcosh(eccentric_anomaly)
+        };
+
+        self.get_state_vectors_from_unchecked_parts(
+            sqrt_abs_gm_a,
+            altitude,
+            q_mult,
+            trig_ecc_anom,
+            sincos_angle,
+        )
+    }
+
+    /// Gets the 3D position and velocity at a given mean anomaly in the orbit.
+    ///
+    /// # Performance
+    /// This function involves converting the mean anomaly to an eccentric anomaly,
+    /// which involves numerical approach methods and are therefore not performant.  
+    /// It is recommended to cache this value if you can.  
+    ///
+    /// Alternatively, if you already know the eccentric anomaly or true anomaly,
+    /// use the following functions instead, which do not use numerical methods and
+    /// therefore are significantly faster:  
+    /// [`get_state_vectors_at_eccentric_anomaly`][OrbitTrait::get_state_vectors_at_eccentric_anomaly]
+    /// [`get_state_vectors_at_true_anomaly`][OrbitTrait::get_state_vectors_at_true_anomaly]
+    ///
+    /// This function is faster than individually calling the position and velocity getters
+    /// separately, as this will reuse calculations whenever possible.
+    ///
+    /// # Parabolic Support
+    /// This function doesn't support parabolic trajectories yet.  
+    /// `NaN`s or nonsensical values may be returned.
+    fn get_state_vectors_at_mean_anomaly(&self, mean_anomaly: f64) -> StateVectors {
+        self.get_state_vectors_at_eccentric_anomaly(
+            self.get_eccentric_anomaly_at_mean_anomaly(mean_anomaly),
+        )
+    }
+
+    /// Gets the 3D position and velocity at a given time in the orbit.
+    ///
+    /// # Time
+    /// The time is measured in seconds.
+    ///
+    /// # Performance
+    /// This function involves converting a mean anomaly (derived from the time)
+    /// into an eccentric anomaly.  
+    /// This involves numerical approach methods and are therefore not performant.  
+    /// It is recommended to cache this value if you can.
+    ///
+    /// Alternatively, if you already know the eccentric anomaly or true anomaly,
+    /// use the following functions instead, which do not use numerical methods and
+    /// therefore are significantly faster:  
+    /// [`get_state_vectors_at_eccentric_anomaly`][OrbitTrait::get_state_vectors_at_eccentric_anomaly]
+    /// [`get_state_vectors_at_true_anomaly`][OrbitTrait::get_state_vectors_at_true_anomaly]
+    ///
+    /// If you only know the mean anomaly, then that may help with performance a little bit,
+    /// in which case you can use
+    /// [`get_state_vectors_at_mean_anomaly`][OrbitTrait::get_state_vectors_at_mean_anomaly]
+    /// instead.
+    ///
+    /// This function is faster than individually calling the position and velocity getters
+    /// separately, as this will reuse calculations whenever possible.
+    ///
+    /// If you need *only one* of the vectors, though, you should instead call the dedicated
+    /// getters:  
+    /// [`get_velocity_at_time`][OrbitTrait::get_velocity_at_time]
+    /// [`get_position_at_time`][OrbitTrait::get_position_at_time]
+    ///
+    /// # Parabolic Support
+    /// This function doesn't support parabolic trajectories yet.  
+    /// `NaN`s or nonsensical values may be returned.
+    fn get_state_vectors_at_time(&self, t: f64) -> StateVectors {
+        self.get_state_vectors_at_mean_anomaly(self.get_mean_anomaly_at_time(t))
+    }
+
+    /// Gets the 3D position and velocity at a certain point in the orbit.
+    ///
+    /// # Unchecked Operation
+    /// This function does not check the validity of the inputs.  
+    /// Invalid inputs may lead to nonsensical results.
+    ///
+    /// # Parameters
+    /// ## `sqrt_abs_gm_a`
+    /// This parameter's value should be calculated using the formula:  
+    /// `sqrt(abs(GM * a))`  
+    /// where:
+    /// - `GM` is the gravitational parameter (a.k.a. mu)
+    /// - `a` is the semi-major axis of the orbit
+    ///
+    /// Alternatively, for elliptic orbits, this formula can be used:  
+    /// `sqrt(GM * a)`
+    ///
+    /// As for hyperbolic orbits, this formula can be used:  
+    /// `sqrt(-GM * a)`
+    ///
+    /// ## `altitude`
+    /// The altitude at that point in the orbit, in meters.
+    ///
+    /// ## `q_mult`
+    /// This parameter is a multiplier for the second element in the velocity PQW vector.  
+    /// For elliptic orbits, it should be calculated by the formula `sqrt(1 - e^2)`,
+    /// where `e` is the eccentricity of the orbit.  
+    /// For hyperbolic orbits, it should be calculated by the formula `sqrt(e^2 - 1)`,
+    /// where `e` is the eccentricity of the orbit.  
+    /// Alternatively, for the general case, you can use the formula `sqrt(abs(1 - e^2))`.
+    ///
+    /// ## `trig_ecc_anom`
+    /// **For elliptic orbits**, this parameter should be a tuple containing the sine and cosine
+    /// values of the eccentric anomaly, respectively.  
+    /// **For hyperbolic orbits**, this parameter should be a tuple containing the **hyperbolic**
+    /// sine and **hyperbolic** cosine values of the eccentric anomaly, respectively.
+    ///
+    /// ## `sincos_angle`
+    /// This parameter should be calculated by passing the true anomaly into sin_cos():
+    /// ```
+    /// let true_anomaly: f64 = 1.25; // Example value
+    /// let sincos_angle = true_anomaly.sin_cos();
+    /// ```
+    ///
+    /// # Performance
+    /// This function, by itself, is very performant and should not
+    /// be the cause of any performance issues.
+    ///
+    /// # Parabolic Support
+    /// This function doesn't support parabolic trajectories yet.  
+    /// `NaN`s or nonsensical values may be returned.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait, StateVectors};
+    ///
+    /// # fn main() {
+    /// // Elliptic (circular) case
+    ///
+    /// let orbit = Orbit::default();
+    /// let true_anomaly: f64 = 1.24; // Example value
+    /// let eccentric_anomaly = orbit
+    ///     .get_eccentric_anomaly_at_true_anomaly(true_anomaly);
+    /// let sqrt_abs_gm_a = (
+    ///     orbit.get_gravitational_parameter() *
+    ///     orbit.get_semi_major_axis()
+    /// ).abs().sqrt();
+    /// let altitude = orbit.get_altitude_at_true_anomaly(true_anomaly);
+    /// let q_mult = (
+    ///     1.0 - orbit.get_eccentricity().powi(2)
+    /// ).abs().sqrt();
+    /// let trig_ecc_anom = eccentric_anomaly.sin_cos();
+    /// let sincos_angle = true_anomaly.sin_cos();
+    ///
+    /// let sv = StateVectors {
+    ///     position: orbit.get_position_at_true_anomaly(true_anomaly),
+    ///     velocity: orbit.get_velocity_at_true_anomaly(true_anomaly),
+    /// };
+    ///
+    /// let sv2 = orbit.get_state_vectors_from_unchecked_parts(
+    ///     sqrt_abs_gm_a,
+    ///     altitude,
+    ///     q_mult,
+    ///     trig_ecc_anom,
+    ///     sincos_angle
+    /// );
+    ///
+    /// assert_eq!(sv, sv2);
+    /// # }
+    /// ```
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait, sinhcosh, StateVectors};
+    ///
+    /// # fn main() {
+    /// // Hyperbolic case
+    ///
+    /// let mut orbit = Orbit::default();
+    /// orbit.set_eccentricity(1.5);
+    /// let true_anomaly: f64 = 1.24; // Example value
+    /// let eccentric_anomaly = orbit
+    ///     .get_eccentric_anomaly_at_true_anomaly(true_anomaly);
+    /// let sqrt_abs_gm_a = (
+    ///     orbit.get_gravitational_parameter() *
+    ///     orbit.get_semi_major_axis()
+    /// ).abs().sqrt();
+    /// let altitude = orbit.get_altitude_at_true_anomaly(true_anomaly);
+    /// let q_mult = (
+    ///     1.0 - orbit.get_eccentricity().powi(2)
+    /// ).abs().sqrt();
+    /// let trig_ecc_anom = sinhcosh(eccentric_anomaly);
+    /// let sincos_angle = true_anomaly.sin_cos();
+    ///
+    /// let sv = StateVectors {
+    ///     position: orbit.get_position_at_true_anomaly(true_anomaly),
+    ///     velocity: orbit.get_velocity_at_true_anomaly(true_anomaly),
+    /// };
+    ///
+    /// let sv2 = orbit.get_state_vectors_from_unchecked_parts(
+    ///     sqrt_abs_gm_a,
+    ///     altitude,
+    ///     q_mult,
+    ///     trig_ecc_anom,
+    ///     sincos_angle
+    /// );
+    ///
+    /// assert_eq!(sv, sv2);
+    /// # }
+    /// ```
+    fn get_state_vectors_from_unchecked_parts(
+        &self,
+        sqrt_abs_gm_a: f64,
+        altitude: f64,
+        q_mult: f64,
+        trig_ecc_anom: (f64, f64),
+        sincos_angle: (f64, f64),
+    ) -> StateVectors {
+        let outer_mult = sqrt_abs_gm_a / altitude;
+        let pqw_velocity =
+            self.get_pqw_velocity_at_eccentric_anomaly_unchecked(outer_mult, q_mult, trig_ecc_anom);
+        let pqw_position = self.get_pqw_position_at_true_anomaly_unchecked(altitude, sincos_angle);
+        StateVectors {
+            position: self.transform_pqw_vector(pqw_position),
+            velocity: self.transform_pqw_vector(pqw_velocity),
+        }
     }
 
     /// Transforms a position from the perifocal coordinate (PQW) system into
@@ -2383,7 +2976,7 @@ fn keplers_equation_second_derivative(eccentric_anomaly: f64, eccentricity: f64)
 /// Returns a tuple which contains:
 /// - 0: The hyperbolic sine of the number.
 /// - 1: The hyperbolic cosine of the number.
-fn sinhcosh(x: f64) -> (f64, f64) {
+pub fn sinhcosh(x: f64) -> (f64, f64) {
     let e_x = x.exp();
     let e_neg_x = (-x).exp();
 
