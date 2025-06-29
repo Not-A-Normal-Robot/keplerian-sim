@@ -201,7 +201,7 @@ impl Matrix3x2 {
 pub struct StateVectors {
     /// The 3D position at a point in the orbit, in meters.
     pub position: DVec3,
-    /// THe 3D velocity at a point in the orbit, in meters per second.
+    /// The 3D velocity at a point in the orbit, in meters per second.
     pub velocity: DVec3,
 }
 
