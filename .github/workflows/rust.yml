@@ -22,7 +22,7 @@ jobs:
       run: |
         MSRV=$(grep -oP 'rust-version\s*=\s*"\K[0-9.]+(?=")' Cargo.toml)
         echo "MSRV version: $MSRV"
-        echo "::set-output name=msrv::$MSRV"
+        echo "msrv=$MSRV" >> $GITHUB_OUTPUT
 
     - name: Set up Rust toolchain for MSRV
       run: |
