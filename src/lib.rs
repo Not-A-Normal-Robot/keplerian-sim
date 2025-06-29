@@ -1459,9 +1459,23 @@ pub trait OrbitTrait {
     #[doc(alias = "get_flat_velocity_at_angle")]
     #[doc(alias = "get_pqw_velocity_at_angle")]
     fn get_pqw_velocity_at_true_anomaly(&self, angle: f64) -> DVec2 {
+        // TODO: PARABOLIC SUPPORT: This does not play well with parabolic trajectories.
+        let outer_mult = (self.get_semi_major_axis() * self.get_gravitational_parameter())
+            .abs()
+            .sqrt()
+            / self.get_altitude_at_true_anomaly(angle);
+
+        let q_mult = (1.0 - self.get_eccentricity().powi(2)).abs().sqrt();
+
         let eccentric_anomaly = self.get_eccentric_anomaly_at_true_anomaly(angle);
 
-        self.get_pqw_velocity_at_eccentric_anomaly(eccentric_anomaly)
+        let trig_ecc_anom = if self.get_eccentricity() < 1.0 {
+            eccentric_anomaly.sin_cos()
+        } else {
+            sinhcosh(eccentric_anomaly)
+        };
+
+        self.get_pqw_velocity_at_eccentric_anomaly_unchecked(outer_mult, q_mult, trig_ecc_anom)
     }
 
     /// Gets the velocity at a given eccentric anomaly in the orbit
@@ -1494,42 +1508,27 @@ pub trait OrbitTrait {
     /// If you want to just get the speed, consider using the
     /// [`get_speed_at_eccentric_anomaly`][OrbitTrait::get_speed_at_eccentric_anomaly]
     /// function instead.
+    ///
+    /// Alternatively, if you already know some values (such as the altitude), consider
+    /// using the unchecked version of the function instead:  
+    /// [`get_pqw_velocity_at_eccentric_anomaly_unchecked`][OrbitTrait::get_pqw_velocity_at_eccentric_anomaly_unchecked]
     #[doc(alias = "get_flat_velocity_at_eccentric_anomaly")]
     fn get_pqw_velocity_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> DVec2 {
         // TODO: PARABOLIC SUPPORT: This does not play well with parabolic trajectories.
-        if self.get_eccentricity() < 1.0 {
-            // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
-            // Equation 8:
-            //                                   [      -sin E       ]
-            // vector_o'(t) = sqrt(GM * a) / r * [ sqrt(1-e^2) cos E ]
-            //                                   [         0         ]
+        let outer_mult = (self.get_semi_major_axis() * self.get_gravitational_parameter())
+            .abs()
+            .sqrt()
+            / self.get_altitude_at_eccentric_anomaly(eccentric_anomaly);
 
-            let multiplier = (self.get_semi_major_axis() * self.get_gravitational_parameter())
-                .sqrt()
-                / self.get_altitude_at_eccentric_anomaly(eccentric_anomaly);
+        let q_mult = (1.0 - self.get_eccentricity().powi(2)).abs().sqrt();
 
-            let (sin, cos) = eccentric_anomaly.sin_cos();
-
-            DVec2::new(
-                -sin * multiplier,
-                (1.0 - self.get_eccentricity().powi(2)).sqrt() * cos * multiplier,
-            )
+        let trig_ecc_anom = if self.get_eccentricity() < 1.0 {
+            eccentric_anomaly.sin_cos()
         } else {
-            // https://space.stackexchange.com/a/54418
-            //                                    [      -sinh F       ]
-            // vector_o'(t) = sqrt(-GM * a) / r * [ sqrt(e^2-1) cosh F ]
-            //                                    [         0          ]
-            let multiplier = (-self.get_semi_major_axis() * self.get_gravitational_parameter())
-                .sqrt()
-                / self.get_altitude_at_eccentric_anomaly(eccentric_anomaly);
+            sinhcosh(eccentric_anomaly)
+        };
 
-            let (sinh, cosh) = sinhcosh(eccentric_anomaly);
-
-            DVec2::new(
-                -sinh * multiplier,
-                (self.get_eccentricity().powi(2) - 1.0).sqrt() * cosh * multiplier,
-            )
-        }
+        self.get_pqw_velocity_at_eccentric_anomaly_unchecked(outer_mult, q_mult, trig_ecc_anom)
     }
 
     /// Gets the velocity at a given eccentric anomaly in the orbit
@@ -1550,7 +1549,8 @@ pub trait OrbitTrait {
     /// parameter, `a` is the semi-major axis, and `r` is the altitude of
     /// the orbit at that point.  
     /// If the orbit is hyperbolic (e > 1), it should instead be calculated by
-    /// the formula `sqrt(GM * a) / r`
+    /// the formula `sqrt(-GM * a) / r`.  
+    /// For the general case, the formula `sqrt(abs(GM * a)) / r` can be used instead.
     ///
     /// ## `q_mult`
     /// This parameter is a multiplier for the second element in the PQW vector.  
@@ -1648,6 +1648,27 @@ pub trait OrbitTrait {
         q_mult: f64,
         trig_ecc_anom: (f64, f64),
     ) -> DVec2 {
+        // ==== ELLIPTIC CASE: ====
+        // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+        // Equation 8:
+        //                                   [      -sin E       ]
+        // vector_o'(t) = sqrt(GM * a) / r * [ sqrt(1-e^2) cos E ]
+        //                                   [         0         ]
+        //
+        // outer_mult = sqrt(GM * a) / r
+        // trig_ecc_anom = eccentric_anomaly.sin_cos()
+        // q_mult = sqrt(1 - e^2)
+        //
+        //
+        // ==== HYPERBOLIC CASE: ====
+        // https://space.stackexchange.com/a/54418
+        //                                    [      -sinh F       ]
+        // vector_o'(t) = sqrt(-GM * a) / r * [ sqrt(e^2-1) cosh F ]
+        //                                    [         0          ]
+        //
+        // outer_mult = sqrt(GM * a) / r
+        // trig_ecc_anom = (eccentric_anomaly.sinh(), eccentric_anomaly.cosh())
+        // q_mult = sqrt(e^2 - 1)
         DVec2::new(
             outer_mult * -trig_ecc_anom.0,
             outer_mult * q_mult * trig_ecc_anom.1,

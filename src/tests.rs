@@ -1724,7 +1724,6 @@ fn state_vectors_getters_base_test(orbit: Orbit) {
     }
 }
 
-// TODO: Orbit conversion tests for state vectors
 #[test]
 fn test_state_vectors_getters() {
     // TODO: POST-PARABOLIC SUPPORT: Change to all-random instead of just nonparabolic
