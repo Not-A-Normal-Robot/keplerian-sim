@@ -15,7 +15,8 @@ Their YouTube channel:
 https://www.youtube.com/@ScottyAnderson
 
 ## M.Eng. René Schwarz
-https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf  
+https://downloads.rene-schwarz.com/download/M002-Cartesian_State_Vectors_to_Keplerian_Orbit_Elements.pdf  
 - to the point
 - kinda beginner-friendly
 - a lot of the matrix transformation code is derived from here

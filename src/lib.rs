@@ -196,6 +196,9 @@ impl Matrix3x2 {
 ///
 /// The position vector is in meters, while the velocity vector is in
 /// meters per second.
+///
+/// State vectors can be used to form an orbit, see
+/// [`to_orbit`][Self::to_compact_orbit] for more information.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct StateVectors {
@@ -203,6 +206,204 @@ pub struct StateVectors {
     pub position: DVec3,
     /// The 3D velocity at a point in the orbit, in meters per second.
     pub velocity: DVec3,
+}
+
+impl StateVectors {
+    // TODO: THIS NEEDS TESTS
+    // TODO: HYPERBOLIC SUPPORT
+    // TODO: PARABOLIC SUPPORT
+    /// Create a new [`CompactOrbit`] struct from the state
+    /// vectors and a given mu value.
+    ///
+    /// # Mu
+    /// Mu is also known as the gravitational parameter, and
+    /// is equal to `GM`, where `G` is the gravitational constant,
+    /// and `M` is the mass of the parent body.  
+    /// It can be described as how strongly the parent body pulls on
+    /// the orbiting body.
+    ///
+    /// Learn more about the gravitational parameter:
+    /// <https://en.wikipedia.org/wiki/Standard_gravitational_parameter>
+    ///
+    /// # Performance
+    /// This function is not too performant as it uses several trigonometric operations.  
+    ///
+    /// For single conversions, this is faster than
+    /// [the cached orbit converter][Self::to_cached_orbit].  
+    /// However, consider using the cached orbit converter if you want to use the same orbit for
+    /// many calculations, as the caching speed benefits should outgrow the small initialization
+    /// overhead.
+    ///
+    /// # Parabolic Support / Hyperbolic Support
+    /// This function does not yet support parabolic nor hyperbolic trajectories.
+    ///
+    /// # Constraints
+    /// The position must not be at the origin, and the velocity must not be at zero.  
+    /// If this constraint is breached, you may get invalid values such as infinities
+    /// or NaNs.
+    #[must_use]
+    pub fn to_compact_orbit(self, mu: f64) -> CompactOrbit {
+        // Reference:
+        // https://downloads.rene-schwarz.com/download/M002-Cartesian_State_Vectors_to_Keplerian_Orbit_Elements.pdf
+
+        // Not from reference, just pre-calculating reused values
+        // Altitude: used for normalized pos (Eq. 2), Eq. 3, and Eq. 8
+        let recip_altitude = self.position.length_recip();
+        let normalized_pos = self.position * recip_altitude;
+
+        // Equation 1: h = r × r'
+        let orbital_momentum_vector = self.position.cross(self.velocity);
+
+        // Equation 2: e = r' × h / mu - r / ||r||
+        let eccentricity_vector =
+            self.velocity.cross(orbital_momentum_vector) / mu - normalized_pos;
+        let eccentricity = eccentricity_vector.length();
+        let recip_eccentricity = eccentricity.recip();
+
+        // Equation 3: n = (-h_y, h_x, 0)
+        let asc_node_vector = DVec2::new(-orbital_momentum_vector.y, orbital_momentum_vector.x);
+        let asc_node_vec_length_recip = asc_node_vector.length_recip();
+        let asc_node_vector3: DVec3 = (asc_node_vector, 0.0).into();
+
+        // Equation 3 (again): f = {
+        //     ⟨r, r'⟩ >= 0: arccos(⟨e, r⟩ / ||e|| ||r||);
+        //     else: tau - arccos(⟨e, r⟩ / ||e|| ||r||)
+        // }
+        // Note: the angle brackets is notation for inner product space:
+        // https://en.wikipedia.org/wiki/Inner_product_space
+        // It is a generalization of a dot product.
+        let acos_result =
+            (eccentricity_vector.dot(self.position) * recip_eccentricity * recip_altitude).acos();
+        let true_anomaly = if self.position.dot(self.velocity) >= 0.0 {
+            acos_result
+        } else {
+            TAU - acos_result
+        };
+
+        // Equation 4: i = arccos(h_z / ||h||)
+        let inclination = (orbital_momentum_vector.z / orbital_momentum_vector.length()).acos();
+
+        // Equation 5: E = 2 arctan(tan(f / 2) / sqrt((1 + ||e||) / (1 - ||e||)))
+        let eccentric_anomaly = 2.0
+            * ((true_anomaly * 0.5).tan() / ((1.0 + eccentricity) / (1.0 - eccentricity)).sqrt())
+                .atan();
+
+        // Equation 6:
+        // OMEGA = {
+        //     n_y >= 0: arccos(n_x / ||n||);
+        //     n_y < 0: tau - arccos(n_x / ||n||)
+        // }
+        // omega = {
+        //     e_z >= 0: arccos(⟨n, e⟩ / ||n|| ||e||)
+        //     e_z < 0: tau - arccos(⟨n, e⟩ / ||n|| ||e||)
+        // }
+        let acos_result = (asc_node_vector.x * asc_node_vec_length_recip).acos();
+        let long_asc_node = if asc_node_vector.y >= 0.0 {
+            acos_result
+        } else {
+            TAU - acos_result
+        };
+
+        let acos_result = (asc_node_vector3.dot(eccentricity_vector)
+            * asc_node_vec_length_recip
+            * recip_eccentricity)
+            .acos();
+        let arg_pe = if eccentricity_vector.z >= 0.0 {
+            acos_result
+        } else {
+            TAU - acos_result
+        };
+
+        // Equation 7: M = E - ||e|| sin E
+        let mean_anomaly = eccentric_anomaly - eccentricity * eccentric_anomaly.sin();
+
+        // Equation 8: a = 1 / (2 / ||r|| - ||r||)
+        let semi_major_axis = (2.0 * recip_altitude - self.velocity.length_squared()).recip();
+
+        // https://en.wikipedia.org/wiki/Apsis#Mathematical_formulae says:
+        // Pericenter distance: `r_per = (1 - ||e||) a`
+        let periapsis = semi_major_axis * (1.0 - eccentricity);
+
+        CompactOrbit::new(
+            eccentricity,
+            periapsis,
+            inclination,
+            arg_pe,
+            long_asc_node,
+            mean_anomaly,
+            mu,
+        )
+    }
+
+    /// Create a new [`Orbit`] struct from the state
+    /// vectors and a given mu value.
+    ///
+    /// # Mu
+    /// Mu is also known as the gravitational parameter, and
+    /// is equal to `GM`, where `G` is the gravitational constant,
+    /// and `M` is the mass of the parent body.  
+    /// It can be described as how strongly the parent body pulls on
+    /// the orbiting body.
+    ///
+    /// Learn more about the gravitational parameter:
+    /// <https://en.wikipedia.org/wiki/Standard_gravitational_parameter>
+    ///
+    /// # Performance
+    /// This function is not too performant as it uses several trigonometric operations.  
+    ///
+    /// For single conversions, this is slower than
+    /// [the compact orbit converter][Self::to_compact_orbit], as there are some extra
+    /// values that will be calculated and cached.  
+    /// However, if you're going to use this same orbit for many calculations, this should
+    /// be better off in the long run as the caching performance benefits should outgrow
+    /// the small initialization cost.
+    ///
+    /// # Parabolic Support / Hyperbolic Support
+    /// This function does not yet support parabolic nor hyperbolic trajectories.
+    ///
+    /// # Constraints
+    /// The position must not be at the origin, and the velocity must not be at zero.  
+    /// If this constraint is breached, you may get invalid values such as infinities
+    /// or NaNs.
+    #[must_use]
+    pub fn to_cached_orbit(self, mu: f64) -> Orbit {
+        self.to_compact_orbit(mu).into()
+    }
+
+    /// Create a new custom orbit struct from the state vectors
+    /// and a given mu value.
+    ///
+    /// # Mu
+    /// Mu is also known as the gravitational parameter, and
+    /// is equal to `GM`, where `G` is the gravitational constant,
+    /// and `M` is the mass of the parent body.  
+    /// It can be described as how strongly the parent body pulls on
+    /// the orbiting body.
+    ///
+    /// Learn more about the gravitational parameter:
+    /// <https://en.wikipedia.org/wiki/Standard_gravitational_parameter>
+    ///
+    /// # Performance
+    /// This function is not too performant as it uses several trigonometric operations.
+    ///
+    /// The performance also depends on how fast the specified orbit type can convert
+    /// between the [`CompactOrbit`] form into itself, and so we cannot guarantee any
+    /// performance behaviors.
+    ///
+    /// # Parabolic Support / Hyperbolic Support
+    /// This function does not yet support parabolic nor hyperbolic trajectories.
+    ///
+    /// # Constraints
+    /// The position must not be at the origin, and the velocity must not be at zero.  
+    /// If this constraint is breached, you may get invalid values such as infinities
+    /// or NaNs.
+    #[must_use]
+    pub fn to_custom_orbit<O>(self, mu: f64) -> O
+    where
+        O: From<CompactOrbit> + OrbitTrait,
+    {
+        self.to_compact_orbit(mu).into()
+    }
 }
 
 /// A trait that defines the methods that a Keplerian orbit must implement.
