@@ -50,5 +50,11 @@ https://space.stackexchange.com/users/42584/krafpy
 for their answer on Space Stack Exchange:
 https://space.stackexchange.com/a/54418
 
+## Bryan Weber
+for their website detailing orbital mechanics, https://orbital-mechanics.space/  
+Their repo: https://github.com/bryanwweber/orbital-mechanics-notes  
+GitHub profile: https://github.com/bryanwweber
+
+
 ## All GitHub contributors
 Thanks for your issues and PRs!

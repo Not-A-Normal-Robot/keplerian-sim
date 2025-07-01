@@ -210,8 +210,6 @@ pub struct StateVectors {
 
 impl StateVectors {
     // TODO: THIS NEEDS TESTS
-    // TODO: HYPERBOLIC SUPPORT
-    // TODO: PARABOLIC SUPPORT
     /// Create a new [`CompactOrbit`] struct from the state
     /// vectors and a given mu value.
     ///
@@ -234,8 +232,9 @@ impl StateVectors {
     /// many calculations, as the caching speed benefits should outgrow the small initialization
     /// overhead.
     ///
-    /// # Parabolic Support / Hyperbolic Support
-    /// This function does not yet support parabolic nor hyperbolic trajectories.
+    /// # Parabolic Support
+    /// This function does not yet support parabolic trajectories.
+    /// Non-finite values may be returned for such cases.
     ///
     /// # Constraints
     /// The position must not be at the origin, and the velocity must not be at zero.  
@@ -244,85 +243,165 @@ impl StateVectors {
     #[must_use]
     pub fn to_compact_orbit(self, mu: f64) -> CompactOrbit {
         // Reference:
+        // https://orbital-mechanics.space/classical-orbital-elements/orbital-elements-and-the-state-vector.html
+        // Note: That site doesn't use the same "base elements" and
+        // conversions will need to be done at the end
+
+        // Precalculated values
+        let altitude = self.position.length();
+        let altitude_recip = altitude.recip();
+        let position_normal = self.position * altitude_recip;
+        let mu_recip = mu.recip();
+
+        // Step 1: Position and Velocity Magnitudes (i.e. speeds)
+        let radial_speed = self.velocity.dot(position_normal);
+
+        // Step 2: Orbital Angular Momentum
+        let angular_momentum_vector = self.position.cross(self.velocity);
+        let angular_momentum = angular_momentum_vector.length();
+
+        // Step 3: Inclination
+        let inclination = (angular_momentum_vector.z / angular_momentum).acos();
+
+        // Step 4: Right Ascension of the Ascending Node
+        // Here we use René Schwarz's simplification of the cross product
+        // between (0, 0, 1) and the angular momentum vector, outlined in:
         // https://downloads.rene-schwarz.com/download/M002-Cartesian_State_Vectors_to_Keplerian_Orbit_Elements.pdf
+        let asc_vec2 = DVec2::new(-angular_momentum_vector.y, angular_momentum_vector.x);
+        let asc_len = asc_vec2.length();
+        let asc_len_recip = asc_len.recip();
+        let asc_vec3 = asc_vec2.extend(0.0);
 
-        // Not from reference, just pre-calculating reused values
-        // Altitude: used for normalized pos (Eq. 2), Eq. 3, and Eq. 8
-        let recip_altitude = self.position.length_recip();
-        let normalized_pos = self.position * recip_altitude;
+        let long_asc_node = {
+            let tmp = (asc_vec3.x * asc_len_recip).acos();
+            if asc_vec3.y >= 0.0 {
+                tmp
+            } else {
+                TAU - tmp
+            }
+        };
 
-        // Equation 1: h = r × r'
-        let orbital_momentum_vector = self.position.cross(self.velocity);
-
-        // Equation 2: e = r' × h / mu - r / ||r||
+        // Step 5: Eccentricity
         let eccentricity_vector =
-            self.velocity.cross(orbital_momentum_vector) / mu - normalized_pos;
+            self.velocity.cross(angular_momentum_vector) * mu_recip - position_normal;
         let eccentricity = eccentricity_vector.length();
-        let recip_eccentricity = eccentricity.recip();
+        let eccentricity_recip = eccentricity.recip();
 
-        // Equation 3: n = (-h_y, h_x, 0)
-        let asc_node_vector = DVec2::new(-orbital_momentum_vector.y, orbital_momentum_vector.x);
-        let asc_node_vec_length_recip = asc_node_vector.length_recip();
-        let asc_node_vector3: DVec3 = (asc_node_vector, 0.0).into();
-
-        // Equation 3 (again): f = {
-        //     ⟨r, r'⟩ >= 0: arccos(⟨e, r⟩ / ||e|| ||r||);
-        //     else: tau - arccos(⟨e, r⟩ / ||e|| ||r||)
-        // }
-        // Note: the angle brackets is notation for inner product space:
-        // https://en.wikipedia.org/wiki/Inner_product_space
-        // It is a generalization of a dot product.
-        let acos_result =
-            (eccentricity_vector.dot(self.position) * recip_eccentricity * recip_altitude).acos();
-        let true_anomaly = if self.position.dot(self.velocity) >= 0.0 {
-            acos_result
-        } else {
-            TAU - acos_result
+        // Step 6: Argument of Periapsis
+        let arg_pe = {
+            let tmp =
+                (eccentricity_vector.dot(asc_vec3) * eccentricity_recip * asc_len_recip).acos();
+            if eccentricity_vector.z >= 0.0 {
+                tmp
+            } else {
+                TAU - tmp
+            }
         };
 
-        // Equation 4: i = arccos(h_z / ||h||)
-        let inclination = (orbital_momentum_vector.z / orbital_momentum_vector.length()).acos();
-
-        // Equation 5: E = 2 arctan(tan(f / 2) / sqrt((1 + ||e||) / (1 - ||e||)))
-        let eccentric_anomaly = 2.0
-            * ((true_anomaly * 0.5).tan() / ((1.0 + eccentricity) / (1.0 - eccentricity)).sqrt())
-                .atan();
-
-        // Equation 6:
-        // OMEGA = {
-        //     n_y >= 0: arccos(n_x / ||n||);
-        //     n_y < 0: tau - arccos(n_x / ||n||)
-        // }
-        // omega = {
-        //     e_z >= 0: arccos(⟨n, e⟩ / ||n|| ||e||)
-        //     e_z < 0: tau - arccos(⟨n, e⟩ / ||n|| ||e||)
-        // }
-        let acos_result = (asc_node_vector.x * asc_node_vec_length_recip).acos();
-        let long_asc_node = if asc_node_vector.y >= 0.0 {
-            acos_result
-        } else {
-            TAU - acos_result
+        // Step 7: True anomaly
+        let true_anomaly = {
+            let tmp =
+                (eccentricity_vector.dot(self.position) * eccentricity_recip * altitude_recip)
+                    .acos();
+            if radial_speed >= 0.0 {
+                tmp
+            } else {
+                TAU - tmp
+            }
         };
 
-        let acos_result = (asc_node_vector3.dot(eccentricity_vector)
-            * asc_node_vec_length_recip
-            * recip_eccentricity)
-            .acos();
-        let arg_pe = if eccentricity_vector.z >= 0.0 {
-            acos_result
+        // Now we convert those elements into our desired form
+        // First we need to convert `h` (Orbital Angular Momentum)
+        // into periapsis altitude, then we need to convert the true anomaly
+        // to a mean anomaly, or to a "time at periapsis" value for parabolic
+        // orbits.
+        // TODO: PARABOLIC SUPPORT: Implement that "time at periapsis" value
+
+        // Part 1: Converting orbital angular momentum into periapsis altitude
+        //
+        // https://faculty.fiu.edu/~vanhamme/ast3213/orbits.pdf says:
+        // r = (h^2 / mu) / (1 + e * cos(theta))
+        // ...where:
+        // r = altitude at a certain true anomaly in the orbit (theta)
+        // h = the orbital angular momentum scalar vale
+        // mu = the gravitational parameter
+        // e = the eccentricity
+        // theta = the true anomaly
+        //
+        // https://en.wikipedia.org/wiki/True_anomaly says:
+        // [The true anomaly] is the angle between the direction of
+        // periapsis and the current position of the body [...]
+        //
+        // This means that a true anomaly of zero means periapsis.
+        // So if we substitute zero into theta into the earlier equation...
+        //
+        // r = (h^2 / mu) / (1 + e * cos(0))
+        //   = (h^2 / mu) / (1 + e * 1)
+        //   = (h^2 / mu) / (1 + e)
+        //
+        // This gives us the altitude at true anomaly 0 (periapsis).
+        let periapsis = (angular_momentum.powi(2) * mu_recip) / (1.0 + eccentricity);
+
+        // Part 2: converting true anomaly to mean anomaly
+        // We first convert it to an eccentric anomaly:
+        let eccentric_anomaly = if eccentricity < 1.0 {
+            // let v = true_anomaly,
+            //   e = eccentricity,
+            //   E = eccentric anomaly
+            //
+            // https://en.wikipedia.org/wiki/True_anomaly#From_the_eccentric_anomaly:
+            // tan(v / 2) = sqrt((1 + e)/(1 - e)) * tan(E / 2)
+            // 1 = sqrt((1 + e)/(1 - e)) * tan(E / 2) / tan(v / 2)
+            // 1 / tan(E / 2) = sqrt((1 + e)/(1 - e)) / tan(v / 2)
+            // tan(E / 2) = tan(v / 2) / sqrt((1 + e)/(1 - e))
+            // E / 2 = atan(tan(v / 2) / sqrt((1 + e)/(1 - e)))
+            // E = 2 * atan(tan(v / 2) / sqrt((1 + e)/(1 - e)))
+            // E = 2 * atan(tan(v / 2) * sqrt((1 - e)/(1 + e)))
+
+            2.0 * ((true_anomaly * 0.5).tan()
+                * ((1.0 - eccentricity) / (1.0 + eccentricity)).sqrt())
+            .atan()
         } else {
-            TAU - acos_result
+            // From the presentation "Spacecraft Dynamics and Control"
+            // by Matthew M. Peet
+            // https://control.asu.edu/Classes/MAE462/462Lecture05.pdf
+            // Slide 25 of 27
+            // Section "The Method for Hyperbolic Orbits"
+            //
+            // tan(f/2) = sqrt((e+1)/(e-1))*tanh(H/2)
+            // 1 / tanh(H/2) = sqrt((e+1)/(e-1)) / tan(f/2)
+            // tanh(H/2) = tan(f/2) / sqrt((e+1)/(e-1))
+            // tanh(H/2) = tan(f/2) * sqrt((e-1)/(e+1))
+            // H/2 = atanh(tan(f/2) * sqrt((e-1)/(e+1)))
+            // H = 2 atanh(tan(f/2) * sqrt((e-1)/(e+1)))
+            2.0 * ((true_anomaly * 0.5).tan()
+                * ((eccentricity - 1.0) / (eccentricity + 1.0)).sqrt())
+            .atanh()
         };
 
-        // Equation 7: M = E - ||e|| sin E
-        let mean_anomaly = eccentric_anomaly - eccentricity * eccentric_anomaly.sin();
-
-        // Equation 8: a = 1 / (2 / ||r|| - ||r||)
-        let semi_major_axis = (2.0 * recip_altitude - self.velocity.length_squared()).recip();
-
-        // https://en.wikipedia.org/wiki/Apsis#Mathematical_formulae says:
-        // Pericenter distance: `r_per = (1 - ||e||) a`
-        let periapsis = semi_major_axis * (1.0 - eccentricity);
+        // Then use Kepler's Equation to convert eccentric anomaly
+        // to mean anomaly:
+        let mean_anomaly = if eccentricity < 1.0 {
+            // https://en.wikipedia.org/wiki/Kepler%27s_equation#Equation
+            //
+            //      M = E - e sin E
+            //
+            // where:
+            //   M = mean anomaly
+            //   E = eccentric anomaly
+            //   e = eccentricity
+            eccentric_anomaly - eccentricity * eccentric_anomaly.sin()
+        } else {
+            // https://en.wikipedia.org/wiki/Kepler%27s_equation#Hyperbolic_Kepler_equation
+            //
+            //      M = e sinh(H) - H
+            //
+            // where:
+            //   M = mean anomaly
+            //   e = eccentricity
+            //   H = hyperbolic eccentric anomaly
+            eccentricity * eccentric_anomaly.sinh() - eccentric_anomaly
+        };
 
         CompactOrbit::new(
             eccentricity,
@@ -358,8 +437,9 @@ impl StateVectors {
     /// be better off in the long run as the caching performance benefits should outgrow
     /// the small initialization cost.
     ///
-    /// # Parabolic Support / Hyperbolic Support
-    /// This function does not yet support parabolic nor hyperbolic trajectories.
+    /// # Parabolic Support
+    /// This function does not yet support parabolic trajectories.
+    /// Non-finite values may be returned for such cases.
     ///
     /// # Constraints
     /// The position must not be at the origin, and the velocity must not be at zero.  
@@ -390,8 +470,9 @@ impl StateVectors {
     /// between the [`CompactOrbit`] form into itself, and so we cannot guarantee any
     /// performance behaviors.
     ///
-    /// # Parabolic Support / Hyperbolic Support
-    /// This function does not yet support parabolic nor hyperbolic trajectories.
+    /// # Parabolic Support
+    /// This function does not yet support parabolic trajectories.
+    /// Non-finite values may be returned for such cases.
     ///
     /// # Constraints
     /// The position must not be at the origin, and the velocity must not be at zero.  
