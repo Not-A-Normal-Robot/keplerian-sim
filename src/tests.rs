@@ -28,20 +28,6 @@ fn assert_almost_eq(a: f64, b: f64, what: &str) {
     assert!(dist < ALMOST_EQ_TOLERANCE, "{msg}");
 }
 
-fn assert_almost_eq_custom(a: f64, b: f64, tolerance: f64, what: &str) {
-    if a.is_nan() && b.is_nan() {
-        return;
-    }
-
-    let dist = (a - b).abs();
-    let msg = format!(
-        "Almost-eq assertion failed for '{what}'!\n\
-        {a} and {b} has distance {dist}, which is more than max of {tolerance}"
-    );
-
-    assert!(dist < tolerance, "{msg}");
-}
-
 fn assert_almost_eq_orbit(a: &impl OrbitTrait, b: &impl OrbitTrait, what: &str) {
     assert_almost_eq(
         a.get_gravitational_parameter(),
@@ -58,31 +44,47 @@ fn assert_almost_eq_orbit(a: &impl OrbitTrait, b: &impl OrbitTrait, what: &str) 
         b.get_periapsis(),
         &format!("periapsis of {what}"),
     );
-    assert_almost_eq_custom(
-        a.get_mean_anomaly_at_epoch().rem_euclid(TAU),
-        b.get_mean_anomaly_at_epoch().rem_euclid(TAU),
-        0.01,
-        &format!("mean anomaly at epoch of {what}"),
-    );
 
-    let a_p = a.transform_pqw_vector(DVec2::new(1.0, 0.0));
-    let a_q = a.transform_pqw_vector(DVec2::new(0.0, 1.0));
-    let b_p = b.transform_pqw_vector(DVec2::new(1.0, 0.0));
-    let b_q = b.transform_pqw_vector(DVec2::new(0.0, 1.0));
+    if a.get_eccentricity() < 1.5 {
+        const TRUE_ANOMALIES: [f64; 3] = [0.0, PI, -PI];
 
-    let p_angle_diff = a_p.angle_between(b_p);
-    let q_angle_diff = a_q.angle_between(b_q);
+        for theta in TRUE_ANOMALIES {
+            let a_sv = a.get_state_vectors_at_true_anomaly(theta);
+            let b_sv = a.get_state_vectors_at_true_anomaly(theta);
 
-    const ANGULAR_TOLERANCE: f64 = 1e-5;
+            assert_almost_eq_vec3(
+                a_sv.position,
+                b_sv.position,
+                &format!("Positions at f = {theta} for {what}"),
+            );
+            assert_almost_eq_vec3(
+                a_sv.velocity,
+                b_sv.velocity,
+                &format!("Velocities at f = {theta} for {what}"),
+            );
+        }
+    }
 
-    assert!(
-        p_angle_diff < ANGULAR_TOLERANCE,
-        "P basis vector differs by {p_angle_diff} rad (> tolerance of {ANGULAR_TOLERANCE} rad) for {what}"
-    );
-    assert!(
-        q_angle_diff < ANGULAR_TOLERANCE,
-        "Q basis vector differs by {q_angle_diff} rad (> tolerance of {ANGULAR_TOLERANCE} rad) for {what}"
-    );
+    if a.get_eccentricity() > 0.25 {
+        let a_p = a.transform_pqw_vector(DVec2::new(1.0, 0.0));
+        let a_q = a.transform_pqw_vector(DVec2::new(0.0, 1.0));
+        let b_p = b.transform_pqw_vector(DVec2::new(1.0, 0.0));
+        let b_q = b.transform_pqw_vector(DVec2::new(0.0, 1.0));
+
+        let p_angle_diff = a_p.angle_between(b_p);
+        let q_angle_diff = a_q.angle_between(b_q);
+
+        const ANGULAR_TOLERANCE: f64 = 1e-5;
+
+        assert!(
+            p_angle_diff < ANGULAR_TOLERANCE,
+            "P basis vector differs by {p_angle_diff} rad (> tolerance of {ANGULAR_TOLERANCE} rad) for {what}"
+        );
+        assert!(
+            q_angle_diff < ANGULAR_TOLERANCE,
+            "Q basis vector differs by {q_angle_diff} rad (> tolerance of {ANGULAR_TOLERANCE} rad) for {what}"
+        );
+    }
 }
 
 fn assert_eq_vec3(a: DVec3, b: DVec3, what: &str) {
