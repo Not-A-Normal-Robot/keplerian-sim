@@ -45,6 +45,24 @@ fn assert_almost_eq_orbit(a: &impl OrbitTrait, b: &impl OrbitTrait, what: &str) 
         &format!("periapsis of {what}"),
     );
 
+    const TIMES: [f64; 3] = [0.0, -1.0, 1.0];
+
+    for t in TIMES {
+        let a_sv = a.get_state_vectors_at_time(0.0);
+        let b_sv = b.get_state_vectors_at_time(0.0);
+
+        assert_almost_eq_vec3(
+            a_sv.position,
+            b_sv.position,
+            &format!("Positions at t = {t} for {what}"),
+        );
+        assert_almost_eq_vec3(
+            a_sv.velocity,
+            b_sv.velocity,
+            &format!("Velocities at t = {t} for {what}"),
+        );
+    }
+
     if a.get_eccentricity() < 1.5 {
         const TRUE_ANOMALIES: [f64; 3] = [0.0, PI, -PI];
 
@@ -1842,15 +1860,21 @@ fn test_state_vectors_getters() {
 #[test]
 fn test_sv_to_orbit() {
     // TODO: POST-PARABOLIC SUPPORT: Change to all-random instead of just nonparabolic
-    let known_problematic = [Orbit::new(
-        0.0,
-        248352.36201764457,
-        -3.7693637740429713,
-        -0.706898672541695,
-        -4.8477018671546155,
-        -1.280427245535563,
-        2.3191422190564097,
-    )];
+    let known_problematic = [
+        Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
+        Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.26, 1.0),
+        Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.42, 1.0),
+        Orbit::new(0.0, 1.0, 0.0, 1.0, 0.0, 0.87, 1.0),
+        Orbit::new(
+            0.0,
+            248352.36201764457,
+            -3.7693637740429713,
+            -0.706898672541695,
+            -4.8477018671546155,
+            -1.280427245535563,
+            2.3191422190564097,
+        ),
+    ];
 
     for orbit in known_problematic {
         let svs = poll_sv(&orbit);

@@ -209,7 +209,6 @@ pub struct StateVectors {
 }
 
 impl StateVectors {
-    // TODO: THIS NEEDS TESTS
     /// Create a new [`CompactOrbit`] struct from the state
     /// vectors and a given mu value.
     ///
@@ -240,6 +239,48 @@ impl StateVectors {
     /// The position must not be at the origin, and the velocity must not be at zero.  
     /// If this constraint is breached, you may get invalid values such as infinities
     /// or NaNs.
+    ///
+    /// # Examples
+    /// Simple use-case:
+    /// ```
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait};
+    ///
+    /// let orbit = CompactOrbit::default();
+    /// let mu = orbit.get_gravitational_parameter();
+    ///
+    /// let sv = orbit.get_state_vectors_at_time(0.0);
+    ///
+    /// let new_orbit = sv.to_compact_orbit(mu);
+    ///
+    /// assert_eq!(orbit.get_eccentricity(), new_orbit.get_eccentricity());
+    /// assert_eq!(orbit.get_periapsis(), new_orbit.get_periapsis());
+    /// ```
+    /// To simulate a burn:
+    /// ```
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait, StateVectors};
+    /// use glam::DVec3;
+    ///
+    /// let orbit = CompactOrbit::default();
+    /// let mu = orbit.get_gravitational_parameter();
+    ///
+    /// let sv = orbit.get_state_vectors_at_time(0.0);
+    /// assert_eq!(
+    ///     sv,
+    ///     StateVectors {
+    ///         position: DVec3::new(1.0, 0.0, 0.0),
+    ///         velocity: DVec3::new(0.0, 1.0, 0.0),
+    ///     }
+    /// );
+    ///
+    /// let new_sv = StateVectors {
+    ///     velocity: sv.velocity + DVec3::new(0.0, 0.1, 0.0),
+    ///     ..sv
+    /// };
+    ///
+    /// let new_orbit = new_sv.to_compact_orbit(mu);
+    ///
+    /// panic!("{new_orbit:?}");
+    /// ```
     #[must_use]
     pub fn to_compact_orbit(self, mu: f64) -> CompactOrbit {
         // Reference:
