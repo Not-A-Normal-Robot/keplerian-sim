@@ -321,6 +321,11 @@ impl StateVectors {
                 TAU - tmp
             }
         };
+        // LAN is undefined in equatorial orbits (i = 0)
+        // Instead of returning NaN and ruining everything
+        // we'll set it to zero
+        let lan_undefined = long_asc_node.is_nan();
+        let long_asc_node = if lan_undefined { 0.0 } else { long_asc_node };
 
         // Step 5: Eccentricity
         let eccentricity_vector =
@@ -329,7 +334,15 @@ impl StateVectors {
         let eccentricity_recip = eccentricity.recip();
 
         // Step 6: Argument of Periapsis
-        let arg_pe = {
+        let arg_pe = if lan_undefined {
+            // In equatorial orbits, argument of periapsis is undefined because
+            // the longitude of ascending node is undefined
+            // However, the longitude of periapsis is defined.
+            // Since longitude of periapsis = argument of periapsis + longitude of ascending node,
+            // and we set longitude of ascending node to 0.0,
+            // we can just set the argument of periapsis to the longitude of periapsis.
+            todo!("Longitude of Periapsis")
+        } else {
             let tmp =
                 (eccentricity_vector.dot(asc_vec3) * eccentricity_recip * asc_len_recip).acos();
             if eccentricity_vector.z >= 0.0 {
