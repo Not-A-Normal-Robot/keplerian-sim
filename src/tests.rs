@@ -28,6 +28,83 @@ fn assert_almost_eq(a: f64, b: f64, what: &str) {
     assert!(dist < ALMOST_EQ_TOLERANCE, "{msg}");
 }
 
+fn assert_almost_eq_orbit(a: &impl OrbitTrait, b: &impl OrbitTrait, what: &str) {
+    assert_almost_eq(
+        a.get_gravitational_parameter(),
+        b.get_gravitational_parameter(),
+        &format!("gravitational parameter of {what}"),
+    );
+    assert_almost_eq(
+        a.get_eccentricity(),
+        b.get_eccentricity(),
+        &format!("eccentricity of {what}"),
+    );
+    assert_almost_eq(
+        a.get_periapsis(),
+        b.get_periapsis(),
+        &format!("periapsis of {what}"),
+    );
+
+    const TIMES: [f64; 3] = [0.0, -1.0, 1.0];
+
+    for t in TIMES {
+        let a_sv = a.get_state_vectors_at_time(0.0);
+        let b_sv = b.get_state_vectors_at_time(0.0);
+
+        assert_almost_eq_vec3(
+            a_sv.position,
+            b_sv.position,
+            &format!("Positions at t = {t} for {what}"),
+        );
+        assert_almost_eq_vec3(
+            a_sv.velocity,
+            b_sv.velocity,
+            &format!("Velocities at t = {t} for {what}"),
+        );
+    }
+
+    if a.get_eccentricity() < 1.5 {
+        const TRUE_ANOMALIES: [f64; 3] = [0.0, PI, -PI];
+
+        for theta in TRUE_ANOMALIES {
+            let a_sv = a.get_state_vectors_at_true_anomaly(theta);
+            let b_sv = a.get_state_vectors_at_true_anomaly(theta);
+
+            assert_almost_eq_vec3(
+                a_sv.position,
+                b_sv.position,
+                &format!("Positions at f = {theta} for {what}"),
+            );
+            assert_almost_eq_vec3(
+                a_sv.velocity,
+                b_sv.velocity,
+                &format!("Velocities at f = {theta} for {what}"),
+            );
+        }
+    }
+
+    if a.get_eccentricity() > 0.25 {
+        let a_p = a.transform_pqw_vector(DVec2::new(1.0, 0.0));
+        let a_q = a.transform_pqw_vector(DVec2::new(0.0, 1.0));
+        let b_p = b.transform_pqw_vector(DVec2::new(1.0, 0.0));
+        let b_q = b.transform_pqw_vector(DVec2::new(0.0, 1.0));
+
+        let p_angle_diff = a_p.angle_between(b_p);
+        let q_angle_diff = a_q.angle_between(b_q);
+
+        const ANGULAR_TOLERANCE: f64 = 1e-5;
+
+        assert!(
+            p_angle_diff < ANGULAR_TOLERANCE,
+            "P basis vector differs by {p_angle_diff} rad (> tolerance of {ANGULAR_TOLERANCE} rad) for {what}"
+        );
+        assert!(
+            q_angle_diff < ANGULAR_TOLERANCE,
+            "Q basis vector differs by {q_angle_diff} rad (> tolerance of {ANGULAR_TOLERANCE} rad) for {what}"
+        );
+    }
+}
+
 fn assert_eq_vec3(a: DVec3, b: DVec3, what: &str) {
     assert_eq!(a.x.to_bits(), b.x.to_bits(), "X coord of {what}");
     assert_eq!(a.y.to_bits(), b.y.to_bits(), "Y coord of {what}");
@@ -1777,6 +1854,58 @@ fn test_state_vectors_getters() {
             crate::MuSetterMode::KeepElements,
         );
         state_vectors_getters_base_test(orbit);
+    }
+}
+
+#[test]
+fn test_sv_to_orbit() {
+    // TODO: POST-PARABOLIC SUPPORT: Change to all-random instead of just nonparabolic
+    let known_problematic = [
+        Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
+        Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.26, 1.0),
+        Orbit::new(0.0, 1.0, 0.0, 1.0, 0.0, 0.42, 1.0),
+        Orbit::new(0.0, 1.0, 0.0, 1.0, 0.0, 0.87, 1.0),
+        Orbit::new(
+            0.0,
+            248352.36201764457,
+            -3.7693637740429713,
+            -0.706898672541695,
+            -4.8477018671546155,
+            -1.280427245535563,
+            2.3191422190564097,
+        ),
+    ];
+
+    for orbit in known_problematic {
+        let svs = poll_sv(&orbit);
+
+        for sv in svs {
+            let new_orbit = sv.to_compact_orbit(orbit.get_gravitational_parameter());
+
+            assert_almost_eq_orbit(
+                &orbit,
+                &new_orbit,
+                &format!("[known problematic] (pre and post) {orbit:?} and {new_orbit:?}"),
+            );
+        }
+    }
+
+    for mut orbit in random_nonparabolic_iter(128) {
+        orbit.set_gravitational_parameter(
+            rand::random_range(0.1..10.0),
+            crate::MuSetterMode::KeepElements,
+        );
+        let svs = poll_sv(&orbit);
+
+        for sv in svs {
+            let new_orbit = sv.to_compact_orbit(orbit.get_gravitational_parameter());
+
+            assert_almost_eq_orbit(
+                &orbit,
+                &new_orbit,
+                &format!("(pre and post) {orbit:?} and {new_orbit:?}"),
+            );
+        }
     }
 }
 

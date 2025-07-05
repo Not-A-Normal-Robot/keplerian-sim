@@ -196,6 +196,9 @@ impl Matrix3x2 {
 ///
 /// The position vector is in meters, while the velocity vector is in
 /// meters per second.
+///
+/// State vectors can be used to form an orbit, see
+/// [`to_orbit`][Self::to_compact_orbit] for more information.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct StateVectors {
@@ -203,6 +206,339 @@ pub struct StateVectors {
     pub position: DVec3,
     /// The 3D velocity at a point in the orbit, in meters per second.
     pub velocity: DVec3,
+}
+
+impl StateVectors {
+    /// Create a new [`CompactOrbit`] struct from the state
+    /// vectors and a given mu value.
+    ///
+    /// # Mu
+    /// Mu is also known as the gravitational parameter, and
+    /// is equal to `GM`, where `G` is the gravitational constant,
+    /// and `M` is the mass of the parent body.  
+    /// It can be described as how strongly the parent body pulls on
+    /// the orbiting body.
+    ///
+    /// Learn more about the gravitational parameter:
+    /// <https://en.wikipedia.org/wiki/Standard_gravitational_parameter>
+    ///
+    /// # Performance
+    /// This function is not too performant as it uses several trigonometric operations.  
+    ///
+    /// For single conversions, this is faster than
+    /// [the cached orbit converter][Self::to_cached_orbit].  
+    /// However, consider using the cached orbit converter if you want to use the same orbit for
+    /// many calculations, as the caching speed benefits should outgrow the small initialization
+    /// overhead.
+    ///
+    /// # Parabolic Support
+    /// This function does not yet support parabolic trajectories.
+    /// Non-finite values may be returned for such cases.
+    ///
+    /// # Constraints
+    /// The position must not be at the origin, and the velocity must not be at zero.  
+    /// If this constraint is breached, you may get invalid values such as infinities
+    /// or NaNs.
+    ///
+    /// # Examples
+    /// Simple use-case:
+    /// ```
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait};
+    ///
+    /// let orbit = CompactOrbit::default();
+    /// let mu = orbit.get_gravitational_parameter();
+    ///
+    /// let sv = orbit.get_state_vectors_at_time(0.0);
+    ///
+    /// let new_orbit = sv.to_compact_orbit(mu);
+    ///
+    /// assert_eq!(orbit.get_eccentricity(), new_orbit.get_eccentricity());
+    /// assert_eq!(orbit.get_periapsis(), new_orbit.get_periapsis());
+    /// ```
+    /// To simulate a burn:
+    /// ```
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait, StateVectors};
+    /// use glam::DVec3;
+    ///
+    /// let orbit = CompactOrbit::default();
+    /// let mu = orbit.get_gravitational_parameter();
+    ///
+    /// let sv = orbit.get_state_vectors_at_time(0.0);
+    /// assert_eq!(
+    ///     sv,
+    ///     StateVectors {
+    ///         position: DVec3::new(1.0, 0.0, 0.0),
+    ///         velocity: DVec3::new(0.0, 1.0, 0.0),
+    ///     }
+    /// );
+    ///
+    /// let new_sv = StateVectors {
+    ///     velocity: sv.velocity + DVec3::new(0.0, 0.1, 0.0),
+    ///     ..sv
+    /// };
+    ///
+    /// let new_orbit = new_sv.to_compact_orbit(mu);
+    ///
+    /// panic!("{new_orbit:?}");
+    /// ```
+    #[must_use]
+    pub fn to_compact_orbit(self, mu: f64) -> CompactOrbit {
+        // Reference:
+        // https://orbital-mechanics.space/classical-orbital-elements/orbital-elements-and-the-state-vector.html
+        // Note: That site doesn't use the same "base elements" and
+        // conversions will need to be done at the end
+
+        // Precalculated values
+        let altitude = self.position.length();
+        let altitude_recip = altitude.recip();
+        let position_normal = self.position * altitude_recip;
+        let mu_recip = mu.recip();
+
+        // Step 1: Position and Velocity Magnitudes (i.e. speeds)
+        let radial_speed = self.velocity.dot(position_normal);
+
+        // Step 2: Orbital Angular Momentum
+        let angular_momentum_vector = self.position.cross(self.velocity);
+        let angular_momentum = angular_momentum_vector.length();
+
+        // Step 3: Inclination
+        let inclination = (angular_momentum_vector.z / angular_momentum).acos();
+
+        // Step 4: Right Ascension of the Ascending Node
+        // Here we use René Schwarz's simplification of the cross product
+        // between (0, 0, 1) and the angular momentum vector, outlined in:
+        // https://downloads.rene-schwarz.com/download/M002-Cartesian_State_Vectors_to_Keplerian_Orbit_Elements.pdf
+        let asc_vec2 = DVec2::new(-angular_momentum_vector.y, angular_momentum_vector.x);
+        let asc_len = asc_vec2.length();
+        let asc_len_recip = asc_len.recip();
+        let asc_vec3 = asc_vec2.extend(0.0);
+
+        let long_asc_node = {
+            let tmp = (asc_vec3.x * asc_len_recip).acos();
+            if asc_vec3.y >= 0.0 {
+                tmp
+            } else {
+                TAU - tmp
+            }
+        };
+        // LAN is undefined in equatorial orbits (i = 0)
+        // Instead of returning NaN and ruining everything
+        // we'll set it to zero
+        let lan_undefined = long_asc_node.is_nan();
+        let long_asc_node = if lan_undefined { 0.0 } else { long_asc_node };
+
+        // Step 5: Eccentricity
+        let eccentricity_vector =
+            self.velocity.cross(angular_momentum_vector) * mu_recip - position_normal;
+        let eccentricity = eccentricity_vector.length();
+        let eccentricity_recip = eccentricity.recip();
+
+        // Step 6: Argument of Periapsis
+        let arg_pe = if lan_undefined {
+            // In equatorial orbits, argument of periapsis is undefined because
+            // the longitude of ascending node is undefined
+            // However, the longitude of periapsis is defined.
+            // Since longitude of periapsis = argument of periapsis + longitude of ascending node,
+            // and we set longitude of ascending node to 0.0,
+            // we can just set the argument of periapsis to the longitude of periapsis.
+            todo!("Longitude of Periapsis")
+        } else {
+            let tmp =
+                (eccentricity_vector.dot(asc_vec3) * eccentricity_recip * asc_len_recip).acos();
+            if eccentricity_vector.z >= 0.0 {
+                tmp
+            } else {
+                TAU - tmp
+            }
+        };
+
+        // Step 7: True anomaly
+        let true_anomaly = {
+            let tmp =
+                (eccentricity_vector.dot(self.position) * eccentricity_recip * altitude_recip)
+                    .acos();
+            if radial_speed >= 0.0 {
+                tmp
+            } else {
+                TAU - tmp
+            }
+        };
+
+        // Now we convert those elements into our desired form
+        // First we need to convert `h` (Orbital Angular Momentum)
+        // into periapsis altitude, then we need to convert the true anomaly
+        // to a mean anomaly, or to a "time at periapsis" value for parabolic
+        // orbits.
+        // TODO: PARABOLIC SUPPORT: Implement that "time at periapsis" value
+
+        // Part 1: Converting orbital angular momentum into periapsis altitude
+        //
+        // https://faculty.fiu.edu/~vanhamme/ast3213/orbits.pdf says:
+        // r = (h^2 / mu) / (1 + e * cos(theta))
+        // ...where:
+        // r = altitude at a certain true anomaly in the orbit (theta)
+        // h = the orbital angular momentum scalar vale
+        // mu = the gravitational parameter
+        // e = the eccentricity
+        // theta = the true anomaly
+        //
+        // https://en.wikipedia.org/wiki/True_anomaly says:
+        // [The true anomaly] is the angle between the direction of
+        // periapsis and the current position of the body [...]
+        //
+        // This means that a true anomaly of zero means periapsis.
+        // So if we substitute zero into theta into the earlier equation...
+        //
+        // r = (h^2 / mu) / (1 + e * cos(0))
+        //   = (h^2 / mu) / (1 + e * 1)
+        //   = (h^2 / mu) / (1 + e)
+        //
+        // This gives us the altitude at true anomaly 0 (periapsis).
+        let periapsis = (angular_momentum.powi(2) * mu_recip) / (1.0 + eccentricity);
+
+        // Part 2: converting true anomaly to mean anomaly
+        // We first convert it to an eccentric anomaly:
+        let eccentric_anomaly = if eccentricity < 1.0 {
+            // let v = true_anomaly,
+            //   e = eccentricity,
+            //   E = eccentric anomaly
+            //
+            // https://en.wikipedia.org/wiki/True_anomaly#From_the_eccentric_anomaly:
+            // tan(v / 2) = sqrt((1 + e)/(1 - e)) * tan(E / 2)
+            // 1 = sqrt((1 + e)/(1 - e)) * tan(E / 2) / tan(v / 2)
+            // 1 / tan(E / 2) = sqrt((1 + e)/(1 - e)) / tan(v / 2)
+            // tan(E / 2) = tan(v / 2) / sqrt((1 + e)/(1 - e))
+            // E / 2 = atan(tan(v / 2) / sqrt((1 + e)/(1 - e)))
+            // E = 2 * atan(tan(v / 2) / sqrt((1 + e)/(1 - e)))
+            // E = 2 * atan(tan(v / 2) * sqrt((1 - e)/(1 + e)))
+
+            2.0 * ((true_anomaly * 0.5).tan()
+                * ((1.0 - eccentricity) / (1.0 + eccentricity)).sqrt())
+            .atan()
+        } else {
+            // From the presentation "Spacecraft Dynamics and Control"
+            // by Matthew M. Peet
+            // https://control.asu.edu/Classes/MAE462/462Lecture05.pdf
+            // Slide 25 of 27
+            // Section "The Method for Hyperbolic Orbits"
+            //
+            // tan(f/2) = sqrt((e+1)/(e-1))*tanh(H/2)
+            // 1 / tanh(H/2) = sqrt((e+1)/(e-1)) / tan(f/2)
+            // tanh(H/2) = tan(f/2) / sqrt((e+1)/(e-1))
+            // tanh(H/2) = tan(f/2) * sqrt((e-1)/(e+1))
+            // H/2 = atanh(tan(f/2) * sqrt((e-1)/(e+1)))
+            // H = 2 atanh(tan(f/2) * sqrt((e-1)/(e+1)))
+            2.0 * ((true_anomaly * 0.5).tan()
+                * ((eccentricity - 1.0) / (eccentricity + 1.0)).sqrt())
+            .atanh()
+        };
+
+        // Then use Kepler's Equation to convert eccentric anomaly
+        // to mean anomaly:
+        let mean_anomaly = if eccentricity < 1.0 {
+            // https://en.wikipedia.org/wiki/Kepler%27s_equation#Equation
+            //
+            //      M = E - e sin E
+            //
+            // where:
+            //   M = mean anomaly
+            //   E = eccentric anomaly
+            //   e = eccentricity
+            eccentric_anomaly - eccentricity * eccentric_anomaly.sin()
+        } else {
+            // https://en.wikipedia.org/wiki/Kepler%27s_equation#Hyperbolic_Kepler_equation
+            //
+            //      M = e sinh(H) - H
+            //
+            // where:
+            //   M = mean anomaly
+            //   e = eccentricity
+            //   H = hyperbolic eccentric anomaly
+            eccentricity * eccentric_anomaly.sinh() - eccentric_anomaly
+        };
+
+        CompactOrbit::new(
+            eccentricity,
+            periapsis,
+            inclination,
+            arg_pe,
+            long_asc_node,
+            mean_anomaly,
+            mu,
+        )
+    }
+
+    /// Create a new [`Orbit`] struct from the state
+    /// vectors and a given mu value.
+    ///
+    /// # Mu
+    /// Mu is also known as the gravitational parameter, and
+    /// is equal to `GM`, where `G` is the gravitational constant,
+    /// and `M` is the mass of the parent body.  
+    /// It can be described as how strongly the parent body pulls on
+    /// the orbiting body.
+    ///
+    /// Learn more about the gravitational parameter:
+    /// <https://en.wikipedia.org/wiki/Standard_gravitational_parameter>
+    ///
+    /// # Performance
+    /// This function is not too performant as it uses several trigonometric operations.  
+    ///
+    /// For single conversions, this is slower than
+    /// [the compact orbit converter][Self::to_compact_orbit], as there are some extra
+    /// values that will be calculated and cached.  
+    /// However, if you're going to use this same orbit for many calculations, this should
+    /// be better off in the long run as the caching performance benefits should outgrow
+    /// the small initialization cost.
+    ///
+    /// # Parabolic Support
+    /// This function does not yet support parabolic trajectories.
+    /// Non-finite values may be returned for such cases.
+    ///
+    /// # Constraints
+    /// The position must not be at the origin, and the velocity must not be at zero.  
+    /// If this constraint is breached, you may get invalid values such as infinities
+    /// or NaNs.
+    #[must_use]
+    pub fn to_cached_orbit(self, mu: f64) -> Orbit {
+        self.to_compact_orbit(mu).into()
+    }
+
+    /// Create a new custom orbit struct from the state vectors
+    /// and a given mu value.
+    ///
+    /// # Mu
+    /// Mu is also known as the gravitational parameter, and
+    /// is equal to `GM`, where `G` is the gravitational constant,
+    /// and `M` is the mass of the parent body.  
+    /// It can be described as how strongly the parent body pulls on
+    /// the orbiting body.
+    ///
+    /// Learn more about the gravitational parameter:
+    /// <https://en.wikipedia.org/wiki/Standard_gravitational_parameter>
+    ///
+    /// # Performance
+    /// This function is not too performant as it uses several trigonometric operations.
+    ///
+    /// The performance also depends on how fast the specified orbit type can convert
+    /// between the [`CompactOrbit`] form into itself, and so we cannot guarantee any
+    /// performance behaviors.
+    ///
+    /// # Parabolic Support
+    /// This function does not yet support parabolic trajectories.
+    /// Non-finite values may be returned for such cases.
+    ///
+    /// # Constraints
+    /// The position must not be at the origin, and the velocity must not be at zero.  
+    /// If this constraint is breached, you may get invalid values such as infinities
+    /// or NaNs.
+    #[must_use]
+    pub fn to_custom_orbit<O>(self, mu: f64) -> O
+    where
+        O: From<CompactOrbit> + OrbitTrait,
+    {
+        self.to_compact_orbit(mu).into()
+    }
 }
 
 /// A trait that defines the methods that a Keplerian orbit must implement.
