@@ -341,6 +341,16 @@ impl StateVectors {
             // Since longitude of periapsis = argument of periapsis + longitude of ascending node,
             // and we set longitude of ascending node to 0.0,
             // we can just set the argument of periapsis to the longitude of periapsis.
+
+            // ASRI_306 on https://space.stackexchange.com/a/38316/ says:
+            //
+            //  If it is equatorial but elliptical then,
+            //      cos(arg_pe_true) = e_x / ||e||
+            //  If it is circular but inclined then,
+            //      cos(arg_pe) = (n . r) / (||n|| ||r||)
+            //  If it is circular and equatorial then,
+            //      cos(arg_pe_true) = r_x / ||r||
+
             todo!("Longitude of Periapsis")
         } else {
             let tmp =
