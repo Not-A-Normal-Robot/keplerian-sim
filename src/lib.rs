@@ -324,17 +324,29 @@ impl StateVectors {
         // LAN is undefined in equatorial orbits (i = 0)
         // Instead of returning NaN and ruining everything
         // we'll set it to zero
-        let lan_undefined = long_asc_node.is_nan();
-        let long_asc_node = if lan_undefined { 0.0 } else { long_asc_node };
+        let equatorial = long_asc_node.is_nan();
+        let long_asc_node = if equatorial { 0.0 } else { long_asc_node };
 
         // Step 5: Eccentricity
         let eccentricity_vector =
             self.velocity.cross(angular_momentum_vector) * mu_recip - position_normal;
         let eccentricity = eccentricity_vector.length();
         let eccentricity_recip = eccentricity.recip();
+        let circular = eccentricity < 1e-6;
 
         // Step 6: Argument of Periapsis
-        let arg_pe = if lan_undefined {
+        let arg_pe = match (equatorial, circular) {
+            (false, false) => {
+                // Neither equatorial nor circular
+                // Use normal equation
+                let tmp =
+                    (eccentricity_vector.dot(asc_vec3) * eccentricity_recip * asc_len_recip).acos();
+                if eccentricity_vector.z >= 0.0 {
+                    tmp
+                } else {
+                    TAU - tmp
+                }
+            }
             // In equatorial orbits, argument of periapsis is undefined because
             // the longitude of ascending node is undefined
             // However, the longitude of periapsis is defined.
@@ -350,15 +362,17 @@ impl StateVectors {
             //      cos(arg_pe) = (n . r) / (||n|| ||r||)
             //  If it is circular and equatorial then,
             //      cos(arg_pe_true) = r_x / ||r||
-
-            todo!("Longitude of Periapsis")
-        } else {
-            let tmp =
-                (eccentricity_vector.dot(asc_vec3) * eccentricity_recip * asc_len_recip).acos();
-            if eccentricity_vector.z >= 0.0 {
-                tmp
-            } else {
-                TAU - tmp
+            (true, false) => {
+                // Equatorial, elliptical
+                (eccentricity_vector.x * eccentricity_recip).acos()
+            }
+            (false, true) => {
+                // Inclined, circular
+                (asc_vec3.dot(self.position) * asc_len_recip * altitude_recip).acos()
+            }
+            (true, true) => {
+                // Circular, equatorial
+                (self.position.x * altitude_recip).acos()
             }
         };
 
