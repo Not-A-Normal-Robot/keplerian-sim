@@ -1861,15 +1861,15 @@ fn test_state_vectors_getters() {
 fn test_sv_to_orbit() {
     // TODO: POST-PARABOLIC SUPPORT: Change to all-random instead of just nonparabolic
     let known_problematic = [
-        Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
-        Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.26, 1.0),
-        Orbit::new(0.0, 1.0, 0.0, 1.0, 0.0, 0.42, 1.0),
-        Orbit::new(0.0, 1.0, 0.0, 1.0, 0.0, 0.87, 1.0),
-        Orbit::new(0.1, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
-        Orbit::new(0.1, 1.0, 0.0, 0.0, 0.0, 0.26, 1.0),
-        Orbit::new(0.1, 1.0, 0.0, 1.0, 0.0, 0.42, 1.0),
-        Orbit::new(0.1, 1.0, 0.0, 1.0, 0.0, 0.87, 1.0),
-        Orbit::new(
+        CompactOrbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
+        CompactOrbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.26, 1.0),
+        CompactOrbit::new(0.0, 1.0, 0.0, 1.0, 0.0, 0.42, 1.0),
+        CompactOrbit::new(0.0, 1.0, 0.0, 1.0, 0.0, 0.87, 1.0),
+        CompactOrbit::new(0.1, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0),
+        CompactOrbit::new(0.1, 1.0, 0.0, 0.0, 0.0, 0.26, 1.0),
+        CompactOrbit::new(0.1, 1.0, 0.0, 1.0, 0.0, 0.42, 1.0),
+        CompactOrbit::new(0.1, 1.0, 0.0, 1.0, 0.0, 0.87, 1.0),
+        CompactOrbit::new(
             0.0,
             248352.36201764457,
             -3.7693637740429713,
