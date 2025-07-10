@@ -255,7 +255,7 @@ impl StateVectors {
     /// assert_eq!(orbit.get_eccentricity(), new_orbit.get_eccentricity());
     /// assert_eq!(orbit.get_periapsis(), new_orbit.get_periapsis());
     /// ```
-    /// To simulate a burn:
+    /// To simulate a 0.1 m/s prograde burn at periapsis:
     /// ```
     /// use keplerian_sim::{CompactOrbit, OrbitTrait, StateVectors};
     /// use glam::DVec3;
@@ -279,7 +279,18 @@ impl StateVectors {
     ///
     /// let new_orbit = new_sv.to_compact_orbit(mu);
     ///
-    /// panic!("{new_orbit:?}");
+    /// assert_eq!(
+    ///     new_orbit,
+    ///     CompactOrbit::new(
+    ///         0.2100000000000002, // eccentricity
+    ///         1.0, // periapsis
+    ///         0.0, // inclination
+    ///         0.0, // argument of periapsis
+    ///         0.0, // longitude of ascending node
+    ///         0.0, // mean anomaly
+    ///         1.0, // gravitational parameter
+    ///     )
+    /// )
     /// ```
     #[must_use]
     pub fn to_compact_orbit(self, mu: f64) -> CompactOrbit {
@@ -335,9 +346,28 @@ impl StateVectors {
         let circular = eccentricity < 1e-6;
 
         // Step 6: Argument of Periapsis
-        let arg_pe = match (equatorial, circular) {
+        // In equatorial orbits, argument of periapsis is undefined because
+        // the longitude of ascending node is undefined
+        // However, the longitude of periapsis is defined.
+        // Since longitude of periapsis = argument of periapsis + longitude of ascending node,
+        // and we set longitude of ascending node to 0.0,
+        // we can just set the argument of periapsis to the longitude of periapsis.
+
+        // ASRI_306 on https://space.stackexchange.com/a/38316/ says (paraphrased):
+        //
+        //  If it is not circular but equatorial then,
+        //      cos(arg_pe_true) = e_x / ||e||
+        //  If it is circular but inclined then,
+        //      cos(arg_pe) = (n . r) / (||n|| ||r||)
+        //  If it is circular and equatorial then,
+        //      cos(arg_pe_true) = r_x / ||r||
+        //
+        // I'm assuming the "arg_pe_true" means the longitude of periapsis,
+        // which would be equal to the argument of periapsis when the
+        // longitude of ascending node is zero (which it is in this case).
+        let arg_pe = match (circular, equatorial) {
             (false, false) => {
-                // Neither equatorial nor circular
+                // Not circular, not equatorial
                 // Use normal equation
                 let tmp =
                     (eccentricity_vector.dot(asc_vec3) * eccentricity_recip * asc_len_recip).acos();
@@ -347,28 +377,13 @@ impl StateVectors {
                     TAU - tmp
                 }
             }
-            // In equatorial orbits, argument of periapsis is undefined because
-            // the longitude of ascending node is undefined
-            // However, the longitude of periapsis is defined.
-            // Since longitude of periapsis = argument of periapsis + longitude of ascending node,
-            // and we set longitude of ascending node to 0.0,
-            // we can just set the argument of periapsis to the longitude of periapsis.
-
-            // ASRI_306 on https://space.stackexchange.com/a/38316/ says:
-            //
-            //  If it is equatorial but elliptical then,
-            //      cos(arg_pe_true) = e_x / ||e||
-            //  If it is circular but inclined then,
-            //      cos(arg_pe) = (n . r) / (||n|| ||r||)
-            //  If it is circular and equatorial then,
-            //      cos(arg_pe_true) = r_x / ||r||
-            (true, false) => {
-                // Equatorial, elliptical
+            (false, true) => {
+                // Not circular, equatorial
                 (eccentricity_vector.x * eccentricity_recip).acos()
             }
-            (false, true) => {
-                // Inclined, circular
-                (asc_vec3.dot(self.position) * asc_len_recip * altitude_recip).acos()
+            (true, false) => {
+                // Circular, not equatorial
+                (asc_vec3.dot(self.position) * eccentricity_recip * asc_len_recip).acos()
             }
             (true, true) => {
                 // Circular, equatorial
@@ -377,7 +392,10 @@ impl StateVectors {
         };
 
         // Step 7: True anomaly
-        let true_anomaly = {
+        // This is undefined for circular orbits, so we set it to zero.
+        let true_anomaly = if circular {
+            0.0
+        } else {
             let tmp =
                 (eccentricity_vector.dot(self.position) * eccentricity_recip * altitude_recip)
                     .acos();
