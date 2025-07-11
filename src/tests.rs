@@ -1885,15 +1885,22 @@ fn test_sv_to_orbit() {
     ];
 
     for orbit in known_problematic {
-        let svs = poll_sv(&orbit);
+        let iter = (0..ORBIT_POLL_ANGLES).into_iter().map(|i| {
+            if orbit.get_eccentricity() < 1.0 {
+                (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64)
+            } else {
+                (i as f64) * TAU / (ORBIT_POLL_ANGLES as f64)
+            }
+        });
 
-        for sv in svs {
-            let new_orbit = sv.to_compact_orbit(orbit.get_gravitational_parameter());
+        for t in iter {
+            let sv = orbit.get_state_vectors_at_time(t);
+            let new_orbit = sv.to_compact_orbit(orbit.get_gravitational_parameter(), t);
 
             assert_almost_eq_orbit(
                 &orbit,
                 &new_orbit,
-                &format!("[known problematic] (pre and post) {orbit:?} and {new_orbit:?} (derived with state vectors {sv:?})"),
+                &format!("[known problematic] (pre and post) {orbit:?} and {new_orbit:?} (derived at t={t:?} from {sv:?})"),
             );
         }
     }
@@ -1903,15 +1910,24 @@ fn test_sv_to_orbit() {
             rand::random_range(0.1..10.0),
             crate::MuSetterMode::KeepElements,
         );
-        let svs = poll_sv(&orbit);
+        let iter = (0..ORBIT_POLL_ANGLES).into_iter().map(|i| {
+            if orbit.get_eccentricity() < 1.0 {
+                (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64)
+            } else {
+                (i as f64) * TAU / (ORBIT_POLL_ANGLES as f64)
+            }
+        });
 
-        for sv in svs {
-            let new_orbit = sv.to_compact_orbit(orbit.get_gravitational_parameter());
+        for t in iter {
+            let sv = orbit.get_state_vectors_at_time(t);
+            let new_orbit = sv.to_compact_orbit(orbit.get_gravitational_parameter(), t);
 
             assert_almost_eq_orbit(
                 &orbit,
                 &new_orbit,
-                &format!("(pre and post) {orbit:?} and {new_orbit:?}"),
+                &format!(
+                    "(pre and post) {orbit:?} and {new_orbit:?} (derived at t={t:?} from {sv:?})"
+                ),
             );
         }
     }

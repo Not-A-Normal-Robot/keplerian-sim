@@ -222,6 +222,9 @@ impl StateVectors {
     /// Learn more about the gravitational parameter:
     /// <https://en.wikipedia.org/wiki/Standard_gravitational_parameter>
     ///
+    /// # Time
+    /// The time `t` passed into the function is measured in seconds.
+    ///
     /// # Performance
     /// This function is not too performant as it uses several trigonometric operations.  
     ///
@@ -247,23 +250,25 @@ impl StateVectors {
     ///
     /// let orbit = CompactOrbit::default();
     /// let mu = orbit.get_gravitational_parameter();
+    /// let time = 0.0;
     ///
-    /// let sv = orbit.get_state_vectors_at_time(0.0);
+    /// let sv = orbit.get_state_vectors_at_time(time);
     ///
-    /// let new_orbit = sv.to_compact_orbit(mu);
+    /// let new_orbit = sv.to_compact_orbit(mu, time);
     ///
     /// assert_eq!(orbit.get_eccentricity(), new_orbit.get_eccentricity());
     /// assert_eq!(orbit.get_periapsis(), new_orbit.get_periapsis());
     /// ```
-    /// To simulate a 0.1 m/s prograde burn at periapsis:
+    /// To simulate an instantaneous 0.1 m/s prograde burn at periapsis:
     /// ```
     /// use keplerian_sim::{CompactOrbit, OrbitTrait, StateVectors};
     /// use glam::DVec3;
     ///
     /// let orbit = CompactOrbit::default();
     /// let mu = orbit.get_gravitational_parameter();
+    /// let time = 0.0;
     ///
-    /// let sv = orbit.get_state_vectors_at_time(0.0);
+    /// let sv = orbit.get_state_vectors_at_time(time);
     /// assert_eq!(
     ///     sv,
     ///     StateVectors {
@@ -277,7 +282,7 @@ impl StateVectors {
     ///     ..sv
     /// };
     ///
-    /// let new_orbit = new_sv.to_compact_orbit(mu);
+    /// let new_orbit = new_sv.to_compact_orbit(mu, time);
     ///
     /// assert_eq!(
     ///     new_orbit,
@@ -293,7 +298,7 @@ impl StateVectors {
     /// )
     /// ```
     #[must_use]
-    pub fn to_compact_orbit(self, mu: f64) -> CompactOrbit {
+    pub fn to_compact_orbit(self, mu: f64, t: f64) -> CompactOrbit {
         // Reference:
         // https://orbital-mechanics.space/classical-orbital-elements/orbital-elements-and-the-state-vector.html
         // Note: That site doesn't use the same "base elements" and
@@ -410,7 +415,7 @@ impl StateVectors {
         // First we need to convert `h` (Orbital Angular Momentum)
         // into periapsis altitude, then we need to convert the true anomaly
         // to a mean anomaly, or to a "time at periapsis" value for parabolic
-        // orbits.
+        // orbits (not implemented yet).
         // TODO: PARABOLIC SUPPORT: Implement that "time at periapsis" value
 
         // Part 1: Converting orbital angular momentum into periapsis altitude
@@ -499,13 +504,32 @@ impl StateVectors {
             eccentricity * eccentric_anomaly.sinh() - eccentric_anomaly
         };
 
+        // We now have the actual mean anomaly (`M`) at the current time (`t`)
+        // We want to get the mean anomaly *at epoch* (`M_0`)
+        // This means offsetting the mean anomaly using the given current timestamp (`t`)
+        //
+        // M = t * sqrt(mu / |a^3|) + M_0
+        // M - M_0 = t * sqrt(mu / |a^3|)
+        // -M_0 = t * sqrt(mu / |a^3|) - M
+        // M_0 = M - t * sqrt(mu / |a^3|)
+        //
+        // a = r_p / (1 - e)
+        let semi_major_axis: f64 = periapsis / (1.0 - eccentricity);
+        let offset = t * (mu / semi_major_axis.powi(3).abs()).sqrt();
+        let mean_anomaly_at_epoch = mean_anomaly - offset;
+        let mean_anomaly_at_epoch = if eccentricity < 1.0 {
+            mean_anomaly_at_epoch.rem_euclid(TAU)
+        } else {
+            mean_anomaly_at_epoch
+        };
+
         CompactOrbit::new(
             eccentricity,
             periapsis,
             inclination,
             arg_pe,
             long_asc_node,
-            mean_anomaly,
+            mean_anomaly_at_epoch,
             mu,
         )
     }
@@ -522,6 +546,9 @@ impl StateVectors {
     ///
     /// Learn more about the gravitational parameter:
     /// <https://en.wikipedia.org/wiki/Standard_gravitational_parameter>
+    ///
+    /// # Time
+    /// The time `t` passed into the function is measured in seconds.
     ///
     /// # Performance
     /// This function is not too performant as it uses several trigonometric operations.  
@@ -542,8 +569,8 @@ impl StateVectors {
     /// If this constraint is breached, you may get invalid values such as infinities
     /// or NaNs.
     #[must_use]
-    pub fn to_cached_orbit(self, mu: f64) -> Orbit {
-        self.to_compact_orbit(mu).into()
+    pub fn to_cached_orbit(self, mu: f64, t: f64) -> Orbit {
+        self.to_compact_orbit(mu, t).into()
     }
 
     /// Create a new custom orbit struct from the state vectors
@@ -558,6 +585,9 @@ impl StateVectors {
     ///
     /// Learn more about the gravitational parameter:
     /// <https://en.wikipedia.org/wiki/Standard_gravitational_parameter>
+    ///
+    /// # Time
+    /// The time `t` passed into the function is measured in seconds.
     ///
     /// # Performance
     /// This function is not too performant as it uses several trigonometric operations.
@@ -575,11 +605,11 @@ impl StateVectors {
     /// If this constraint is breached, you may get invalid values such as infinities
     /// or NaNs.
     #[must_use]
-    pub fn to_custom_orbit<O>(self, mu: f64) -> O
+    pub fn to_custom_orbit<O>(self, mu: f64, t: f64) -> O
     where
         O: From<CompactOrbit> + OrbitTrait,
     {
-        self.to_compact_orbit(mu).into()
+        self.to_compact_orbit(mu, t).into()
     }
 }
 
@@ -652,6 +682,7 @@ pub trait OrbitTrait {
     /// This function is very performant and should not be the cause of any
     /// performance issues.
     fn get_semi_major_axis(&self) -> f64 {
+        // a = r_p / (1 - e)
         self.get_periapsis() / (1.0 - self.get_eccentricity())
     }
 
@@ -1448,6 +1479,7 @@ pub trait OrbitTrait {
     /// This function is performant and is unlikely to be the culprit of
     /// any performance issues.
     fn get_mean_anomaly_at_time(&self, t: f64) -> f64 {
+        // M = t * sqrt(mu / |a^3|) + M_0
         t * (self.get_gravitational_parameter() / self.get_semi_major_axis().powi(3).abs()).sqrt()
             + self.get_mean_anomaly_at_epoch()
     }
