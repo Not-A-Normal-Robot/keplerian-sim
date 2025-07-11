@@ -106,25 +106,29 @@ fn assert_almost_eq_orbit(a: &impl OrbitTrait, b: &impl OrbitTrait, what: &str) 
 }
 
 fn assert_eq_vec3(a: DVec3, b: DVec3, what: &str) {
-    assert_eq!(a.x.to_bits(), b.x.to_bits(), "X coord of {what}");
-    assert_eq!(a.y.to_bits(), b.y.to_bits(), "Y coord of {what}");
-    assert_eq!(a.z.to_bits(), b.z.to_bits(), "Z coord of {what}");
+    let desc = format!("{a:?} vs {b:?}; {what}");
+    assert_eq!(a.x.to_bits(), b.x.to_bits(), "X coord of {desc}");
+    assert_eq!(a.y.to_bits(), b.y.to_bits(), "Y coord of {desc}");
+    assert_eq!(a.z.to_bits(), b.z.to_bits(), "Z coord of {desc}");
 }
 
 fn assert_eq_vec2(a: DVec2, b: DVec2, what: &str) {
-    assert_eq!(a.x.to_bits(), b.x.to_bits(), "X coord of {what}");
-    assert_eq!(a.y.to_bits(), b.y.to_bits(), "Y coord of {what}");
+    let desc = format!("{a:?} vs {b:?}; {what}");
+    assert_eq!(a.x.to_bits(), b.x.to_bits(), "X coord of {desc}");
+    assert_eq!(a.y.to_bits(), b.y.to_bits(), "Y coord of {desc}");
 }
 
 fn assert_almost_eq_vec3(a: DVec3, b: DVec3, what: &str) {
-    assert_almost_eq(a.x, b.x, &("X coord of ".to_string() + what));
-    assert_almost_eq(a.y, b.y, &("Y coord of ".to_string() + what));
-    assert_almost_eq(a.z, b.z, &("Z coord of ".to_string() + what));
+    let desc = format!("{a:?} vs {b:?}; {what}");
+    assert_almost_eq(a.x, b.x, &("X coord of ".to_string() + &desc));
+    assert_almost_eq(a.y, b.y, &("Y coord of ".to_string() + &desc));
+    assert_almost_eq(a.z, b.z, &("Z coord of ".to_string() + &desc));
 }
 
 fn assert_almost_eq_vec2(a: DVec2, b: DVec2, what: &str) {
-    assert_almost_eq(a.x, b.x, &("X coord of ".to_string() + what));
-    assert_almost_eq(a.y, b.y, &("Y coord of ".to_string() + what));
+    let desc = format!("{a:?} vs {b:?}; {what}");
+    assert_almost_eq(a.x, b.x, &("X coord of ".to_string() + &desc));
+    assert_almost_eq(a.y, b.y, &("Y coord of ".to_string() + &desc));
 }
 
 fn assert_orbit_positions_3d(orbit: &impl OrbitTrait, tests: &[(&str, f64, DVec3)]) {
@@ -1889,7 +1893,7 @@ fn test_sv_to_orbit() {
             assert_almost_eq_orbit(
                 &orbit,
                 &new_orbit,
-                &format!("[known problematic] (pre and post) {orbit:?} and {new_orbit:?}"),
+                &format!("[known problematic] (pre and post) {orbit:?} and {new_orbit:?} (derived with state vectors {sv:?})"),
             );
         }
     }
