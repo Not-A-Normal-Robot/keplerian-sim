@@ -48,8 +48,8 @@ fn assert_almost_eq_orbit(a: &impl OrbitTrait, b: &impl OrbitTrait, what: &str) 
     const TIMES: [f64; 3] = [0.0, -1.0, 1.0];
 
     for t in TIMES {
-        let a_sv = a.get_state_vectors_at_time(0.0);
-        let b_sv = b.get_state_vectors_at_time(0.0);
+        let a_sv = a.get_state_vectors_at_time(t);
+        let b_sv = b.get_state_vectors_at_time(t);
 
         assert_almost_eq_vec3(
             a_sv.position,
@@ -68,7 +68,7 @@ fn assert_almost_eq_orbit(a: &impl OrbitTrait, b: &impl OrbitTrait, what: &str) 
 
         for theta in TRUE_ANOMALIES {
             let a_sv = a.get_state_vectors_at_true_anomaly(theta);
-            let b_sv = a.get_state_vectors_at_true_anomaly(theta);
+            let b_sv = b.get_state_vectors_at_true_anomaly(theta);
 
             assert_almost_eq_vec3(
                 a_sv.position,

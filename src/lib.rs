@@ -388,7 +388,7 @@ impl StateVectors {
             }
             (true, false) => {
                 // Circular, not equatorial
-                (asc_vec3.dot(self.position) * eccentricity_recip * asc_len_recip).acos()
+                (asc_vec3.dot(self.position) * altitude_recip * asc_len_recip).acos()
             }
             (true, true) => {
                 // Circular, equatorial
