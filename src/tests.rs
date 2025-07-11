@@ -1894,13 +1894,16 @@ fn test_sv_to_orbit() {
         });
 
         for t in iter {
+            let mean_anom = orbit.get_mean_anomaly_at_time(t);
+            let ecc_anom = orbit.get_eccentric_anomaly_at_time(t);
+            let true_anom = orbit.get_true_anomaly_at_time(t);
             let sv = orbit.get_state_vectors_at_time(t);
             let new_orbit = sv.to_compact_orbit(orbit.get_gravitational_parameter(), t);
 
             assert_almost_eq_orbit(
                 &orbit,
                 &new_orbit,
-                &format!("[known problematic] (pre and post) {orbit:?} and {new_orbit:?} (derived at t={t:?} from {sv:?})"),
+                &format!("[known problematic] (pre and post) {orbit:?} and {new_orbit:?} (derived at t={t:?}/M={mean_anom:?}/E={ecc_anom:?}/f={true_anom:?} from {sv:?})"),
             );
         }
     }
@@ -1919,6 +1922,9 @@ fn test_sv_to_orbit() {
         });
 
         for t in iter {
+            let mean_anom = orbit.get_mean_anomaly_at_time(t);
+            let ecc_anom = orbit.get_eccentric_anomaly_at_time(t);
+            let true_anom = orbit.get_true_anomaly_at_time(t);
             let sv = orbit.get_state_vectors_at_time(t);
             let new_orbit = sv.to_compact_orbit(orbit.get_gravitational_parameter(), t);
 
@@ -1926,7 +1932,7 @@ fn test_sv_to_orbit() {
                 &orbit,
                 &new_orbit,
                 &format!(
-                    "(pre and post) {orbit:?} and {new_orbit:?} (derived at t={t:?} from {sv:?})"
+                    "(pre and post) {orbit:?} and {new_orbit:?} (derived at t={t:?}/M={mean_anom:?}/E={ecc_anom:?}/f={true_anom:?} from {sv:?})"
                 ),
             );
         }
