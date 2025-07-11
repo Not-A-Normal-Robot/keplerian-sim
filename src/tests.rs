@@ -48,18 +48,24 @@ fn assert_almost_eq_orbit(a: &impl OrbitTrait, b: &impl OrbitTrait, what: &str) 
     const TIMES: [f64; 3] = [0.0, -1.0, 1.0];
 
     for t in TIMES {
+        let mean_anom_a = a.get_mean_anomaly_at_time(t);
+        let ecc_anom_a = a.get_eccentric_anomaly_at_time(t);
+        let true_anom_a = a.get_true_anomaly_at_time(t);
+        let mean_anom_b = b.get_mean_anomaly_at_time(t);
+        let ecc_anom_b = b.get_eccentric_anomaly_at_time(t);
+        let true_anom_b = b.get_true_anomaly_at_time(t);
         let a_sv = a.get_state_vectors_at_time(t);
         let b_sv = b.get_state_vectors_at_time(t);
 
         assert_almost_eq_vec3(
             a_sv.position,
             b_sv.position,
-            &format!("Positions at t = {t} for {what}"),
+            &format!("Positions at t = {t} (Ma={mean_anom_a:?}/Mb={mean_anom_b:?}/Ea={ecc_anom_a:?}/Eb={ecc_anom_b:?}/fa={true_anom_a:?}/fb={true_anom_b:?}) for {what}"),
         );
         assert_almost_eq_vec3(
             a_sv.velocity,
             b_sv.velocity,
-            &format!("Velocities at t = {t} for {what}"),
+            &format!("Velocities at t = {t} (Ma={mean_anom_a:?}/Mb={mean_anom_b:?}/Ea={ecc_anom_a:?}/Eb={ecc_anom_b:?}/fa={true_anom_a:?}/fb={true_anom_b:?}) for {what}"),
         );
     }
 
