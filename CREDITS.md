@@ -15,7 +15,8 @@ Their YouTube channel:
 https://www.youtube.com/@ScottyAnderson
 
 ## M.Eng. René Schwarz
-https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf  
+https://downloads.rene-schwarz.com/download/M002-Cartesian_State_Vectors_to_Keplerian_Orbit_Elements.pdf  
 - to the point
 - kinda beginner-friendly
 - a lot of the matrix transformation code is derived from here
@@ -48,6 +49,16 @@ https://en.wikipedia.org/wiki/Orbital_elements#Keplerian
 https://space.stackexchange.com/users/42584/krafpy
 for their answer on Space Stack Exchange:
 https://space.stackexchange.com/a/54418
+
+## Bryan Weber
+for their website detailing orbital mechanics, https://orbital-mechanics.space/  
+Their repo: https://github.com/bryanwweber/orbital-mechanics-notes  
+GitHub profile: https://github.com/bryanwweber
+
+## ASRI_306
+https://space.stackexchange.com/users/27193/asri-306
+for their answer on Space Stack Exchange:
+https://space.stackexchange.com/a/38316
 
 ## All GitHub contributors
 Thanks for your issues and PRs!
