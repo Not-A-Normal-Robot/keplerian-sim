@@ -198,7 +198,9 @@ impl Matrix3x2 {
 /// meters per second.
 ///
 /// State vectors can be used to form an orbit, see
-/// [`to_orbit`][Self::to_compact_orbit] for more information.
+/// [`to_compact_orbit`][Self::to_compact_orbit] and
+/// [`to_cached_orbit`][Self::to_cached_orbit]
+/// for more information.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct StateVectors {

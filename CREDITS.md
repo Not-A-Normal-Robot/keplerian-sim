@@ -55,7 +55,7 @@ for their website detailing orbital mechanics, https://orbital-mechanics.space/
 Their repo: https://github.com/bryanwweber/orbital-mechanics-notes  
 GitHub profile: https://github.com/bryanwweber
 
-# ASRI_306
+## ASRI_306
 https://space.stackexchange.com/users/27193/asri-306
 for their answer on Space Stack Exchange:
 https://space.stackexchange.com/a/38316
