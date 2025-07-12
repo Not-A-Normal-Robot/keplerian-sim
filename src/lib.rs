@@ -391,8 +391,8 @@ impl StateVectors {
                 (asc_vec3.dot(self.position) * altitude_recip * asc_len_recip).acos()
             }
             (true, true) => {
-                // Circular, equatorial
-                (self.position.x * altitude_recip).acos()
+                // Circular and equatorial: element degeneracy, keep argument of periapsis at zero
+                0.0
             }
         };
 
