@@ -230,9 +230,13 @@ impl StateVectors {
     ///
     /// For single conversions, this is faster than
     /// [the cached orbit converter][Self::to_cached_orbit].  
-    /// However, consider using the cached orbit converter if you want to use the same orbit for
+    /// However, consider using the cached orbit instead if you want to use the same orbit for
     /// many calculations, as the caching speed benefits should outgrow the small initialization
     /// overhead.
+    ///
+    /// # Reference Frame
+    /// This function expects a state vector where the position's origin (0.0, 0.0, 0.0)
+    /// is the center of the parent body.
     ///
     /// # Parabolic Support
     /// This function does not yet support parabolic trajectories.
@@ -606,6 +610,10 @@ impl StateVectors {
     /// be better off in the long run as the caching performance benefits should outgrow
     /// the small initialization cost.
     ///
+    /// # Reference Frame
+    /// This function expects a state vector where the position's origin (0.0, 0.0, 0.0)
+    /// is the center of the parent body.
+    ///
     /// # Parabolic Support
     /// This function does not yet support parabolic trajectories.
     /// Non-finite values may be returned for such cases.
@@ -614,6 +622,61 @@ impl StateVectors {
     /// The position must not be at the origin, and the velocity must not be at zero.  
     /// If this constraint is breached, you may get invalid values such as infinities
     /// or NaNs.
+    ///
+    /// # Examples
+    /// Simple use-case:
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// let orbit = Orbit::default();
+    /// let mu = orbit.get_gravitational_parameter();
+    /// let time = 0.0;
+    ///
+    /// let sv = orbit.get_state_vectors_at_time(time);
+    ///
+    /// let new_orbit = sv.to_cached_orbit(mu, time);
+    ///
+    /// assert_eq!(orbit.get_eccentricity(), new_orbit.get_eccentricity());
+    /// assert_eq!(orbit.get_periapsis(), new_orbit.get_periapsis());
+    /// ```
+    /// To simulate an instantaneous 0.1 m/s prograde burn at periapsis:
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait, StateVectors};
+    /// use glam::DVec3;
+    ///
+    /// let orbit = Orbit::default();
+    /// let mu = orbit.get_gravitational_parameter();
+    /// let time = 0.0;
+    ///
+    /// let sv = orbit.get_state_vectors_at_time(time);
+    /// assert_eq!(
+    ///     sv,
+    ///     StateVectors {
+    ///         position: DVec3::new(1.0, 0.0, 0.0),
+    ///         velocity: DVec3::new(0.0, 1.0, 0.0),
+    ///     }
+    /// );
+    ///
+    /// let new_sv = StateVectors {
+    ///     velocity: sv.velocity + DVec3::new(0.0, 0.1, 0.0),
+    ///     ..sv
+    /// };
+    ///
+    /// let new_orbit = new_sv.to_cached_orbit(mu, time);
+    ///
+    /// assert_eq!(
+    ///     new_orbit,
+    ///     Orbit::new(
+    ///         0.2100000000000002, // eccentricity
+    ///         1.0, // periapsis
+    ///         0.0, // inclination
+    ///         0.0, // argument of periapsis
+    ///         0.0, // longitude of ascending node
+    ///         0.0, // mean anomaly
+    ///         1.0, // gravitational parameter
+    ///     )
+    /// )
+    /// ```
     #[must_use]
     pub fn to_cached_orbit(self, mu: f64, t: f64) -> Orbit {
         self.to_compact_orbit(mu, t).into()
@@ -641,6 +704,10 @@ impl StateVectors {
     /// The performance also depends on how fast the specified orbit type can convert
     /// between the [`CompactOrbit`] form into itself, and so we cannot guarantee any
     /// performance behaviors.
+    ///
+    /// # Reference Frame
+    /// This function expects a state vector where the position's origin (0.0, 0.0, 0.0)
+    /// is the center of the parent body.
     ///
     /// # Parabolic Support
     /// This function does not yet support parabolic trajectories.
