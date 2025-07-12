@@ -397,9 +397,55 @@ impl StateVectors {
         };
 
         // Step 7: True anomaly
-        // This is undefined for circular orbits, so we set it to zero.
+        // The true anomaly is the angle from periapsis to the current position.
         let true_anomaly = if circular {
-            0.0
+            // The normal equation does not work when the orbit is circular, so we get it
+            // manually by getting the P and Q basis vectors in the PQW coordinate system
+            // (see https://en.wikipedia.org/wiki/Perifocal_coordinate_system),
+            // then measuring the angle between that and our orbit using the dot product.
+            //
+            // We can optimize a little by just considering part of the transformation
+            // matrix instead of the entire matrix.
+            //
+            // Consider this excerpt from the transformation matrix getter from
+            // another part of the codebase:
+            //
+            // matrix.e11 = cos_arg_pe * cos_lan - sin_arg_pe * cos_inc * sin_lan;
+            // matrix.e12 = -(sin_arg_pe * cos_lan + cos_arg_pe * cos_inc * sin_lan);
+            // matrix.e21 = cos_arg_pe * sin_lan + sin_arg_pe * cos_inc * cos_lan;
+            // matrix.e22 = cos_arg_pe * cos_inc * cos_lan - sin_arg_pe * sin_lan;
+            // matrix.e31 = sin_arg_pe * sin_inc;
+            // matrix.e32 = cos_arg_pe * sin_inc;
+            //
+            // Here, `matrix.e*1` (namely e11, e21, e31) describes the P basis vector,
+            // meanwhile `matrix.e*2` describes the Q basis vector.
+
+            let (sin_inc, cos_inc) = inclination.sin_cos();
+            let (sin_arg_pe, cos_arg_pe) = arg_pe.sin_cos();
+            let (sin_lan, cos_lan) = long_asc_node.sin_cos();
+
+            let p_x = cos_arg_pe * cos_lan - sin_arg_pe * cos_inc * sin_lan;
+            let p_y = cos_arg_pe * sin_lan + sin_arg_pe * cos_inc * cos_lan;
+            let p_z = sin_arg_pe * sin_inc;
+
+            let p = DVec3::new(p_x, p_y, p_z);
+
+            let q_x = -(sin_arg_pe * cos_lan + cos_arg_pe * cos_inc * sin_lan);
+            let q_y = cos_arg_pe * cos_inc * cos_lan - sin_arg_pe * sin_lan;
+            let q_z = cos_arg_pe * sin_inc;
+
+            let q = DVec3::new(q_x, q_y, q_z);
+
+            // Now that we have the P and Q basis vectors (of length 1), we can
+            // project our position into the PQW reference frame
+            let pos_p = self.position.dot(p);
+            let pos_q = self.position.dot(q);
+
+            // Then we can get the angle between the projected position and
+            // the +X direction (or technically +P here because it's projected),
+            // and since that direction points to the periapsis, that angle
+            // is the true anomaly
+            pos_q.atan2(pos_p).rem_euclid(TAU)
         } else {
             let tmp =
                 (eccentricity_vector.dot(self.position) * eccentricity_recip * altitude_recip)
