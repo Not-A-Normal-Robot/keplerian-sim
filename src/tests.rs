@@ -280,7 +280,11 @@ mod random_orbit {
         Orbit::new(
             0.0,
             rand::random_range(0.01..1e6),
-            rand::random_range(-TAU..TAU),
+            if rand::random_bool(0.5) {
+                rand::random_range(-TAU..TAU)
+            } else {
+                0.0
+            },
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
@@ -292,7 +296,11 @@ mod random_orbit {
         Orbit::new(
             rand::random_range(0.01..0.99),
             rand::random_range(0.01..1e6),
-            rand::random_range(-TAU..TAU),
+            if rand::random_bool(0.5) {
+                rand::random_range(-TAU..TAU)
+            } else {
+                0.0
+            },
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
@@ -304,7 +312,11 @@ mod random_orbit {
         Orbit::new(
             rand::random_range(0.99..0.9999),
             rand::random_range(0.01..1e6),
-            rand::random_range(-TAU..TAU),
+            if rand::random_bool(0.5) {
+                rand::random_range(-TAU..TAU)
+            } else {
+                0.0
+            },
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
@@ -316,7 +328,11 @@ mod random_orbit {
         Orbit::new(
             1.0,
             rand::random_range(0.01..1e6),
-            rand::random_range(-TAU..TAU),
+            if rand::random_bool(0.5) {
+                rand::random_range(-TAU..TAU)
+            } else {
+                0.0
+            },
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
@@ -328,7 +344,11 @@ mod random_orbit {
         Orbit::new(
             rand::random_range(1.01..3.0),
             rand::random_range(0.01..1e6),
-            rand::random_range(-TAU..TAU),
+            if rand::random_bool(0.5) {
+                rand::random_range(-TAU..TAU)
+            } else {
+                0.0
+            },
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
@@ -340,7 +360,11 @@ mod random_orbit {
         Orbit::new(
             rand::random_range(5.0..15.0),
             rand::random_range(0.01..1e6),
-            rand::random_range(-TAU..TAU),
+            if rand::random_bool(0.5) {
+                rand::random_range(-TAU..TAU)
+            } else {
+                0.0
+            },
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
@@ -352,7 +376,11 @@ mod random_orbit {
         Orbit::new(
             rand::random_range(80.0..150.0),
             rand::random_range(0.01..1e6),
-            rand::random_range(-TAU..TAU),
+            if rand::random_bool(0.5) {
+                rand::random_range(-TAU..TAU)
+            } else {
+                0.0
+            },
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
