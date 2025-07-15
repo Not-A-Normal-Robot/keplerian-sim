@@ -60,12 +60,26 @@ fn assert_almost_eq_orbit(a: &impl OrbitTrait, b: &impl OrbitTrait, what: &str) 
         assert_almost_eq_vec3(
             a_sv.position.normalize(),
             b_sv.position.normalize(),
-            &format!("Positions at t = {t} (Ma={mean_anom_a:?}/Mb={mean_anom_b:?}/Ea={ecc_anom_a:?}/Eb={ecc_anom_b:?}/fa={true_anom_a:?}/fb={true_anom_b:?}) for {what}"),
+            &format!("Normalized positions ({} vs {}) at t = {t} (Ma={mean_anom_a:?}/Mb={mean_anom_b:?}/Ea={ecc_anom_a:?}/Eb={ecc_anom_b:?}/fa={true_anom_a:?}/fb={true_anom_b:?}) for {what}",
+                a_sv.position, b_sv.position),
+        );
+        assert_almost_eq(
+            a_sv.position.length().log10(),
+            b_sv.position.length().log10(),
+            &format!("Log of position ({} vs {}) magnitudes at t = {t} (Ma={mean_anom_a:?}/Mb={mean_anom_b:?}/Ea={ecc_anom_a:?}/Eb={ecc_anom_b:?}/fa={true_anom_a:?}/fb={true_anom_b:?}) for {what}",
+                a_sv.position, b_sv.position),
         );
         assert_almost_eq_vec3(
             a_sv.velocity.normalize(),
             b_sv.velocity.normalize(),
-            &format!("Velocities at t = {t} (Ma={mean_anom_a:?}/Mb={mean_anom_b:?}/Ea={ecc_anom_a:?}/Eb={ecc_anom_b:?}/fa={true_anom_a:?}/fb={true_anom_b:?}) for {what}"),
+            &format!("Normalized velocities ({} vs {}) at t = {t} (Ma={mean_anom_a:?}/Mb={mean_anom_b:?}/Ea={ecc_anom_a:?}/Eb={ecc_anom_b:?}/fa={true_anom_a:?}/fb={true_anom_b:?}) for {what}",
+                a_sv.velocity, b_sv.velocity),
+        );
+        assert_almost_eq(
+            a_sv.velocity.length().log10(),
+            b_sv.velocity.length().log10(),
+            &format!("Log of velocity ({} vs {}) magnitudes at t = {t} (Ma={mean_anom_a:?}/Mb={mean_anom_b:?}/Ea={ecc_anom_a:?}/Eb={ecc_anom_b:?}/fa={true_anom_a:?}/fb={true_anom_b:?}) for {what}",
+                a_sv.velocity, b_sv.velocity),
         );
     }
 
@@ -280,7 +294,11 @@ mod random_orbit {
         Orbit::new(
             0.0,
             rand::random_range(0.01..1e6),
-            rand::random_range(-TAU..TAU),
+            if rand::random_bool(0.5) {
+                rand::random_range(-TAU..TAU)
+            } else {
+                0.0
+            },
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
@@ -292,7 +310,11 @@ mod random_orbit {
         Orbit::new(
             rand::random_range(0.01..0.99),
             rand::random_range(0.01..1e6),
-            rand::random_range(-TAU..TAU),
+            if rand::random_bool(0.5) {
+                rand::random_range(-TAU..TAU)
+            } else {
+                0.0
+            },
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
@@ -304,7 +326,11 @@ mod random_orbit {
         Orbit::new(
             rand::random_range(0.99..0.9999),
             rand::random_range(0.01..1e6),
-            rand::random_range(-TAU..TAU),
+            if rand::random_bool(0.5) {
+                rand::random_range(-TAU..TAU)
+            } else {
+                0.0
+            },
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
@@ -316,7 +342,11 @@ mod random_orbit {
         Orbit::new(
             1.0,
             rand::random_range(0.01..1e6),
-            rand::random_range(-TAU..TAU),
+            if rand::random_bool(0.5) {
+                rand::random_range(-TAU..TAU)
+            } else {
+                0.0
+            },
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
@@ -328,7 +358,11 @@ mod random_orbit {
         Orbit::new(
             rand::random_range(1.01..3.0),
             rand::random_range(0.01..1e6),
-            rand::random_range(-TAU..TAU),
+            if rand::random_bool(0.5) {
+                rand::random_range(-TAU..TAU)
+            } else {
+                0.0
+            },
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
@@ -340,7 +374,11 @@ mod random_orbit {
         Orbit::new(
             rand::random_range(5.0..15.0),
             rand::random_range(0.01..1e6),
-            rand::random_range(-TAU..TAU),
+            if rand::random_bool(0.5) {
+                rand::random_range(-TAU..TAU)
+            } else {
+                0.0
+            },
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
@@ -352,7 +390,11 @@ mod random_orbit {
         Orbit::new(
             rand::random_range(80.0..150.0),
             rand::random_range(0.01..1e6),
-            rand::random_range(-TAU..TAU),
+            if rand::random_bool(0.5) {
+                rand::random_range(-TAU..TAU)
+            } else {
+                0.0
+            },
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
             rand::random_range(-TAU..TAU),
@@ -1894,6 +1936,15 @@ fn test_sv_to_orbit() {
             -4.8477018671546155,
             -1.280427245535563,
             2.3191422190564097,
+        ),
+        CompactOrbit::new(
+            139.37169486186113,
+            563133.6452925412,
+            0.0,
+            4.995613136230864,
+            -0.6106457587079852,
+            1.336834808877482,
+            3.5820444996821963,
         ),
     ];
 

@@ -389,15 +389,30 @@ impl StateVectors {
                 }
             }
             (false, true) => {
-                // Not circular, equatorial
-                (eccentricity_vector.x * eccentricity_recip).acos()
+                // Not circular, equatorial: longitude of periapsis = acos(e_x/|e|) with sign from y
+                let tmp = (eccentricity_vector.x * eccentricity_recip).acos();
+
+                // Acos only returns values in [0, pi] instead of [0, 2pi]. To recover the
+                // full range, we do a sign check on `e.y`, similar to the normal equation earlier,
+                // except since the orbit lies on the XY plane we use the Y component instead of Z
+                if eccentricity_vector.y >= 0.0 {
+                    tmp
+                } else {
+                    TAU - tmp
+                }
             }
             (true, false) => {
                 // Circular, not equatorial
+
+                // Since the orbit is symmetrical, it's fine to only have arg_pe in the
+                // [0, pi] range. We will adjust for this discrepancy in the true anomaly
+                // calculation.
                 (asc_vec3.dot(self.position) * altitude_recip * asc_len_recip).acos()
             }
             (true, true) => {
-                // Circular and equatorial: element degeneracy, keep argument of periapsis at zero
+                // Circular and equatorial
+                // This is a very weird case, so we just set it to zero and adjust
+                // for this discrepancy in the true anomaly calculation instead.
                 0.0
             }
         };
@@ -453,6 +468,8 @@ impl StateVectors {
             // is the true anomaly
             pos_q.atan2(pos_p).rem_euclid(TAU)
         } else {
+            // Use the regular method from orbital-mechanics.space
+            // as previously mentioned
             let tmp =
                 (eccentricity_vector.dot(self.position) * eccentricity_recip * altitude_recip)
                     .acos();
