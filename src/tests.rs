@@ -80,7 +80,7 @@ fn assert_almost_eq_orbit(a: &impl OrbitTrait, b: &impl OrbitTrait, what: &str) 
             b_sv.velocity.length().log10(),
             &format!("Log of velocity ({} vs {}) magnitudes at t = {t} (Ma={mean_anom_a:?}/Mb={mean_anom_b:?}/Ea={ecc_anom_a:?}/Eb={ecc_anom_b:?}/fa={true_anom_a:?}/fb={true_anom_b:?}) for {what}",
                 a_sv.velocity, b_sv.velocity),
-        )
+        );
     }
 
     // Only test true anomaly SVs for inclined, non-circular orbits
