@@ -60,13 +60,27 @@ fn assert_almost_eq_orbit(a: &impl OrbitTrait, b: &impl OrbitTrait, what: &str) 
         assert_almost_eq_vec3(
             a_sv.position.normalize(),
             b_sv.position.normalize(),
-            &format!("Positions at t = {t} (Ma={mean_anom_a:?}/Mb={mean_anom_b:?}/Ea={ecc_anom_a:?}/Eb={ecc_anom_b:?}/fa={true_anom_a:?}/fb={true_anom_b:?}) for {what}"),
+            &format!("Normalized positions ({} vs {}) at t = {t} (Ma={mean_anom_a:?}/Mb={mean_anom_b:?}/Ea={ecc_anom_a:?}/Eb={ecc_anom_b:?}/fa={true_anom_a:?}/fb={true_anom_b:?}) for {what}",
+                a_sv.position, b_sv.position),
+        );
+        assert_almost_eq(
+            a_sv.position.length().log10(),
+            b_sv.position.length().log10(),
+            &format!("Log of position ({} vs {}) magnitudes at t = {t} (Ma={mean_anom_a:?}/Mb={mean_anom_b:?}/Ea={ecc_anom_a:?}/Eb={ecc_anom_b:?}/fa={true_anom_a:?}/fb={true_anom_b:?}) for {what}",
+                a_sv.position, b_sv.position),
         );
         assert_almost_eq_vec3(
             a_sv.velocity.normalize(),
             b_sv.velocity.normalize(),
-            &format!("Velocities at t = {t} (Ma={mean_anom_a:?}/Mb={mean_anom_b:?}/Ea={ecc_anom_a:?}/Eb={ecc_anom_b:?}/fa={true_anom_a:?}/fb={true_anom_b:?}) for {what}"),
+            &format!("Normalized velocities ({} vs {}) at t = {t} (Ma={mean_anom_a:?}/Mb={mean_anom_b:?}/Ea={ecc_anom_a:?}/Eb={ecc_anom_b:?}/fa={true_anom_a:?}/fb={true_anom_b:?}) for {what}",
+                a_sv.velocity, b_sv.velocity),
         );
+        assert_almost_eq(
+            a_sv.velocity.length().log10(),
+            b_sv.velocity.length().log10(),
+            &format!("Log of velocity ({} vs {}) magnitudes at t = {t} (Ma={mean_anom_a:?}/Mb={mean_anom_b:?}/Ea={ecc_anom_a:?}/Eb={ecc_anom_b:?}/fa={true_anom_a:?}/fb={true_anom_b:?}) for {what}",
+                a_sv.velocity, b_sv.velocity),
+        )
     }
 
     // Only test true anomaly SVs for inclined, non-circular orbits
