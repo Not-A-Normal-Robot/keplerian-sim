@@ -371,20 +371,14 @@ impl OrbitTrait for CompactOrbit {
 
                 self.mu = new_mu;
             }
-            crate::MuSetterMode::KeepPositionAndVelocityAtEccentricAnomaly {
-                eccentric_anomaly,
+            crate::MuSetterMode::KeepKnownStateVectors {
+                state_vectors,
                 time,
             } => {
-                let state_vectors = self.get_state_vectors_at_eccentric_anomaly(eccentric_anomaly);
                 let new = state_vectors.to_compact_orbit(new_mu, time);
                 *self = new;
             }
-            crate::MuSetterMode::KeepPositionAndVelocityAtTrueAnomaly { true_anomaly, time } => {
-                let state_vectors = self.get_state_vectors_at_true_anomaly(true_anomaly);
-                let new = state_vectors.to_compact_orbit(new_mu, time);
-                *self = new;
-            }
-            crate::MuSetterMode::KeepPositionAndVelocityAtTime(time) => {
+            crate::MuSetterMode::KeepStateVectorsAtTime(time) => {
                 let ecc_anom = self.get_eccentric_anomaly_at_time(time);
                 let state_vectors = self.get_state_vectors_at_eccentric_anomaly(ecc_anom);
                 let new = state_vectors.to_compact_orbit(new_mu, time);

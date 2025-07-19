@@ -3475,60 +3475,9 @@ pub enum MuSetterMode {
     /// mean anomaly at epoch. However, this isn't too expensive and only costs a
     /// few squareroot operations.
     KeepPositionAtTime(f64),
-    /// Keep the position and velocity of the orbit at a certain point the same
-    /// (deviating a little bit due to inherent floating-point imprecision). Uses
-    /// the true anomaly and time values.
-    ///
-    /// **This will change the orbit's overall trajectory.**
-    ///
-    /// # Angle
-    /// The true anomaly angle is measured in radians. Anything outside
-    /// the range [0, 2 * pi] will get wrapped around. If the current orbit is not
-    /// closed (e ≥ 1), then some true anomaly values may be unreachable and
-    /// can result in NaNs.
-    ///
-    /// # Time
-    /// The time is measured in seconds.
-    ///
-    /// # Unchecked Operation
-    /// This mode does not check whether or not the true anomaly and time values given
-    /// match up. Mismatched values may result in undesired behavior and NaNs.  
-    /// Use the [`KeepPositionAndVelocityAtTime`][MuSetterMode::KeepPositionAndVelocityAtTime]
-    /// mode if you don't want this unchecked operation.
-    ///
-    /// # Performance
-    /// TODO: Check if this uses numerical approach methods
-    /// This mode uses quite a bit of trigonometry, and therefore is not very performant.  
-    /// Consider using another mode if performance is an issue.  
-    ///
-    /// This mode is dependent on the state vector getter.  
-    /// This means that if you already know the state vectors at the given point in the orbit,
-    /// you should consider getting a new orbit struct using [`StateVectors::to_compact_orbit`]
-    /// (and its derivatives) instead. It would skip a significant amount of redundant trig
-    /// operations. After getting the new orbit struct you should be able to overwrite your
-    /// previous orbit with the new orbit.
-    KeepPositionAndVelocityAtTrueAnomaly {
-        /// The true anomaly value of the point in the orbit
-        /// where you want the position and velocity to remain the same.
-        ///
-        /// The true anomaly angle is measured in radians. Anything outside
-        /// the range [0, 2 * pi] will get wrapped around. If the current orbit is not
-        /// closed (e ≥ 1), then some true anomaly values may be unreachable and
-        /// can result in NaNs.
-        ///
-        /// Must correspond to the time value, or undesired behavior and NaNs may occur.
-        true_anomaly: f64,
-        /// The time value of the point in the orbit
-        /// where you want the position and velocity to remain the same.
-        ///
-        /// The time is measured in seconds.
-        ///
-        /// Must correspond to the true anomaly value, or undesired behavior and NaNs may occur.
-        time: f64,
-    },
-    /// Keep the position and velocity of the orbit at a certain point the same
-    /// (deviating a little bit due to inherent floating-point imprecision). Uses the eccentric
-    /// anomaly and time values.
+    /// Keep the position and velocity of the orbit at a certain time
+    /// roughly unchanged, using known [StateVectors] to avoid
+    /// duplicate calculations.
     ///
     /// **This will change the orbit's overall trajectory.**
     ///
@@ -3536,39 +3485,35 @@ pub enum MuSetterMode {
     /// The time is measured in seconds.
     ///
     /// # Unchecked Operation
-    /// This mode does not check whether or not the eccentric anomaly and time values given
+    /// This mode does not check whether or not the state vectors and time values given
     /// match up. Mismatched values may result in undesired behavior and NaNs.  
-    /// Use the [`KeepPositionAndVelocityAtTime`][MuSetterMode::KeepPositionAndVelocityAtTime]
+    /// Use the [`KeepStateVectorsAtTime`][MuSetterMode::KeepStateVectorsAtTime]
     /// mode if you don't want this unchecked operation.
     ///
     /// # Performance
-    /// TODO: Check if this uses numerical approach methods
-    /// This mode uses quite a bit of trigonometry, and therefore is not very performant.  
+    /// This mode uses some trigonometry, and therefore is not very performant.  
     /// Consider using another mode if performance is an issue.  
     ///
-    /// This mode is dependent on the state vector getter.  
-    /// This means that if you already know the state vectors at the given point in the orbit,
-    /// you should consider getting a new orbit struct using [`StateVectors::to_compact_orbit`]
-    /// (and its derivatives) instead. It would skip a significant amount of redundant trig
-    /// operations. After getting the new orbit struct you should be able to overwrite your
-    /// previous orbit with the new orbit.
-    KeepPositionAndVelocityAtEccentricAnomaly {
-        /// The eccentric anomaly value of the point in the orbit
-        /// where you want the position and velocity to remain the same.
+    /// This is, however, significantly more performant than the numerical approach
+    /// used in the [`KeepStateVectorsAtTime`][MuSetterMode::KeepStateVectorsAtTime]
+    /// mode.
+    KeepKnownStateVectors {
+        /// The state vectors describing the point in the orbit where you want the
+        /// position and velocity to remain the same.
         ///
         /// Must correspond to the time value, or undesired behavior and NaNs may occur.
-        eccentric_anomaly: f64,
+        state_vectors: StateVectors,
 
         /// The time value of the point in the orbit
         /// where you want the position and velocity to remain the same.
         ///
         /// The time is measured in seconds.
         ///
-        /// Must correspond to the eccentric anomaly value, or undesired behavior and NaNs may occur.
+        /// Must correspond to the given state vectors, or undesired behavior and NaNs may occur.
         time: f64,
     },
-    /// Keep the position and velocity of the orbit at a certain point the same
-    /// (deviating a little bit due to inherent floating-point imprecision). Uses the time value.
+    /// Keep the position and velocity of the orbit at a certain time
+    /// roughly unchanged.
     ///
     /// **This will change the orbit's overall trajectory.**
     ///
@@ -3579,22 +3524,18 @@ pub enum MuSetterMode {
     /// This mode uses numerical approach methods, and therefore is not performant.  
     /// Consider using another mode if performance is an issue.  
     ///
-    /// Alternatively, if you already know the eccentric anomaly or true anomaly
-    /// values at that time in the orbit, you should use the
-    /// [`KeepPositionAndVelocityAtEccentricAnomaly`][MuSetterMode::KeepPositionAndVelocityAtEccentricAnomaly]
-    /// and
-    /// [`KeepPositionAndVelocityAtTrueAnomaly`][MuSetterMode::KeepPositionAndVelocityAtTrueAnomaly]
-    /// modes instead.  
-    /// This skips deriving the eccentric anomaly (which uses numerical approach methods) and therefore
-    /// should be a lot faster.
+    /// Alternatively, if you already know the state vectors (position and velocity)
+    /// of the point you want to keep, use the
+    /// [`KeepKnownStateVectors`][MuSetterMode::KeepKnownStateVectors]
+    /// mode instead. This skips the numerical method used to obtain the eccentric anomaly
+    /// and some more trigonometry.
     ///
-    /// This mode is dependent on the state vector getter.  
-    /// This means that if you already know the state vectors at the given point in the orbit,
-    /// you should consider getting a new orbit struct using [`StateVectors::to_compact_orbit`]
-    /// (and its derivatives) instead. It would skip a significant amount of redundant trig
-    /// operations. After getting the new orbit struct you should be able to overwrite your
-    /// previous orbit with the new orbit.
-    KeepPositionAndVelocityAtTime(f64),
+    /// If you only know the eccentric anomaly and true anomaly, it's more performant
+    /// to derive state vectors from those first and then use the aforementioned
+    /// [`KeepKnownStateVectors`][MuSetterMode::KeepKnownStateVectors] mode. This can
+    /// be done using the [`Orbit::get_state_vectors_at_eccentric_anomaly`] function, for
+    /// example.
+    KeepStateVectorsAtTime(f64),
 }
 
 /// An error to describe why setting the periapsis of an orbit failed.
