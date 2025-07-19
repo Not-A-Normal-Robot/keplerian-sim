@@ -1316,12 +1316,14 @@ mod mu_setter {
             let mut new_orbit = orbit.clone();
             let sv_before = orbit.get_state_vectors_at_time(time);
             new_orbit.set_gravitational_parameter(
-                orbit.get_gravitational_parameter() * random_mult(),
+                // TODO: Replace magic number after testing
+                3496814.613221479,
+                // orbit.get_gravitational_parameter() * random_mult(),
                 crate::MuSetterMode::KeepStateVectorsAtTime(time),
             );
             let sv_after = new_orbit.get_state_vectors_at_time(time);
             let ext_info = format!(
-                "with orbits {orbit:?} vs {new_orbit:?}, on iteration {i}, at time {time:?} \
+                "with orbits {orbit:?} vs {new_orbit:?}, on iteration {i}, at time={time:?} \
                 (KeepStateVectorsAtTime)"
             );
             assert_almost_eq_vec3_rescale(
@@ -1337,7 +1339,7 @@ mod mu_setter {
         }
     }
 
-    fn keep_sv_known(orbit: &(impl OrbitTrait + Clone + Debug)) {
+    fn keep_sv_known_base_test(orbit: &(impl OrbitTrait + Clone + Debug)) {
         for i in 0..1024 {
             let time = i as f64 * 0.15f64;
             let sv_before = orbit.get_state_vectors_at_time(time);
@@ -1371,7 +1373,7 @@ mod mu_setter {
         keep_elements_base_test(orbit);
         keep_position_time_base_test(orbit);
         keep_sv_time_base_test(orbit);
-        keep_sv_known(orbit);
+        keep_sv_known_base_test(orbit);
     }
 
     #[test]
