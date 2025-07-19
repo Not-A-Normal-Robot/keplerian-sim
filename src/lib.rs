@@ -417,16 +417,16 @@ impl StateVectors {
             }
         };
 
-        // Step 7: True anomaly
-        // The true anomaly is the angle from periapsis to the current position.
-        let true_anomaly = if circular | equatorial {
-            // The normal equation does not work when the orbit is circular, so we get it
-            // manually by getting the P and Q basis vectors in the PQW coordinate system
+        fn stably_get_true_anomaly(
+            position: DVec3,
+            inclination: f64,
+            arg_pe: f64,
+            long_asc_node: f64,
+        ) -> f64 {
+            // The normal equation does not work sometimes, especially when the orbit is circular,
+            // so we get it manually by getting the P and Q basis vectors in the PQW coordinate system
             // (see https://en.wikipedia.org/wiki/Perifocal_coordinate_system),
             // then measuring the angle between that and our orbit using the dot product.
-            //
-            // We can optimize a little by just considering part of the transformation
-            // matrix instead of the entire matrix.
             //
             // Consider this excerpt from the transformation matrix getter from
             // another part of the codebase:
@@ -459,21 +459,29 @@ impl StateVectors {
 
             // Now that we have the P and Q basis vectors (of length 1), we can
             // project our position into the PQW reference frame
-            let pos_p = self.position.dot(p);
-            let pos_q = self.position.dot(q);
+            let pos_p = position.dot(p);
+            let pos_q = position.dot(q);
 
             // Then we can get the angle between the projected position and
             // the +X direction (or technically +P here because it's projected),
             // and since that direction points to the periapsis, that angle
             // is the true anomaly
             pos_q.atan2(pos_p).rem_euclid(TAU)
+        }
+
+        // Step 7: True anomaly
+        // The true anomaly is the angle from periapsis to the current position.
+        let true_anomaly = if circular | equatorial {
+            stably_get_true_anomaly(self.position, inclination, arg_pe, long_asc_node)
         } else {
             // Use the regular method from orbital-mechanics.space
             // as previously mentioned
             let tmp =
                 (eccentricity_vector.dot(self.position) * eccentricity_recip * altitude_recip)
                     .acos();
-            if radial_speed >= 0.0 {
+            if !tmp.is_finite() {
+                stably_get_true_anomaly(self.position, inclination, arg_pe, long_asc_node)
+            } else if radial_speed >= 0.0 {
                 tmp
             } else {
                 TAU - tmp
