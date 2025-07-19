@@ -419,7 +419,7 @@ impl StateVectors {
 
         // Step 7: True anomaly
         // The true anomaly is the angle from periapsis to the current position.
-        let true_anomaly = if circular {
+        let true_anomaly = if circular | equatorial {
             // The normal equation does not work when the orbit is circular, so we get it
             // manually by getting the P and Q basis vectors in the PQW coordinate system
             // (see https://en.wikipedia.org/wiki/Perifocal_coordinate_system),
@@ -3456,27 +3456,86 @@ pub enum MuSetterMode {
     /// **This will change the position and velocity of the orbiting body abruptly,
     /// if you use the time-based functions.** It will not, however, change the trajectory
     /// of the orbit.
+    ///
+    /// # Performance
+    /// This mode is the fastest of the mu setter modes as it is simply an
+    /// assignment operation.
     KeepElements,
     /// Keep the overall shape of the orbit, but modify the mean anomaly at epoch
-    /// such that the position at the given time t is the same.
+    /// such that the position at the given time is the same.
     ///
     /// **This will change the velocity of the orbiting body abruptly, if you use
-    /// the time-based functions.**
+    /// the time-based position/velocity getter functions.**
+    ///
+    /// # Time
+    /// The time is measured in seconds.
+    ///
+    /// # Performance
+    /// This mode is slower than the `KeepElements` mode as it has to compute a new
+    /// mean anomaly at epoch. However, this isn't too expensive and only costs a
+    /// few squareroot operations.
     KeepPositionAtTime(f64),
-    /// Keep the position and velocity of the orbit at a certain time t the same.
+    /// Keep the position and velocity of the orbit at a certain time
+    /// roughly unchanged, using known [StateVectors] to avoid
+    /// duplicate calculations.
     ///
     /// **This will change the orbit's overall trajectory.**
-    KeepPositionAndVelocityAtTime(f64),
-    /// Keep the overall shape of the orbit, but modify the mean anomaly at epoch
-    /// such that the position at the given angle (in radians) is the same.
     ///
-    /// **This will change the velocity of the orbiting body abruptly, if you use
-    /// the time-based functions.**
-    KeepPositionAtAngle(f64),
-    /// Keep the position and velocity of the orbit at a certain angle t the same.
+    /// # Time
+    /// The time is measured in seconds.
+    ///
+    /// # Unchecked Operation
+    /// This mode does not check whether or not the state vectors and time values given
+    /// match up. Mismatched values may result in undesired behavior and NaNs.  
+    /// Use the [`KeepStateVectorsAtTime`][MuSetterMode::KeepStateVectorsAtTime]
+    /// mode if you don't want this unchecked operation.
+    ///
+    /// # Performance
+    /// This mode uses some trigonometry, and therefore is not very performant.  
+    /// Consider using another mode if performance is an issue.  
+    ///
+    /// This is, however, significantly more performant than the numerical approach
+    /// used in the [`KeepStateVectorsAtTime`][MuSetterMode::KeepStateVectorsAtTime]
+    /// mode.
+    KeepKnownStateVectors {
+        /// The state vectors describing the point in the orbit where you want the
+        /// position and velocity to remain the same.
+        ///
+        /// Must correspond to the time value, or undesired behavior and NaNs may occur.
+        state_vectors: StateVectors,
+
+        /// The time value of the point in the orbit
+        /// where you want the position and velocity to remain the same.
+        ///
+        /// The time is measured in seconds.
+        ///
+        /// Must correspond to the given state vectors, or undesired behavior and NaNs may occur.
+        time: f64,
+    },
+    /// Keep the position and velocity of the orbit at a certain time
+    /// roughly unchanged.
     ///
     /// **This will change the orbit's overall trajectory.**
-    KeepPositionAndVelocityAtAngle(f64),
+    ///
+    /// # Time
+    /// The time is measured in seconds.
+    ///
+    /// # Performance
+    /// This mode uses numerical approach methods, and therefore is not performant.  
+    /// Consider using another mode if performance is an issue.  
+    ///
+    /// Alternatively, if you already know the state vectors (position and velocity)
+    /// of the point you want to keep, use the
+    /// [`KeepKnownStateVectors`][MuSetterMode::KeepKnownStateVectors]
+    /// mode instead. This skips the numerical method used to obtain the eccentric anomaly
+    /// and some more trigonometry.
+    ///
+    /// If you only know the eccentric anomaly and true anomaly, it's more performant
+    /// to derive state vectors from those first and then use the aforementioned
+    /// [`KeepKnownStateVectors`][MuSetterMode::KeepKnownStateVectors] mode. This can
+    /// be done using the [`Orbit::get_state_vectors_at_eccentric_anomaly`] function, for
+    /// example.
+    KeepStateVectorsAtTime(f64),
 }
 
 /// An error to describe why setting the periapsis of an orbit failed.
