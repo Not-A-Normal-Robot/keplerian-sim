@@ -1316,9 +1316,7 @@ mod mu_setter {
             let mut new_orbit = orbit.clone();
             let sv_before = orbit.get_state_vectors_at_time(time);
             new_orbit.set_gravitational_parameter(
-                // TODO: Replace magic number after testing
-                3496814.613221479,
-                // orbit.get_gravitational_parameter() * random_mult(),
+                orbit.get_gravitational_parameter() * random_mult(),
                 crate::MuSetterMode::KeepStateVectorsAtTime(time),
             );
             let sv_after = new_orbit.get_state_vectors_at_time(time);

@@ -419,7 +419,7 @@ impl StateVectors {
 
         // Step 7: True anomaly
         // The true anomaly is the angle from periapsis to the current position.
-        let true_anomaly = if circular {
+        let true_anomaly = if circular | equatorial {
             // The normal equation does not work when the orbit is circular, so we get it
             // manually by getting the P and Q basis vectors in the PQW coordinate system
             // (see https://en.wikipedia.org/wiki/Perifocal_coordinate_system),
