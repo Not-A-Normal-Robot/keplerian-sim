@@ -147,9 +147,24 @@ fn assert_eq_vec2(a: DVec2, b: DVec2, what: &str) {
 
 fn assert_almost_eq_vec3(a: DVec3, b: DVec3, what: &str) {
     let desc = format!("{a:?} vs {b:?}; {what}");
-    assert_almost_eq(a.x, b.x, &("X coord of ".to_string() + &desc));
-    assert_almost_eq(a.y, b.y, &("Y coord of ".to_string() + &desc));
-    assert_almost_eq(a.z, b.z, &("Z coord of ".to_string() + &desc));
+    assert_almost_eq(a.x, b.x, &format!("X coord of {desc}"));
+    assert_almost_eq(a.y, b.y, &format!("Y coord of {desc}"));
+    assert_almost_eq(a.z, b.z, &format!("Z coord of {desc}"));
+}
+
+fn assert_almost_eq_vec3_rescale(a: DVec3, b: DVec3, what: &str) {
+    let desc = format!("{a:?} vs {b:?}; {what}");
+    let a_norm = a.normalize();
+    let b_norm = b.normalize();
+    let a_scale = a.length().log2();
+    let b_scale = b.length().log2();
+
+    assert_almost_eq(a_scale, b_scale, &format!("logarithmic scale of {desc}"));
+    if a_scale.is_finite() {
+        assert_almost_eq(a_norm.x, b_norm.x, &format!("rescaled X coord of {desc}"));
+        assert_almost_eq(a_norm.y, b_norm.y, &format!("rescaled Y coord of {desc}"));
+        assert_almost_eq(a_norm.z, b_norm.z, &format!("rescaled Z coord of {desc}"));
+    }
 }
 
 fn assert_almost_eq_vec2(a: DVec2, b: DVec2, what: &str) {
@@ -1152,98 +1167,255 @@ fn naive_speed_correlation_base_test(orbit: &impl OrbitTrait, what: &str) {
     }
 }
 
-// TODO: Add a unit test for this when the feature is implemented
-fn _orbit_mu_setter_base_test(orbit: impl OrbitTrait + Clone) {
-    for _ in 0..1024 {
-        let _after = {
-            let mut o = orbit.clone();
-            o.set_gravitational_parameter(
-                orbit.get_gravitational_parameter() * random_mult(),
-                crate::MuSetterMode::KeepElements,
+mod mu_setter {
+    use super::*;
+    fn keep_elements_base_test(orbit: &(impl OrbitTrait + Clone)) {
+        for _ in 0..1024 {
+            let old_mu = orbit.get_gravitational_parameter();
+            let new_mu = orbit.get_gravitational_parameter() * random_mult();
+            let mut new_orbit = orbit.clone();
+            new_orbit.set_gravitational_parameter(new_mu, crate::MuSetterMode::KeepElements);
+
+            assert_eq!(
+                orbit.get_eccentricity(),
+                new_orbit.get_eccentricity(),
+                "Eccentricity between mu={old_mu} to mu={new_mu}"
             );
-            o
-        };
+            assert_eq!(
+                orbit.get_periapsis(),
+                new_orbit.get_periapsis(),
+                "Periapsis between mu={old_mu} to mu={new_mu}"
+            );
+            assert_eq!(
+                orbit.get_apoapsis(),
+                new_orbit.get_apoapsis(),
+                "Apoapsis between mu={old_mu} to mu={new_mu}"
+            );
+            assert_eq!(
+                orbit.get_semi_major_axis(),
+                new_orbit.get_semi_major_axis(),
+                "Semi-major axis between mu={old_mu} to mu={new_mu}"
+            );
+            assert_eq!(
+                orbit.get_inclination(),
+                new_orbit.get_inclination(),
+                "Inclination between mu={old_mu} to mu={new_mu}"
+            );
+            assert_eq!(
+                orbit.get_arg_pe(),
+                new_orbit.get_arg_pe(),
+                "Argument of Periapsis between mu={old_mu} to mu={new_mu}"
+            );
+            assert_eq!(
+                orbit.get_long_asc_node(),
+                new_orbit.get_long_asc_node(),
+                "Longitude of Ascending Node between mu={old_mu} to mu={new_mu}"
+            );
+            assert_eq!(
+                orbit.get_linear_eccentricity(),
+                new_orbit.get_linear_eccentricity(),
+                "Linear Eccentricity between mu={old_mu} to mu={new_mu}"
+            );
+            assert_eq!(
+                orbit.get_semi_minor_axis(),
+                new_orbit.get_semi_minor_axis(),
+                "Semi-minor axis between mu={old_mu} to mu={new_mu}"
+            );
+            assert_eq!(
+                orbit.get_semi_latus_rectum(),
+                new_orbit.get_semi_latus_rectum(),
+                "Semi-latus rectum between mu={old_mu} to mu={new_mu}"
+            );
+            assert_eq!(
+                orbit.get_mean_anomaly_at_epoch(),
+                new_orbit.get_mean_anomaly_at_epoch(),
+                "Mean anomaly at epoch between mu={old_mu} to mu={new_mu}"
+            );
+        }
     }
 
-    for i in 0..1024 {
-        let time = i as f64 * 0.15f64;
-        let mut o = orbit.clone();
-        let pos_before = orbit.get_position_at_time(time);
-        o.set_gravitational_parameter(
-            orbit.get_gravitational_parameter() * random_mult(),
-            crate::MuSetterMode::KeepPositionAtTime(time),
-        );
-        let pos_after = orbit.get_position_at_time(time);
-        assert_almost_eq_vec3(
-            pos_before,
-            pos_after,
-            "Positions before and after mu setter",
-        );
+    use std::fmt::Debug;
+
+    fn keep_position_time_base_test(orbit: &(impl OrbitTrait + Clone + Debug)) {
+        for i in 0..1024 {
+            let time = i as f64 * 0.15f64;
+            let mut new_orbit = orbit.clone();
+            let pos_before = orbit.get_position_at_time(time);
+            new_orbit.set_gravitational_parameter(
+                orbit.get_gravitational_parameter() * random_mult(),
+                crate::MuSetterMode::KeepPositionAtTime(time),
+            );
+            let pos_after = new_orbit.get_position_at_time(time);
+
+            let ext_info = format!(
+                "with orbits {orbit:?} vs {new_orbit:?}, on iteration {i}, at time {time:?} \
+                (KeepPositionAtTime)"
+            );
+
+            assert_eq!(
+                orbit.get_eccentricity(),
+                new_orbit.get_eccentricity(),
+                "Eccentricity before and after mu setter, {ext_info}"
+            );
+            assert_eq!(
+                orbit.get_periapsis(),
+                new_orbit.get_periapsis(),
+                "Periapsis before and after mu setter, {ext_info}"
+            );
+            assert_eq!(
+                orbit.get_apoapsis(),
+                new_orbit.get_apoapsis(),
+                "Apoapsis before and after mu setter, {ext_info}"
+            );
+            assert_eq!(
+                orbit.get_semi_major_axis(),
+                new_orbit.get_semi_major_axis(),
+                "Semi-major axis before and after mu setter, {ext_info}"
+            );
+            assert_eq!(
+                orbit.get_inclination(),
+                new_orbit.get_inclination(),
+                "Inclination before and after mu setter, {ext_info}"
+            );
+            assert_eq!(
+                orbit.get_arg_pe(),
+                new_orbit.get_arg_pe(),
+                "Argument of Periapsis before and after mu setter, {ext_info}"
+            );
+            assert_eq!(
+                orbit.get_long_asc_node(),
+                new_orbit.get_long_asc_node(),
+                "Longitude of Ascending Node before and after mu setter, {ext_info}"
+            );
+            assert_eq!(
+                orbit.get_linear_eccentricity(),
+                new_orbit.get_linear_eccentricity(),
+                "Linear Eccentricity before and after mu setter, {ext_info}"
+            );
+            assert_eq!(
+                orbit.get_semi_minor_axis(),
+                new_orbit.get_semi_minor_axis(),
+                "Semi-minor axis before and after mu setter, {ext_info}"
+            );
+            assert_eq!(
+                orbit.get_semi_latus_rectum(),
+                new_orbit.get_semi_latus_rectum(),
+                "Semi-latus rectum before and after mu setter, {ext_info}"
+            );
+            assert_almost_eq_vec3(
+                pos_before,
+                pos_after,
+                &format!("Positions before and after mu setter, {ext_info}"),
+            );
+        }
     }
 
-    for i in 0..1024 {
-        let time = i as f64 * 0.15f64;
-        let mut o = orbit.clone();
-        let pos_before = orbit.get_position_at_time(time);
-        let vel_before = orbit.get_velocity_at_time(time);
-        o.set_gravitational_parameter(
-            orbit.get_gravitational_parameter() * random_mult(),
-            crate::MuSetterMode::KeepPositionAndVelocityAtTime(time),
-        );
-        let pos_after = orbit.get_position_at_time(time);
-        let vel_after = orbit.get_velocity_at_time(time);
-        assert_almost_eq_vec3(
-            pos_before,
-            pos_after,
-            "Positions before and after mu setter",
-        );
-        assert_almost_eq_vec3(
-            vel_before,
-            vel_after,
-            "Velocities before and after mu setter",
-        )
+    fn keep_sv_time(orbit: &(impl OrbitTrait + Clone + Debug)) {
+        for i in 0..1024 {
+            let time = i as f64 * 0.15f64;
+            let mut new_orbit = orbit.clone();
+            let sv_before = orbit.get_state_vectors_at_time(time);
+            new_orbit.set_gravitational_parameter(
+                orbit.get_gravitational_parameter() * random_mult(),
+                crate::MuSetterMode::KeepPositionAndVelocityAtTime(time),
+            );
+            let sv_after = new_orbit.get_state_vectors_at_time(time);
+            let ext_info = format!(
+                "with orbits {orbit:?} vs {new_orbit:?}, on iteration {i}, at time {time:?} \
+                (KeepPositionAndVelocityAtTime)"
+            );
+            assert_almost_eq_vec3_rescale(
+                sv_before.position,
+                sv_after.position,
+                &format!("Positions before and after mu setter, {ext_info}"),
+            );
+            assert_almost_eq_vec3_rescale(
+                sv_before.velocity,
+                sv_after.velocity,
+                &format!("Velocities before and after mu setter, {ext_info}"),
+            )
+        }
     }
 
-    for i in 0..1024 {
-        let angle = i as f64 * 0.15f64;
-        let mut o = orbit.clone();
-        let pos_before = orbit.get_position_at_true_anomaly(angle);
-        o.set_gravitational_parameter(
-            o.get_gravitational_parameter() * random_mult(),
-            crate::MuSetterMode::KeepPositionAtTime(angle),
-        );
-        let pos_after = orbit.get_position_at_true_anomaly(angle);
-
-        assert_almost_eq_vec3(
-            pos_before,
-            pos_after,
-            "Positions before and after mu setter",
-        );
+    fn keep_sv_ecc_anom(orbit: &(impl OrbitTrait + Clone + Debug)) {
+        for i in 0..1024 {
+            let time = i as f64 * 0.15f64;
+            let ecc_anom = orbit.get_eccentric_anomaly_at_time(time);
+            let sv_before = orbit.get_state_vectors_at_eccentric_anomaly(ecc_anom);
+            let mut new_orbit = orbit.clone();
+            new_orbit.set_gravitational_parameter(
+                orbit.get_gravitational_parameter() * random_mult(),
+                crate::MuSetterMode::KeepPositionAndVelocityAtEccentricAnomaly {
+                    eccentric_anomaly: ecc_anom,
+                    time,
+                },
+            );
+            let sv_after = new_orbit.get_state_vectors_at_eccentric_anomaly(ecc_anom);
+            let ext_info = format!(
+                "with orbits {orbit:?} vs {new_orbit:?}, on iteration {i}, at time {time:?} \
+                (KeepPositionAndVelocityAtEccentricAnomaly)"
+            );
+            assert_almost_eq_vec3_rescale(
+                sv_before.position,
+                sv_after.position,
+                &format!("Positions before and after mu setter, {ext_info}"),
+            );
+            assert_almost_eq_vec3_rescale(
+                sv_before.velocity,
+                sv_after.velocity,
+                &format!("Velocities before and after mu setter, {ext_info}"),
+            )
+        }
     }
 
-    // for i in 0..1024 {
-    //     let angle = i as f64 * 0.15f64;
-    //     let mut o = orbit.clone();
-    //     let pos_before = orbit.get_position_at_true_anomaly(angle);
-    //     let vel_before = orbit.get_velocity_at_true_anomaly(angle);
-    //     o.set_gravitational_parameter(
-    //         orbit.get_gravitational_parameter() * random_mult(),
-    //         crate::MuSetterMode::KeepPositionAndVelocityAtTrueAnomaly(angle),
-    //     );
-    //     let pos_after = orbit.get_position_at_true_anomaly(angle);
-    //     let vel_after = orbit.get_velocity_at_true_anomaly(angle);
-    //     assert_almost_eq_vec3(
-    //         pos_before,
-    //         pos_after,
-    //         "Positions before and after mu setter",
-    //     );
-    //     assert_almost_eq_vec3(
-    //         vel_before,
-    //         vel_after,
-    //         "Velocities before and after mu setter",
-    //     );
-    // }
-    todo!("Orbit mu setter test");
+    fn keep_sv_true_anom(orbit: &(impl OrbitTrait + Clone + Debug)) {
+        for i in 0..1024 {
+            let time = i as f64 * 0.15f64;
+            let true_anom = orbit.get_true_anomaly_at_time(time);
+            let sv_before = orbit.get_state_vectors_at_true_anomaly(true_anom);
+            let mut new_orbit = orbit.clone();
+            new_orbit.set_gravitational_parameter(
+                orbit.get_gravitational_parameter() * random_mult(),
+                crate::MuSetterMode::KeepPositionAndVelocityAtTrueAnomaly {
+                    true_anomaly: true_anom,
+                    time,
+                },
+            );
+            let sv_after = new_orbit.get_state_vectors_at_true_anomaly(true_anom);
+            let ext_info = format!(
+                "with orbits {orbit:?} vs {new_orbit:?}, on iteration {i}, at time {time:?} \
+                (KeepPositionAndVelocityAtTrueAnomaly)"
+            );
+            assert_almost_eq_vec3_rescale(
+                sv_before.position,
+                sv_after.position,
+                &format!("Positions before and after mu setter, {ext_info}"),
+            );
+            assert_almost_eq_vec3_rescale(
+                sv_before.velocity,
+                sv_after.velocity,
+                &format!("Velocities before and after mu setter, {ext_info}"),
+            );
+        }
+    }
+
+    fn base_test(orbit: &(impl OrbitTrait + Clone + Debug)) {
+        keep_elements_base_test(orbit);
+        keep_position_time_base_test(orbit);
+        keep_sv_time(orbit);
+        keep_sv_ecc_anom(orbit);
+        keep_sv_true_anom(orbit);
+    }
+
+    #[test]
+    fn test_mu_setter() {
+        // TODO: POST-PARABOLIC SUPPORT: Change to all-random instead of just nonparabolic
+        let orbits = random_nonparabolic_iter(1024);
+
+        for orbit in orbits {
+            base_test(&orbit);
+        }
+    }
 }
 
 #[test]
