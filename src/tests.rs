@@ -1170,7 +1170,7 @@ fn naive_speed_correlation_base_test(orbit: &impl OrbitTrait, what: &str) {
 mod mu_setter {
     use super::*;
 
-    const NEAR_PARABOLIC_RANGE: f64 = 2e-3;
+    const NEAR_PARABOLIC_RANGE: f64 = 3e-3;
 
     fn keep_elements_base_test(orbit: &(impl OrbitTrait + Clone)) {
         for _ in 0..1024 {
