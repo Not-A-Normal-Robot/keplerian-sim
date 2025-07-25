@@ -22,7 +22,7 @@ serde = ["dep:serde"]
 libm = "0.2.13"
 
 [dev-dependencies]
-criterion = "0.5.1"
+criterion = "0.6"
 rand = "0.9.1"
 
 [[bench]]
