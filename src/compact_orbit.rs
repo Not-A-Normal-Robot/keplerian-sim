@@ -154,7 +154,7 @@ impl CompactOrbit {
     /// - `inclination`: The inclination of the orbit, in radians.
     /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
     /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
-    /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
+    /// - `mean_anomaly`: The mean anomaly of the orbit at epoch, in radians.
     /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
     pub fn new(
         eccentricity: f64,

@@ -1062,9 +1062,9 @@ pub trait OrbitTrait {
     fn get_eccentric_anomaly_at_mean_anomaly(&self, mean_anomaly: f64) -> f64 {
         // TODO: PARABOLIC SUPPORT: This function doesn't consider parabolic support yet.
         if self.get_eccentricity() < 1.0 {
-            self.get_eccentric_anomaly_elliptic(mean_anomaly)
+            self.get_elliptic_eccentric_anomaly(mean_anomaly)
         } else {
-            self.get_eccentric_anomaly_hyperbolic(mean_anomaly)
+            self.get_hyperbolic_eccentric_anomaly(mean_anomaly)
         }
     }
 
@@ -1249,7 +1249,7 @@ pub trait OrbitTrait {
     /// From the paper:  
     /// "A new method for solving the hyperbolic Kepler equation"  
     /// by Baisheng Wu et al.  
-    fn get_eccentric_anomaly_hyperbolic(&self, mean_anomaly: f64) -> f64 {
+    fn get_hyperbolic_eccentric_anomaly(&self, mean_anomaly: f64) -> f64 {
         let mut ecc_anom = self.get_approx_hyperbolic_eccentric_anomaly(mean_anomaly);
 
         /*
@@ -1314,10 +1314,9 @@ pub trait OrbitTrait {
 
             if denominator.abs() < 1e-30 || !denominator.is_finite() {
                 // dangerously close to div-by-zero, break out
-                #[cfg(debug_assertions)]
-                eprintln!(
-                    "Hyperbolic eccentric anomaly solver: denominator is too small or not finite"
-                );
+                // eprintln!(
+                //     "Hyperbolic eccentric anomaly solver: denominator is too small or not finite"
+                // );
                 break;
             }
 
@@ -1350,7 +1349,7 @@ pub trait OrbitTrait {
     /// "An improved algorithm due to laguerre for the solution of Kepler's equation."  
     /// by Bruce A. Conway  
     /// <https://doi.org/10.1007/bf01230852>
-    fn get_eccentric_anomaly_elliptic(&self, mut mean_anomaly: f64) -> f64 {
+    fn get_elliptic_eccentric_anomaly(&self, mut mean_anomaly: f64) -> f64 {
         let mut sign = 1.0;
         // Use the symmetry and periodicity of the eccentric anomaly
         // Equation 2 from the paper

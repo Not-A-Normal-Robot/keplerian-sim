@@ -12,6 +12,8 @@ use super::Body;
 
 type Id = u64;
 
+const GRAVITATIONAL_CONSTANT: f64 = 6.6743e-11;
+
 /// Struct that represents the simulation of the universe.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -87,7 +89,7 @@ impl Universe {
     /// Creates an empty universe.
     pub fn new(time_step: Option<f64>, g: Option<f64>) -> Universe {
         let time_step = time_step.unwrap_or(3.6e3);
-        let g = g.unwrap_or(6.67430e-11);
+        let g = g.unwrap_or(GRAVITATIONAL_CONSTANT);
 
         Universe {
             bodies: HashMap::new(),
@@ -251,7 +253,7 @@ impl Default for Universe {
             bodies: HashMap::new(),
             time: 0.0,
             time_step: 3.6e3,
-            g: 6.67430e-11,
+            g: GRAVITATIONAL_CONSTANT,
             next_id: 0,
         }
     }
