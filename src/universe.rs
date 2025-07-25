@@ -109,15 +109,6 @@ impl Universe {
         satellite_of: Option<Id>,
     ) -> Result<Id, BodyAddError> {
         if let Some(parent_index) = satellite_of {
-            if !self.bodies.contains_key(&parent_index) {
-                return Err(BodyAddError {
-                    cause: BodyAddErrorCause::ParentNotFound {
-                        parent_id: parent_index,
-                    },
-                    body: Box::new(body),
-                });
-            }
-
             // TODO: POST-MU SETTER: Set body orbit mu accordingly
             let parent = match self.bodies.get(&parent_index) {
                 Some(b) => b,

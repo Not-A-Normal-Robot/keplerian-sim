@@ -479,7 +479,7 @@ impl StateVectors {
             let tmp =
                 (eccentricity_vector.dot(self.position) * eccentricity_recip * altitude_recip)
                     .acos();
-            if !tmp.is_finite() {
+            if tmp.is_nan() {
                 stably_get_true_anomaly(self.position, inclination, arg_pe, long_asc_node)
             } else if radial_speed >= 0.0 {
                 tmp

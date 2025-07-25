@@ -1169,6 +1169,9 @@ fn naive_speed_correlation_base_test(orbit: &impl OrbitTrait, what: &str) {
 
 mod mu_setter {
     use super::*;
+
+    const NEAR_PARABOLIC_RANGE: f64 = 2e-3;
+
     fn keep_elements_base_test(orbit: &(impl OrbitTrait + Clone)) {
         for _ in 0..1024 {
             let old_mu = orbit.get_gravitational_parameter();
@@ -1327,7 +1330,7 @@ mod mu_setter {
 
             // TODO: PARABOLIC SUPPORT: This does not test for
             // parabolic orbits.
-            if (new_orbit.get_eccentricity() - 1.0).abs() < 2e-3 {
+            if (new_orbit.get_eccentricity() - 1.0).abs() < NEAR_PARABOLIC_RANGE {
                 // Currently, numerical instabilities arise near e = 1.
                 // Although the tested function does work "fine" near it,
                 // it deviates enough from the 1e-6 allowed delta-log to
@@ -1368,7 +1371,7 @@ mod mu_setter {
 
             // TODO: PARABOLIC SUPPORT: This does not test for
             // parabolic orbits.
-            if (new_orbit.get_eccentricity() - 1.0).abs() < 2e-3 {
+            if (new_orbit.get_eccentricity() - 1.0).abs() < NEAR_PARABOLIC_RANGE {
                 // Currently, numerical instabilities arise near e = 1.
                 // Although the tested function does work "fine" near it,
                 // it deviates enough from the 1e-6 allowed delta-log to
