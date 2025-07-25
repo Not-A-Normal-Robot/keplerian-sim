@@ -322,10 +322,6 @@ impl OrbitTrait for Orbit {
         self.mean_anomaly = value;
     }
 
-    /// # Not Yet Implemented
-    /// This function sometimes panics when it encounters a todo macro.  
-    /// Refrain from using this function.
-    #[doc(hidden)]
     fn set_gravitational_parameter(
         &mut self,
         gravitational_parameter: f64,
