@@ -44,3 +44,19 @@ harness = false
 [[bench]]
 name = "position_time"
 harness = false
+
+[[bench]]
+name = "velocity"
+harness = false
+
+[[bench]]
+name = "velocity_time"
+harness = false
+
+[[bench]]
+name = "state_vectors"
+harness = false
+
+[[bench]]
+name = "state_vectors_time"
+harness = false
