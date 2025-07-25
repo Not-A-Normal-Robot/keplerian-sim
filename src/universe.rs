@@ -6,7 +6,7 @@ use std::fmt;
 use glam::DVec3;
 use std::{collections::HashMap, error::Error};
 
-use crate::OrbitTrait as _;
+use crate::OrbitTrait;
 
 use super::Body;
 
@@ -99,21 +99,34 @@ impl Universe {
     }
 
     /// Adds a body to the universe.
-    /// `body`: The body to add into the universe.
-    /// `satellite_of`: The index of the body that this body is orbiting.
-    /// Returns: The index of the newly-added body.
-    pub fn add_body(&mut self, body: Body, satellite_of: Option<Id>) -> Result<Id, BodyAddError> {
+    ///
+    /// `body`: The body to add into the universe.  
+    /// `satellite_of`: The index of the body that this body is orbiting.  
+    /// Returns: The index of the newly-added body.  
+    pub fn add_body(
+        &mut self,
+        mut body: Body,
+        satellite_of: Option<Id>,
+    ) -> Result<Id, BodyAddError> {
         if let Some(parent_index) = satellite_of {
-            if !self.bodies.contains_key(&parent_index) {
-                return Err(BodyAddError {
-                    cause: BodyAddErrorCause::ParentNotFound {
-                        parent_id: parent_index,
-                    },
-                    body: Box::new(body),
-                });
-            }
+            let parent = match self.bodies.get(&parent_index) {
+                Some(b) => b,
+                None => {
+                    return Err(BodyAddError {
+                        cause: BodyAddErrorCause::ParentNotFound {
+                            parent_id: parent_index,
+                        },
+                        body: Box::new(body),
+                    })
+                }
+            };
 
-            // TODO: POST-MU SETTER: Set body orbit mu accordingly
+            if let Some(ref mut o) = body.orbit {
+                o.set_gravitational_parameter(
+                    self.g * parent.body.mass,
+                    crate::MuSetterMode::KeepPositionAtTime(self.time),
+                );
+            }
         }
 
         let id = self.next_id;

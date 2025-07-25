@@ -417,16 +417,16 @@ impl StateVectors {
             }
         };
 
-        // Step 7: True anomaly
-        // The true anomaly is the angle from periapsis to the current position.
-        let true_anomaly = if circular {
-            // The normal equation does not work when the orbit is circular, so we get it
-            // manually by getting the P and Q basis vectors in the PQW coordinate system
+        fn stably_get_true_anomaly(
+            position: DVec3,
+            inclination: f64,
+            arg_pe: f64,
+            long_asc_node: f64,
+        ) -> f64 {
+            // The normal equation does not work sometimes, especially when the orbit is circular,
+            // so we get it manually by getting the P and Q basis vectors in the PQW coordinate system
             // (see https://en.wikipedia.org/wiki/Perifocal_coordinate_system),
             // then measuring the angle between that and our orbit using the dot product.
-            //
-            // We can optimize a little by just considering part of the transformation
-            // matrix instead of the entire matrix.
             //
             // Consider this excerpt from the transformation matrix getter from
             // another part of the codebase:
@@ -459,21 +459,29 @@ impl StateVectors {
 
             // Now that we have the P and Q basis vectors (of length 1), we can
             // project our position into the PQW reference frame
-            let pos_p = self.position.dot(p);
-            let pos_q = self.position.dot(q);
+            let pos_p = position.dot(p);
+            let pos_q = position.dot(q);
 
             // Then we can get the angle between the projected position and
             // the +X direction (or technically +P here because it's projected),
             // and since that direction points to the periapsis, that angle
             // is the true anomaly
             pos_q.atan2(pos_p).rem_euclid(TAU)
+        }
+
+        // Step 7: True anomaly
+        // The true anomaly is the angle from periapsis to the current position.
+        let true_anomaly = if circular | equatorial {
+            stably_get_true_anomaly(self.position, inclination, arg_pe, long_asc_node)
         } else {
             // Use the regular method from orbital-mechanics.space
             // as previously mentioned
             let tmp =
                 (eccentricity_vector.dot(self.position) * eccentricity_recip * altitude_recip)
                     .acos();
-            if radial_speed >= 0.0 {
+            if tmp.is_nan() {
+                stably_get_true_anomaly(self.position, inclination, arg_pe, long_asc_node)
+            } else if radial_speed >= 0.0 {
                 tmp
             } else {
                 TAU - tmp
@@ -3424,6 +3432,31 @@ pub trait OrbitTrait {
     /// gravitational constant G times the mass of the parent body M.
     ///
     /// In other words, mu = GM.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait, MuSetterMode};
+    ///
+    /// let mut orbit = Orbit::new(
+    ///     0.0, // Eccentricity
+    ///     1.0, // Periapsis
+    ///     0.0, // Inclination
+    ///     0.0, // Argument of Periapsis
+    ///     0.0, // Longitude of Ascending Node
+    ///     0.0, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter (mu = GM)
+    /// );
+    ///
+    /// orbit.set_gravitational_parameter(3.0, MuSetterMode::KeepElements);
+    ///
+    /// assert_eq!(orbit.get_eccentricity(), 0.0);
+    /// assert_eq!(orbit.get_periapsis(), 1.0);
+    /// assert_eq!(orbit.get_inclination(), 0.0);
+    /// assert_eq!(orbit.get_arg_pe(), 0.0);
+    /// assert_eq!(orbit.get_long_asc_node(), 0.0);
+    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), 0.0);
+    /// assert_eq!(orbit.get_gravitational_parameter(), 3.0);
+    /// ```
     #[doc(alias = "set_mu")]
     fn set_gravitational_parameter(&mut self, gravitational_parameter: f64, mode: MuSetterMode);
 
@@ -3449,6 +3482,20 @@ pub trait OrbitTrait {
 ///
 /// This is used to describe how the setter should behave when setting the
 /// gravitational parameter of the parent body.
+///
+/// # Which mode should I use?
+/// The mode you should use depends on what you expect from setting the mu value
+/// to a different value.
+///
+/// If you just want to set the mu value naïvely (without touching the
+/// other orbital elements), you can use the `KeepElements` variant.
+///
+/// If this is part of a simulation and you want to keep the current position
+/// (not caring about the velocity), you can use the `KeepPositionAtTime` variant.
+///
+/// If you want to keep the current position and velocity, you can use either
+/// the `KeepKnownStateVectors` or `KeepStateVectorsAtTime` modes, the former
+/// being more performant if you already know the state vectors beforehand.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MuSetterMode {
     /// Keep all the other orbital parameters the same.
@@ -3456,27 +3503,201 @@ pub enum MuSetterMode {
     /// **This will change the position and velocity of the orbiting body abruptly,
     /// if you use the time-based functions.** It will not, however, change the trajectory
     /// of the orbit.
+    ///
+    /// # Performance
+    /// This mode is the fastest of the mu setter modes as it is simply an
+    /// assignment operation.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait, MuSetterMode};
+    ///
+    /// let mut orbit = Orbit::new(
+    ///     0.0, // Eccentricity
+    ///     1.0, // Periapsis
+    ///     0.0, // Inclination
+    ///     0.0, // Argument of Periapsis
+    ///     0.0, // Longitude of Ascending Node
+    ///     0.0, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter (mu = GM)
+    /// );
+    ///
+    /// orbit.set_gravitational_parameter(3.0, MuSetterMode::KeepElements);
+    ///
+    /// assert_eq!(orbit.get_eccentricity(), 0.0);
+    /// assert_eq!(orbit.get_periapsis(), 1.0);
+    /// assert_eq!(orbit.get_inclination(), 0.0);
+    /// assert_eq!(orbit.get_arg_pe(), 0.0);
+    /// assert_eq!(orbit.get_long_asc_node(), 0.0);
+    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), 0.0);
+    /// assert_eq!(orbit.get_gravitational_parameter(), 3.0);
+    /// ```
     KeepElements,
     /// Keep the overall shape of the orbit, but modify the mean anomaly at epoch
-    /// such that the position at the given time t is the same.
+    /// such that the position at the given time is the same.
     ///
     /// **This will change the velocity of the orbiting body abruptly, if you use
-    /// the time-based functions.**
+    /// the time-based position/velocity getter functions.**
+    ///
+    /// # Time
+    /// The time is measured in seconds.
+    ///
+    /// # Performance
+    /// This mode is slower than the `KeepElements` mode as it has to compute a new
+    /// mean anomaly at epoch. However, this isn't too expensive and only costs a
+    /// few squareroot operations.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait, MuSetterMode};
+    ///
+    /// let mut orbit = Orbit::new(
+    ///     0.0, // Eccentricity
+    ///     1.0, // Periapsis
+    ///     0.0, // Inclination
+    ///     0.0, // Argument of Periapsis
+    ///     0.0, // Longitude of Ascending Node
+    ///     0.0, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter (mu = GM)
+    /// );
+    ///
+    /// orbit.set_gravitational_parameter(
+    ///     3.0,
+    ///     MuSetterMode::KeepPositionAtTime(0.4),
+    /// );
+    ///
+    /// assert_eq!(orbit.get_eccentricity(), 0.0);
+    /// assert_eq!(orbit.get_periapsis(), 1.0);
+    /// assert_eq!(orbit.get_inclination(), 0.0);
+    /// assert_eq!(orbit.get_arg_pe(), 0.0);
+    /// assert_eq!(orbit.get_long_asc_node(), 0.0);
+    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), -0.2928203230275509);
+    /// assert_eq!(orbit.get_gravitational_parameter(), 3.0);
+    /// ```
     KeepPositionAtTime(f64),
-    /// Keep the position and velocity of the orbit at a certain time t the same.
+    /// Keep the position and velocity of the orbit at a certain time
+    /// roughly unchanged, using known [StateVectors] to avoid
+    /// duplicate calculations.
     ///
     /// **This will change the orbit's overall trajectory.**
-    KeepPositionAndVelocityAtTime(f64),
-    /// Keep the overall shape of the orbit, but modify the mean anomaly at epoch
-    /// such that the position at the given angle (in radians) is the same.
     ///
-    /// **This will change the velocity of the orbiting body abruptly, if you use
-    /// the time-based functions.**
-    KeepPositionAtAngle(f64),
-    /// Keep the position and velocity of the orbit at a certain angle t the same.
+    /// # Time
+    /// The time is measured in seconds.
+    ///
+    /// # Unchecked Operation
+    /// This mode does not check whether or not the state vectors and time values given
+    /// match up. Mismatched values may result in undesired behavior and NaNs.  
+    /// Use the [`KeepStateVectorsAtTime`][MuSetterMode::KeepStateVectorsAtTime]
+    /// mode if you don't want this unchecked operation.
+    ///
+    /// # Performance
+    /// This mode uses some trigonometry, and therefore is not very performant.  
+    /// Consider using another mode if performance is an issue.  
+    ///
+    /// This is, however, significantly more performant than the numerical approach
+    /// used in the [`KeepStateVectorsAtTime`][MuSetterMode::KeepStateVectorsAtTime]
+    /// mode.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait, MuSetterMode};
+    ///
+    /// let mut orbit = Orbit::new(
+    ///     0.0, // Eccentricity
+    ///     1.0, // Periapsis
+    ///     0.0, // Inclination
+    ///     0.0, // Argument of Periapsis
+    ///     0.0, // Longitude of Ascending Node
+    ///     0.0, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter (mu = GM)
+    /// );
+    ///
+    /// let time = 0.75;
+    ///
+    /// let state_vectors = orbit.get_state_vectors_at_time(time);
+    ///
+    /// orbit.set_gravitational_parameter(
+    ///     3.0,
+    ///     MuSetterMode::KeepKnownStateVectors {
+    ///         state_vectors,
+    ///         time
+    ///     }
+    /// );
+    ///
+    /// let new_state_vectors = orbit.get_state_vectors_at_time(time);
+    ///
+    /// println!("Old state vectors: {state_vectors:?}");
+    /// println!("New state vectors: {new_state_vectors:?}");
+    /// ```
+    KeepKnownStateVectors {
+        /// The state vectors describing the point in the orbit where you want the
+        /// position and velocity to remain the same.
+        ///
+        /// Must correspond to the time value, or undesired behavior and NaNs may occur.
+        state_vectors: StateVectors,
+
+        /// The time value of the point in the orbit
+        /// where you want the position and velocity to remain the same.
+        ///
+        /// The time is measured in seconds.
+        ///
+        /// Must correspond to the given state vectors, or undesired behavior and NaNs may occur.
+        time: f64,
+    },
+    /// Keep the position and velocity of the orbit at a certain time
+    /// roughly unchanged.
     ///
     /// **This will change the orbit's overall trajectory.**
-    KeepPositionAndVelocityAtAngle(f64),
+    ///
+    /// # Time
+    /// The time is measured in seconds.
+    ///
+    /// # Performance
+    /// This mode uses numerical approach methods, and therefore is not performant.  
+    /// Consider using another mode if performance is an issue.  
+    ///
+    /// Alternatively, if you already know the state vectors (position and velocity)
+    /// of the point you want to keep, use the
+    /// [`KeepKnownStateVectors`][MuSetterMode::KeepKnownStateVectors]
+    /// mode instead. This skips the numerical method used to obtain the eccentric anomaly
+    /// and some more trigonometry.
+    ///
+    /// If you only know the eccentric anomaly and true anomaly, it's more performant
+    /// to derive state vectors from those first and then use the aforementioned
+    /// [`KeepKnownStateVectors`][MuSetterMode::KeepKnownStateVectors] mode. This can
+    /// be done using the [`Orbit::get_state_vectors_at_eccentric_anomaly`] function, for
+    /// example.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait, MuSetterMode};
+    ///
+    /// let old_orbit = Orbit::new(
+    ///     0.0, // Eccentricity
+    ///     1.0, // Periapsis
+    ///     0.0, // Inclination
+    ///     0.0, // Argument of Periapsis
+    ///     0.0, // Longitude of Ascending Node
+    ///     0.0, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter (mu = GM)
+    /// );
+    ///
+    /// let mut new_orbit = old_orbit.clone();
+    ///
+    /// const TIME: f64 = 1.5;
+    ///
+    /// new_orbit.set_gravitational_parameter(
+    ///     3.0,
+    ///     MuSetterMode::KeepStateVectorsAtTime(TIME)
+    /// );
+    ///
+    /// let old_state_vectors = old_orbit.get_state_vectors_at_time(TIME);
+    /// let new_state_vectors = new_orbit.get_state_vectors_at_time(TIME);
+    ///
+    /// println!("Old state vectors: {old_state_vectors:?}");
+    /// println!("New state vectors: {new_state_vectors:?}");
+    /// ```
+    KeepStateVectorsAtTime(f64),
 }
 
 /// An error to describe why setting the periapsis of an orbit failed.

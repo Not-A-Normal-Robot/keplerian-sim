@@ -322,10 +322,6 @@ impl OrbitTrait for Orbit {
         self.mean_anomaly = value;
     }
 
-    /// # Not Yet Implemented
-    /// This function sometimes panics when it encounters a todo macro.  
-    /// Refrain from using this function.
-    #[doc(hidden)]
     fn set_gravitational_parameter(
         &mut self,
         gravitational_parameter: f64,
@@ -361,24 +357,18 @@ impl OrbitTrait for Orbit {
 
                 self.mu = new_mu;
             }
-            crate::MuSetterMode::KeepPositionAndVelocityAtTime(_t) => {
-                // We need to preserve the state vector at time t
-                //
-                // r_0(t), v_0(t) == r_1(t), v_1(t)
-                // ...todo: figure out a way to do this
-                // https://downloads.rene-schwarz.com/download/M002-Cartesian_State_Vectors_to_Keplerian_Orbit_Elements.pdf
-
-                todo!(
-                    "set_gravitational_parameter with MuSetterMode::KeepPositionAndVelocityAtTime"
-                )
+            crate::MuSetterMode::KeepKnownStateVectors {
+                state_vectors,
+                time,
+            } => {
+                let new = state_vectors.to_cached_orbit(new_mu, time);
+                *self = new;
             }
-            crate::MuSetterMode::KeepPositionAtAngle(_t) => {
-                todo!("set_gravitational_parameter with MuSetterMode::KeepPositionAtAngle")
-            }
-            crate::MuSetterMode::KeepPositionAndVelocityAtAngle(_t) => {
-                todo!(
-                    "set_gravitational_parameter with MuSetterMode::KeepPositionAndVelocityAtAngle"
-                )
+            crate::MuSetterMode::KeepStateVectorsAtTime(time) => {
+                let ecc_anom = self.get_eccentric_anomaly_at_time(time);
+                let state_vectors = self.get_state_vectors_at_eccentric_anomaly(ecc_anom);
+                let new = state_vectors.to_cached_orbit(new_mu, time);
+                *self = new;
             }
         }
     }
