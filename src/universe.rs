@@ -103,21 +103,15 @@ impl Universe {
     /// Adds a body to the universe.
     ///
     /// `body`: The body to add into the universe.  
-    /// `satellite_of`: The index of the body that this body is orbiting.  
+    /// `parent_id`: The index of the body that this body is orbiting.  
     /// Returns: The index of the newly-added body.  
-    pub fn add_body(
-        &mut self,
-        mut body: Body,
-        satellite_of: Option<Id>,
-    ) -> Result<Id, BodyAddError> {
-        if let Some(parent_index) = satellite_of {
-            let parent = match self.bodies.get(&parent_index) {
+    pub fn add_body(&mut self, mut body: Body, parent_id: Option<Id>) -> Result<Id, BodyAddError> {
+        if let Some(parent_id) = parent_id {
+            let parent = match self.bodies.get(&parent_id) {
                 Some(b) => b,
                 None => {
                     return Err(BodyAddError {
-                        cause: BodyAddErrorCause::ParentNotFound {
-                            parent_id: parent_index,
-                        },
+                        cause: BodyAddErrorCause::ParentNotFound { parent_id },
                         body: Box::new(body),
                     })
                 }
@@ -139,12 +133,12 @@ impl Universe {
             BodyWrapper {
                 body,
                 relations: BodyRelation {
-                    parent: satellite_of,
+                    parent: parent_id,
                     satellites: Vec::new(),
                 },
             },
         );
-        if let Some(parent_index) = satellite_of {
+        if let Some(parent_index) = parent_id {
             if let Some(wrapper) = self.bodies.get_mut(&parent_index) {
                 wrapper.relations.satellites.push(id);
             }
