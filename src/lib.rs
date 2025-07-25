@@ -225,7 +225,7 @@ impl StateVectors {
     /// <https://en.wikipedia.org/wiki/Standard_gravitational_parameter>
     ///
     /// # Time
-    /// The time `t` passed into the function is measured in seconds.
+    /// The time passed into the function is measured in seconds.
     ///
     /// # Performance
     /// This function is not too performant as it uses several trigonometric operations.  
@@ -304,7 +304,7 @@ impl StateVectors {
     /// )
     /// ```
     #[must_use]
-    pub fn to_compact_orbit(self, mu: f64, t: f64) -> CompactOrbit {
+    pub fn to_compact_orbit(self, mu: f64, time: f64) -> CompactOrbit {
         // Reference:
         // https://orbital-mechanics.space/classical-orbital-elements/orbital-elements-and-the-state-vector.html
         // Note: That site doesn't use the same "base elements" and
@@ -592,7 +592,7 @@ impl StateVectors {
         //
         // a = r_p / (1 - e)
         let semi_major_axis: f64 = periapsis / (1.0 - eccentricity);
-        let offset = t * (mu / semi_major_axis.powi(3).abs()).sqrt();
+        let offset = time * (mu / semi_major_axis.powi(3).abs()).sqrt();
         let mean_anomaly_at_epoch = mean_anomaly - offset;
         let mean_anomaly_at_epoch = if eccentricity < 1.0 {
             mean_anomaly_at_epoch.rem_euclid(TAU)
@@ -625,7 +625,7 @@ impl StateVectors {
     /// <https://en.wikipedia.org/wiki/Standard_gravitational_parameter>
     ///
     /// # Time
-    /// The time `t` passed into the function is measured in seconds.
+    /// The time passed into the function is measured in seconds.
     ///
     /// # Performance
     /// This function is not too performant as it uses several trigonometric operations.  
@@ -705,8 +705,8 @@ impl StateVectors {
     /// )
     /// ```
     #[must_use]
-    pub fn to_cached_orbit(self, mu: f64, t: f64) -> Orbit {
-        self.to_compact_orbit(mu, t).into()
+    pub fn to_cached_orbit(self, mu: f64, time: f64) -> Orbit {
+        self.to_compact_orbit(mu, time).into()
     }
 
     /// Create a new custom orbit struct from the state vectors
@@ -723,7 +723,7 @@ impl StateVectors {
     /// <https://en.wikipedia.org/wiki/Standard_gravitational_parameter>
     ///
     /// # Time
-    /// The time `t` passed into the function is measured in seconds.
+    /// The time passed into the function is measured in seconds.
     ///
     /// # Performance
     /// This function is not too performant as it uses several trigonometric operations.
@@ -745,11 +745,11 @@ impl StateVectors {
     /// If this constraint is breached, you may get invalid values such as infinities
     /// or NaNs.
     #[must_use]
-    pub fn to_custom_orbit<O>(self, mu: f64, t: f64) -> O
+    pub fn to_custom_orbit<O>(self, mu: f64, time: f64) -> O
     where
         O: From<CompactOrbit> + OrbitTrait,
     {
-        self.to_compact_orbit(mu, t).into()
+        self.to_compact_orbit(mu, time).into()
     }
 }
 
@@ -1498,8 +1498,8 @@ pub trait OrbitTrait {
     /// The method to get the eccentric anomaly from the time
     /// uses numerical approach methods, and so it is not performant.  
     /// It is recommended to cache this value if you can.
-    fn get_eccentric_anomaly_at_time(&self, t: f64) -> f64 {
-        self.get_eccentric_anomaly_at_mean_anomaly(self.get_mean_anomaly_at_time(t))
+    fn get_eccentric_anomaly_at_time(&self, time: f64) -> f64 {
+        self.get_eccentric_anomaly_at_mean_anomaly(self.get_mean_anomaly_at_time(time))
     }
 
     /// Gets the true anomaly at a given eccentric anomaly in the orbit.
@@ -1599,8 +1599,8 @@ pub trait OrbitTrait {
     /// [`get_true_anomaly_at_mean_anomaly`][OrbitTrait::get_true_anomaly_at_mean_anomaly]
     /// instead.  
     /// It won't help performance much, but it's not zero.
-    fn get_true_anomaly_at_time(&self, t: f64) -> f64 {
-        self.get_true_anomaly_at_mean_anomaly(self.get_mean_anomaly_at_time(t))
+    fn get_true_anomaly_at_time(&self, time: f64) -> f64 {
+        self.get_true_anomaly_at_mean_anomaly(self.get_mean_anomaly_at_time(time))
     }
 
     /// Gets the mean anomaly at a given time in the orbit.
@@ -1618,9 +1618,10 @@ pub trait OrbitTrait {
     /// # Performance
     /// This function is performant and is unlikely to be the culprit of
     /// any performance issues.
-    fn get_mean_anomaly_at_time(&self, t: f64) -> f64 {
+    fn get_mean_anomaly_at_time(&self, time: f64) -> f64 {
         // M = t * sqrt(mu / |a^3|) + M_0
-        t * (self.get_gravitational_parameter() / self.get_semi_major_axis().powi(3).abs()).sqrt()
+        time * (self.get_gravitational_parameter() / self.get_semi_major_axis().powi(3).abs())
+            .sqrt()
             + self.get_mean_anomaly_at_epoch()
     }
 
@@ -1759,6 +1760,8 @@ pub trait OrbitTrait {
     /// Anything out of range will get wrapped around.
     ///
     /// # Performance
+    /// This function is somewhat performant.
+    ///
     /// This function benefits significantly from being in the
     /// [cached version of the orbit struct][crate::Orbit].  
     ///
@@ -1767,6 +1770,10 @@ pub trait OrbitTrait {
     /// [`get_state_vectors_at_true_anomaly`][OrbitTrait::get_state_vectors_at_true_anomaly]
     /// function instead. It prevents redundant calculations and is therefore
     /// faster than calling the position and velocity functions separately.
+    ///
+    /// If you only want to get the altitude of the orbit, you can use the
+    /// [`get_altitude_at_true_anomaly`][OrbitTrait::get_altitude_at_true_anomaly]
+    /// function instead.
     ///
     /// If you already know the altitude at the angle, you can
     /// rotate the altitude using the true anomaly, then tilt
@@ -1928,8 +1935,8 @@ pub trait OrbitTrait {
     /// Speed is not to be confused with velocity.  
     /// Speed tells you how fast something is moving,
     /// while velocity tells you how fast *and in what direction* it's moving in.
-    fn get_speed_at_time(&self, t: f64) -> f64 {
-        self.get_speed_at_true_anomaly(self.get_true_anomaly_at_time(t))
+    fn get_speed_at_time(&self, time: f64) -> f64 {
+        self.get_speed_at_true_anomaly(self.get_true_anomaly_at_time(time))
     }
 
     /// Gets the speed at a given eccentric anomaly in the orbit.
@@ -2260,8 +2267,8 @@ pub trait OrbitTrait {
     /// functions instead.  
     /// Those do not use numerical methods and therefore are a lot faster.
     #[doc(alias = "get_flat_velocity_at_time")]
-    fn get_pqw_velocity_at_time(&self, t: f64) -> DVec2 {
-        self.get_pqw_velocity_at_eccentric_anomaly(self.get_eccentric_anomaly_at_time(t))
+    fn get_pqw_velocity_at_time(&self, time: f64) -> DVec2 {
+        self.get_pqw_velocity_at_eccentric_anomaly(self.get_eccentric_anomaly_at_time(time))
     }
 
     /// Gets the position at a given angle (true anomaly) in the orbit
@@ -2407,9 +2414,13 @@ pub trait OrbitTrait {
     /// [`get_pqw_position_at_true_anomaly`][OrbitTrait::get_pqw_position_at_true_anomaly]
     /// functions instead.
     /// Those do not use numerical methods and therefore are a lot faster.
+    ///
+    /// If you only want to get the altitude of the orbit, you can use the
+    /// [`get_altitude_at_time`][OrbitTrait::get_altitude_at_time]
+    /// function instead.
     #[doc(alias = "get_flat_position_at_time")]
-    fn get_pqw_position_at_time(&self, t: f64) -> DVec2 {
-        self.get_pqw_position_at_true_anomaly(self.get_true_anomaly_at_time(t))
+    fn get_pqw_position_at_time(&self, time: f64) -> DVec2 {
+        self.get_pqw_position_at_true_anomaly(self.get_true_anomaly_at_time(time))
     }
 
     // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
@@ -2568,8 +2579,8 @@ pub trait OrbitTrait {
     /// Speed is not to be confused with velocity.  
     /// Speed tells you how fast something is moving,
     /// while velocity tells you how fast *and in what direction* it's moving in.
-    fn get_velocity_at_time(&self, t: f64) -> DVec3 {
-        self.get_velocity_at_eccentric_anomaly(self.get_eccentric_anomaly_at_time(t))
+    fn get_velocity_at_time(&self, time: f64) -> DVec3 {
+        self.get_velocity_at_eccentric_anomaly(self.get_eccentric_anomaly_at_time(time))
     }
 
     /// Gets the altitude of the body from its parent at a given angle (true anomaly) in the orbit.
@@ -2722,8 +2733,8 @@ pub trait OrbitTrait {
     /// # Parabolic Support
     /// **This function returns infinity for parabolic orbits** due to how the equation for
     /// true anomaly works.
-    fn get_altitude_at_time(&self, t: f64) -> f64 {
-        self.get_altitude_at_true_anomaly(self.get_true_anomaly_at_time(t))
+    fn get_altitude_at_time(&self, time: f64) -> f64 {
+        self.get_altitude_at_true_anomaly(self.get_true_anomaly_at_time(time))
     }
 
     // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
@@ -2755,8 +2766,8 @@ pub trait OrbitTrait {
     /// # Parabolic Support
     /// **This function returns non-finite numbers for parabolic orbits**
     /// due to how the equation for true anomaly works.
-    fn get_position_at_time(&self, t: f64) -> DVec3 {
-        self.get_position_at_true_anomaly(self.get_true_anomaly_at_time(t))
+    fn get_position_at_time(&self, time: f64) -> DVec3 {
+        self.get_position_at_true_anomaly(self.get_true_anomaly_at_time(time))
     }
 
     // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
@@ -2948,8 +2959,8 @@ pub trait OrbitTrait {
     /// # Parabolic Support
     /// This function doesn't support parabolic trajectories yet.  
     /// `NaN`s or nonsensical values may be returned.
-    fn get_state_vectors_at_time(&self, t: f64) -> StateVectors {
-        self.get_state_vectors_at_mean_anomaly(self.get_mean_anomaly_at_time(t))
+    fn get_state_vectors_at_time(&self, time: f64) -> StateVectors {
+        self.get_state_vectors_at_mean_anomaly(self.get_mean_anomaly_at_time(time))
     }
 
     /// Gets the 3D position and velocity at a certain point in the orbit.
@@ -3092,9 +3103,10 @@ pub trait OrbitTrait {
         let pqw_velocity =
             self.get_pqw_velocity_at_eccentric_anomaly_unchecked(outer_mult, q_mult, trig_ecc_anom);
         let pqw_position = self.get_pqw_position_at_true_anomaly_unchecked(altitude, sincos_angle);
+        let matrix = self.get_transformation_matrix();
         StateVectors {
-            position: self.transform_pqw_vector(pqw_position),
-            velocity: self.transform_pqw_vector(pqw_velocity),
+            position: matrix.dot_vec(pqw_position),
+            velocity: matrix.dot_vec(pqw_velocity),
         }
     }
 
