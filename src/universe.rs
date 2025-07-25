@@ -109,7 +109,6 @@ impl Universe {
         satellite_of: Option<Id>,
     ) -> Result<Id, BodyAddError> {
         if let Some(parent_index) = satellite_of {
-            // TODO: POST-MU SETTER: Set body orbit mu accordingly
             let parent = match self.bodies.get(&parent_index) {
                 Some(b) => b,
                 None => {
