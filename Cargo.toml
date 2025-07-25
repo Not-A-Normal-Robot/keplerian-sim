@@ -60,3 +60,7 @@ harness = false
 [[bench]]
 name = "state_vectors_time"
 harness = false
+
+[[bench]]
+name = "sinhcosh"
+harness = false
