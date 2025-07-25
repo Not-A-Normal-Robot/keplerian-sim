@@ -3432,6 +3432,31 @@ pub trait OrbitTrait {
     /// gravitational constant G times the mass of the parent body M.
     ///
     /// In other words, mu = GM.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait, MuSetterMode};
+    ///
+    /// let mut orbit = Orbit::new(
+    ///     0.0, // Eccentricity
+    ///     1.0, // Periapsis
+    ///     0.0, // Inclination
+    ///     0.0, // Argument of Periapsis
+    ///     0.0, // Longitude of Ascending Node
+    ///     0.0, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter (mu = GM)
+    /// );
+    ///
+    /// orbit.set_gravitational_parameter(3.0, MuSetterMode::KeepElements);
+    ///
+    /// assert_eq!(orbit.get_eccentricity(), 0.0);
+    /// assert_eq!(orbit.get_periapsis(), 1.0);
+    /// assert_eq!(orbit.get_inclination(), 0.0);
+    /// assert_eq!(orbit.get_arg_pe(), 0.0);
+    /// assert_eq!(orbit.get_long_asc_node(), 0.0);
+    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), 0.0);
+    /// assert_eq!(orbit.get_gravitational_parameter(), 3.0);
+    /// ```
     #[doc(alias = "set_mu")]
     fn set_gravitational_parameter(&mut self, gravitational_parameter: f64, mode: MuSetterMode);
 
@@ -3457,6 +3482,20 @@ pub trait OrbitTrait {
 ///
 /// This is used to describe how the setter should behave when setting the
 /// gravitational parameter of the parent body.
+///
+/// # Which mode should I use?
+/// The mode you should use depends on what you expect from setting the mu value
+/// to a different value.
+///
+/// If you just want to set the mu value naïvely (without touching the
+/// other orbital elements), you can use the `KeepElements` variant.
+///
+/// If this is part of a simulation and you want to keep the current position
+/// (not caring about the velocity), you can use the `KeepPositionAtTime` variant.
+///
+/// If you want to keep the current position and velocity, you can use either
+/// the `KeepKnownStateVectors` or `KeepStateVectorsAtTime` modes, the former
+/// being more performant if you already know the state vectors beforehand.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MuSetterMode {
     /// Keep all the other orbital parameters the same.
@@ -3468,6 +3507,31 @@ pub enum MuSetterMode {
     /// # Performance
     /// This mode is the fastest of the mu setter modes as it is simply an
     /// assignment operation.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait, MuSetterMode};
+    ///
+    /// let mut orbit = Orbit::new(
+    ///     0.0, // Eccentricity
+    ///     1.0, // Periapsis
+    ///     0.0, // Inclination
+    ///     0.0, // Argument of Periapsis
+    ///     0.0, // Longitude of Ascending Node
+    ///     0.0, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter (mu = GM)
+    /// );
+    ///
+    /// orbit.set_gravitational_parameter(3.0, MuSetterMode::KeepElements);
+    ///
+    /// assert_eq!(orbit.get_eccentricity(), 0.0);
+    /// assert_eq!(orbit.get_periapsis(), 1.0);
+    /// assert_eq!(orbit.get_inclination(), 0.0);
+    /// assert_eq!(orbit.get_arg_pe(), 0.0);
+    /// assert_eq!(orbit.get_long_asc_node(), 0.0);
+    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), 0.0);
+    /// assert_eq!(orbit.get_gravitational_parameter(), 3.0);
+    /// ```
     KeepElements,
     /// Keep the overall shape of the orbit, but modify the mean anomaly at epoch
     /// such that the position at the given time is the same.
@@ -3482,6 +3546,34 @@ pub enum MuSetterMode {
     /// This mode is slower than the `KeepElements` mode as it has to compute a new
     /// mean anomaly at epoch. However, this isn't too expensive and only costs a
     /// few squareroot operations.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait, MuSetterMode};
+    ///
+    /// let mut orbit = Orbit::new(
+    ///     0.0, // Eccentricity
+    ///     1.0, // Periapsis
+    ///     0.0, // Inclination
+    ///     0.0, // Argument of Periapsis
+    ///     0.0, // Longitude of Ascending Node
+    ///     0.0, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter (mu = GM)
+    /// );
+    ///
+    /// orbit.set_gravitational_parameter(
+    ///     3.0,
+    ///     MuSetterMode::KeepPositionAtTime(0.4),
+    /// );
+    ///
+    /// assert_eq!(orbit.get_eccentricity(), 0.0);
+    /// assert_eq!(orbit.get_periapsis(), 1.0);
+    /// assert_eq!(orbit.get_inclination(), 0.0);
+    /// assert_eq!(orbit.get_arg_pe(), 0.0);
+    /// assert_eq!(orbit.get_long_asc_node(), 0.0);
+    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), -0.2928203230275509);
+    /// assert_eq!(orbit.get_gravitational_parameter(), 3.0);
+    /// ```
     KeepPositionAtTime(f64),
     /// Keep the position and velocity of the orbit at a certain time
     /// roughly unchanged, using known [StateVectors] to avoid
@@ -3505,6 +3597,38 @@ pub enum MuSetterMode {
     /// This is, however, significantly more performant than the numerical approach
     /// used in the [`KeepStateVectorsAtTime`][MuSetterMode::KeepStateVectorsAtTime]
     /// mode.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait, MuSetterMode};
+    ///
+    /// let mut orbit = Orbit::new(
+    ///     0.0, // Eccentricity
+    ///     1.0, // Periapsis
+    ///     0.0, // Inclination
+    ///     0.0, // Argument of Periapsis
+    ///     0.0, // Longitude of Ascending Node
+    ///     0.0, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter (mu = GM)
+    /// );
+    ///
+    /// let time = 0.75;
+    ///
+    /// let state_vectors = orbit.get_state_vectors_at_time(time);
+    ///
+    /// orbit.set_gravitational_parameter(
+    ///     3.0,
+    ///     MuSetterMode::KeepKnownStateVectors {
+    ///         state_vectors,
+    ///         time
+    ///     }
+    /// );
+    ///
+    /// let new_state_vectors = orbit.get_state_vectors_at_time(time);
+    ///
+    /// println!("Old state vectors: {state_vectors:?}");
+    /// println!("New state vectors: {new_state_vectors:?}");
+    /// ```
     KeepKnownStateVectors {
         /// The state vectors describing the point in the orbit where you want the
         /// position and velocity to remain the same.
@@ -3543,6 +3667,36 @@ pub enum MuSetterMode {
     /// [`KeepKnownStateVectors`][MuSetterMode::KeepKnownStateVectors] mode. This can
     /// be done using the [`Orbit::get_state_vectors_at_eccentric_anomaly`] function, for
     /// example.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait, MuSetterMode};
+    ///
+    /// let old_orbit = Orbit::new(
+    ///     0.0, // Eccentricity
+    ///     1.0, // Periapsis
+    ///     0.0, // Inclination
+    ///     0.0, // Argument of Periapsis
+    ///     0.0, // Longitude of Ascending Node
+    ///     0.0, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter (mu = GM)
+    /// );
+    ///
+    /// let mut new_orbit = old_orbit.clone();
+    ///
+    /// const TIME: f64 = 1.5;
+    ///
+    /// new_orbit.set_gravitational_parameter(
+    ///     3.0,
+    ///     MuSetterMode::KeepStateVectorsAtTime(TIME)
+    /// );
+    ///
+    /// let old_state_vectors = old_orbit.get_state_vectors_at_time(TIME);
+    /// let new_state_vectors = new_orbit.get_state_vectors_at_time(TIME);
+    ///
+    /// println!("Old state vectors: {old_state_vectors:?}");
+    /// println!("New state vectors: {new_state_vectors:?}");
+    /// ```
     KeepStateVectorsAtTime(f64),
 }
 
