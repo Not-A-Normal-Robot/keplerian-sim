@@ -53,6 +53,7 @@
 //! ```
 
 #![warn(missing_docs)]
+#![forbid(unsafe_code)]
 
 mod body;
 pub mod body_presets;
