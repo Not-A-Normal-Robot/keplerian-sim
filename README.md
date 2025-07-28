@@ -30,8 +30,12 @@ You can run `cargo bench` to run the benchmarks in `/benches`. Note that most of
 
 The benchmarks use shortened names, and here's what they mean:
 - `ecc poll`: The algorithm for obtaining the eccentric anomaly from the mean anomaly in a certain orbit.
-- `pos`: The algorithm for obtaining the position of a body at a certain angle in an orbit.
+- `pos`: The algorithm for obtaining the position of a body at a certain angle (true anomaly) in an orbit.
 - `pos time`: The algorithm for obtaining the position of a body at a certain time in an orbit.
+- `vel`: The algorithm for obtaining the velocity of a body at a certain angle (true anomaly) in an orbit.
+- `vel time`: The algorithm for obtaining the velocity of a body at a certain time in an orbit.
+- `sv`: The algorithm for obtaining the state vectors (position and velocity) of a body at a certain angle (true anomaly) in an orbit.
+- `sv time`: The algorithm for obtaining the state vectors (position and velocity) of a body at a certain time in an orbit.
 - `tilt poll`: The algorithm for tilting a certain point from 2D to 3D based on the orbit's inclination and longitude of ascending node.
 - `true poll`: The algorithm for obtaining the true anomaly from the mean anomaly in an orbit.
 - `hyp`: Specifies that the orbit/trajectory is hyperbolic. If this is not present, then the orbit is elliptic.
