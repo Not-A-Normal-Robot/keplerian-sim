@@ -2273,3 +2273,33 @@ mod sinh_approx {
         );
     }
 }
+
+#[cfg(feature = "mint")]
+mod mint_test {
+    use crate::Matrix3x2;
+    use mint::RowMatrix3x2;
+    use rand::{rngs::ThreadRng, Rng};
+
+    fn get_random_matrix(rng: &mut ThreadRng) -> Matrix3x2 {
+        Matrix3x2 {
+            e11: rng.random_range(-1e100..1e100),
+            e12: rng.random_range(-1e100..1e100),
+            e21: rng.random_range(-1e100..1e100),
+            e22: rng.random_range(-1e100..1e100),
+            e31: rng.random_range(-1e100..1e100),
+            e32: rng.random_range(-1e100..1e100),
+        }
+    }
+
+    #[test]
+    fn test_mint_conversions() {
+        let mut rng = rand::rng();
+        for _ in 0..10000 {
+            let my_mat = get_random_matrix(&mut rng);
+            let mint_mat: RowMatrix3x2<f64> = my_mat.into();
+            let also_mine: Matrix3x2 = mint_mat.into();
+
+            assert_eq!(my_mat, also_mine);
+        }
+    }
+}
