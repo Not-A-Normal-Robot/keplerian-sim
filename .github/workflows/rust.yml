@@ -35,6 +35,9 @@ jobs:
       
     - name: Run tests with MSRV
       run: cargo test --verbose --no-fail-fast
+    
+    - name: Run tests for mint feature
+      run: cargo test mint --features mint
       
     - name: Switch to stable and run Clippy
       if: always()

@@ -191,6 +191,45 @@ impl Matrix3x2 {
     }
 }
 
+#[cfg(feature = "mint")]
+impl From<Matrix3x2> for mint::RowMatrix3x2<f64> {
+    fn from(value: Matrix3x2) -> Self {
+        mint::RowMatrix3x2::<f64> {
+            x: mint::Vector2::<f64> {
+                x: value.e11,
+                y: value.e12,
+            },
+            y: mint::Vector2::<f64> {
+                x: value.e21,
+                y: value.e22,
+            },
+            z: mint::Vector2::<f64> {
+                x: value.e31,
+                y: value.e32,
+            },
+        }
+    }
+}
+
+#[cfg(feature = "mint")]
+impl mint::IntoMint for Matrix3x2 {
+    type MintType = mint::RowMatrix3x2<f64>;
+}
+
+#[cfg(feature = "mint")]
+impl From<mint::RowMatrix3x2<f64>> for Matrix3x2 {
+    fn from(value: mint::RowMatrix3x2<f64>) -> Self {
+        Self {
+            e11: value.x.x,
+            e12: value.x.y,
+            e21: value.y.x,
+            e22: value.y.y,
+            e31: value.z.x,
+            e32: value.z.y,
+        }
+    }
+}
+
 /// A struct representing a position and velocity at a point in the orbit.
 ///
 /// The position and velocity vectors are three-dimensional.
