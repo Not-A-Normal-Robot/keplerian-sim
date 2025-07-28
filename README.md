@@ -9,6 +9,11 @@ You'll need Cargo and Rust to run the example binary. You can get it [at rustup.
 You'll also need `rustfmt` to build the code, which you can install with `rustup component add rustfmt`.  
 You should not need to install `rustfmt` if you are a user of this library and only want to use it in your own project, as `rustfmt` is only used in `build.rs`, which is not included in the distributed crate in crates.io.
 
+## Feature flags
+The crate has the following feature flags:
+- `serde`: Enables serialization and deserialization of the structs in this crate using Serde. Disabled by default.
+- `mint`: Enables interoperability across math libraries using the `mint` crate. Disabled by default. Note that this only applies to the `Matrix3x2` struct used internally.
+
 ## Minimum Supported Rust Version (MSRV)
 <!-- When changing the MSRV, don't forget to change `Cargo.toml`! -->
 The current MSRV is **`1.81.0`**.  
