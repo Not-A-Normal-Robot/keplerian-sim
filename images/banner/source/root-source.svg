@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="1000" viewBox="0 0 1000 500">
+    <style>
+        @font-face {
+            font-family: 'JetBrains Mono';
+            font-style: normal;
+            font-weight: 100 800;
+            font-display: swap;
+            src: url(https://fonts.gstatic.com/s/jetbrainsmono/v23/tDbV2o-flEEny0FZhsfKu5WU4xD7OwE.woff2) format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+
+        @font-face {
+            font-family: 'VT323';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url(https://fonts.gstatic.com/s/vt323/v17/pxiKyp0ihIEF2isfFJU.woff2) format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+    </style>
+
+    <defs>
+        <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+            <rect width="100%" height="100%" fill="#000" />
+            <g fill="none" stroke="#7773" stroke-width="1" stroke-linecap="round">
+                <path d="M25,0L25,50M0,25L50,25" />
+                <line x1="25" x2="25" y1="18" y2="32" />
+                <line x1="18" x2="32" y1="25" y2="25" />
+            </g>
+        </pattern>
+    </defs>
+
+    <rect y="-100%" width="100%" height="300%" fill="url(#grid)" />
+
+    <g stroke-width="3" fill="none">
+        <circle stroke="#8a848433" r="150" cx="80" cy="250" />
+        <circle stroke="#e6e6e633" r="300" cx="80" cy="250" />
+        <circle stroke="#3a397a66" r="500" cx="80" cy="250" />
+        <circle stroke="#d6986866" r="800" cx="80" cy="250" />
+    </g>
+
+    <g font-family="VT323" font-size="120" fill="#fff" aria-label="Keplerian Orbital Mechanics">
+        <text x="40" y="138">
+            Keplerian
+        </text>
+        <circle fill="#fc0b" stroke="#ff0" stroke-width="12" r="40" cx="80" cy="250" />
+        <text x="136" y="288" fill="#ff0">
+            rbital
+        </text>
+        <text x="40" y="438">
+            Mechanics
+        </text>
+    </g>
+
+    <g font-family="JetBrains Mono" font-size="42" fill="#fff" text-anchor="end">
+        <text x="980" y="400">
+            A
+            <tspan fill="#f74c00">
+                Rust
+            </tspan>
+            library
+            <tspan x="954" y="460">for space sims!</tspan>
+        </text>
+        <text x="960" y="60" font-size="24">
+            crates.io/crates/keplerian_sim
+        </text>
+    </g>
+
+    <circle fill="#8a8484" stroke="#8a848488" stroke-width="1" r="4" cx="191.5" cy="150" />
+    <circle fill="#e6e6e6" stroke="#e6e6e6ee" stroke-width="4" r="7" cx="352" cy="376" />
+    <circle fill="#3a397a" stroke="#3a397abb" stroke-width="3" r="7" cx="412" cy="-124" />
+    <circle fill="#d69868" stroke="#d69868bb" stroke-width="2" r="5.5" cx="600" cy="858" />
+</svg>
