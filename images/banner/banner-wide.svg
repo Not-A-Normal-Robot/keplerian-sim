@@ -1,4 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="4000" height="500" viewBox="-1000 0 3000 500">
+    <!-- © 2025 NOT_A_ROBOT, CC BY-NC-SA 4.0 https://creativecommons.org/licenses/by-nc-sa/4.0/ -->
+
     <defs>
         <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
             <rect width="100%" height="100%" fill="#000" />
