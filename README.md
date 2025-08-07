@@ -1,4 +1,5 @@
-# Keplerian-sim
+# ![Keplerian Orbital Mechanics](./images/banner/banner.svg)
+
 A Rust library for simulating Keplerian orbits.
 
 **[Documentation](https://docs.rs/keplerian-sim/)**  
