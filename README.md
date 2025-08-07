@@ -1,5 +1,5 @@
 <h1>
-    <img src="./images/banner/banner-wide.svg" aria-label="Keplerian Orbital Mechanics" title="Keplerian Orbital Mechanics" height="256">
+    <img src="./images/banner/banner-wide.svg" aria-label="Keplerian Orbital Mechanics" title="Keplerian Orbital Mechanics" style="height: 256px; width: fit-content; object-fit: cover; object-position: center;" />
 </h1>
 
 A Rust library for simulating Keplerian orbits.
