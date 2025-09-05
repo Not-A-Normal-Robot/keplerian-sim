@@ -2742,6 +2742,34 @@ pub trait OrbitTrait {
         semi_latus_rectum / (1.0 + self.get_eccentricity() * cos_true_anomaly)
     }
 
+    // TODO: Move these elsewhere in the file to maintain grouping
+    // TODO: Tests
+    fn get_true_anomaly_at_altitude(&self, altitude: f64) -> f64 {
+        self.get_true_anomaly_at_altitude_unchecked(
+            self.get_semi_latus_rectum(),
+            altitude,
+            self.get_eccentricity().recip(),
+        )
+    }
+
+    fn get_true_anomaly_at_altitude_unchecked(
+        &self,
+        semi_latus_rectum: f64,
+        altitude: f64,
+        eccentricity_recip: f64,
+    ) -> f64 {
+        // r = p / (1 + e cos ν), r > 0, p > 0.
+        // 1 / r = (1 + e cos ν) / p
+        // 1 / r = 1 / p + (e cos ν / p)
+        // 1 / r - 1 / p = e cos ν / p
+        // e cos ν / p = 1 / r - 1 / p
+        // e cos ν = p (1 / r - 1 / p)
+        // e cos ν = p / r - 1
+        // cos ν = (p / r - 1) / e
+        // ν = acos((p / r - 1) / e)
+        ((semi_latus_rectum / altitude - 1.0) * eccentricity_recip).acos()
+    }
+
     /// Gets the altitude at a given eccentric anomaly in the orbit.
     ///
     /// # Performance
