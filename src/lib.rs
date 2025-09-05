@@ -55,23 +55,17 @@
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
 
-mod body;
-pub mod body_presets;
 mod cached_orbit;
 mod compact_orbit;
-mod universe;
 
 use std::f64::consts::{PI, TAU};
 
-pub use body::Body;
 pub use cached_orbit::Orbit;
 pub use compact_orbit::CompactOrbit;
 use glam::{DVec2, DVec3};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-
-pub use universe::Universe;
 
 /// A constant used to get the initial seed for the eccentric anomaly.
 ///
