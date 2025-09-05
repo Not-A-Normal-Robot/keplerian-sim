@@ -152,6 +152,29 @@ pub struct Matrix3x2 {
 }
 
 impl Matrix3x2 {
+    /// The zero matrix.
+    ///
+    /// Multiplying a vector with this results in a vector
+    /// of zero length.
+    pub const ZERO: Self = Self {
+        e11: 0.0,
+        e12: 0.0,
+        e21: 0.0,
+        e22: 0.0,
+        e31: 0.0,
+        e32: 0.0,
+    };
+
+    /// The identity matrix.
+    ///
+    /// Multiplying a vector with this results in the same
+    /// vector.
+    pub const IDENTITY: Self = Self {
+        e11: 1.0,
+        e22: 1.0,
+        ..Self::ZERO
+    };
+
     /// Computes a dot product between this matrix and a 2D vector.
     ///
     /// # Example

@@ -148,7 +148,7 @@ impl CompactOrbit {
     /// If you want to provide an apoapsis instead, consider using the
     /// [`CompactOrbit::with_apoapsis`] function instead.
     ///
-    /// ### Parameters
+    /// # Parameters
     /// - `eccentricity`: The eccentricity of the orbit.
     /// - `periapsis`: The periapsis of the orbit, in meters.
     /// - `inclination`: The inclination of the orbit, in radians.
@@ -156,6 +156,39 @@ impl CompactOrbit {
     /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
     /// - `mean_anomaly`: The mean anomaly of the orbit at epoch, in radians.
     /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait};
+    ///
+    /// # fn main() {
+    /// let eccentricity = 0.2;
+    /// let periapsis = 2.8;
+    /// let inclination = 1.0;
+    /// let argument_of_periapsis = 0.7;
+    /// let longitude_of_ascending_node = 4.5;
+    /// let mean_anomaly_at_epoch = 2.9;
+    /// let gravitational_parameter = 9.2;
+    ///
+    /// let orbit = CompactOrbit::new(
+    ///     eccentricity,
+    ///     periapsis,
+    ///     inclination,
+    ///     argument_of_periapsis,
+    ///     longitude_of_ascending_node,
+    ///     mean_anomaly_at_epoch,
+    ///     gravitational_parameter
+    /// );
+    ///
+    /// assert_eq!(orbit.eccentricity, eccentricity);
+    /// assert_eq!(orbit.periapsis, periapsis);
+    /// assert_eq!(orbit.inclination, inclination);
+    /// assert_eq!(orbit.arg_pe, argument_of_periapsis);
+    /// assert_eq!(orbit.long_asc_node, longitude_of_ascending_node);
+    /// assert_eq!(orbit.mean_anomaly, mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.mu, gravitational_parameter);
+    /// # }
+    /// ```
     pub fn new(
         eccentricity: f64,
         periapsis: f64,
@@ -164,8 +197,8 @@ impl CompactOrbit {
         long_asc_node: f64,
         mean_anomaly: f64,
         mu: f64,
-    ) -> CompactOrbit {
-        CompactOrbit {
+    ) -> Self {
+        Self {
             eccentricity,
             periapsis,
             inclination,
@@ -179,19 +212,55 @@ impl CompactOrbit {
     /// Creates a new `CompactOrbit` instance with the given parameters.
     ///
     /// Note: This function uses apoapsis instead of eccentricity.  
-    /// Because of this, it's not recommended to initialize
-    /// parabolic or hyperbolic 'orbits' with this function.  
+    /// Because of this, it's not recommended to create
+    /// parabolic or hyperbolic trajectories with this function.  
     /// If you're looking to initialize a parabolic or hyperbolic
     /// trajectory, consider using the [`CompactOrbit::new`] function instead.
     ///
-    /// ### Parameters
+    /// # Parameters
     /// - `apoapsis`: The apoapsis of the orbit, in meters.
+    ///   Must be more than the periapsis.
     /// - `periapsis`: The periapsis of the orbit, in meters.
     /// - `inclination`: The inclination of the orbit, in radians.
     /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
     /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
-    /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
+    /// - `mean_anomaly`: The mean anomaly of the orbit at epoch, in radians.
     /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait};
+    ///
+    /// # fn main() {
+    /// let apoapsis = 4.1;
+    /// let periapsis = 2.8;
+    /// let inclination = 1.0;
+    /// let argument_of_periapsis = 0.7;
+    /// let longitude_of_ascending_node = 4.5;
+    /// let mean_anomaly_at_epoch = 2.9;
+    /// let gravitational_parameter = 9.2;
+    ///
+    /// let orbit = CompactOrbit::with_apoapsis(
+    ///     apoapsis,
+    ///     periapsis,
+    ///     inclination,
+    ///     argument_of_periapsis,
+    ///     longitude_of_ascending_node,
+    ///     mean_anomaly_at_epoch,
+    ///     gravitational_parameter
+    /// );
+    ///
+    /// let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
+    ///
+    /// assert_eq!(orbit.eccentricity, eccentricity);
+    /// assert_eq!(orbit.periapsis, periapsis);
+    /// assert_eq!(orbit.inclination, inclination);
+    /// assert_eq!(orbit.arg_pe, argument_of_periapsis);
+    /// assert_eq!(orbit.long_asc_node, longitude_of_ascending_node);
+    /// assert_eq!(orbit.mean_anomaly, mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.mu, gravitational_parameter);
+    /// # }
+    /// ```
     pub fn with_apoapsis(
         apoapsis: f64,
         periapsis: f64,
@@ -200,9 +269,9 @@ impl CompactOrbit {
         long_asc_node: f64,
         mean_anomaly: f64,
         mu: f64,
-    ) -> CompactOrbit {
+    ) -> Self {
         let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
-        CompactOrbit::new(
+        Self::new(
             eccentricity,
             periapsis,
             inclination,
@@ -211,6 +280,231 @@ impl CompactOrbit {
             mean_anomaly,
             mu,
         )
+    }
+
+    /// Creates a new circular `CompactOrbit` instance with the given parameters.
+    ///
+    /// # Parameters
+    /// - `radius`: The radius of the orbit, in meters.
+    /// - `inclination`: The inclination of the orbit, in radians.
+    /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
+    /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
+    /// - `mean_anomaly`: The mean anomaly of the orbit at epoch, in radians.
+    /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait};
+    ///
+    /// # fn main() {
+    /// let radius = 4.2;
+    /// let inclination = 1.8;
+    /// let longitude_of_ascending_node = 3.1;
+    /// let mean_anomaly_at_epoch = 1.5;
+    /// let gravitational_parameter = 5.0;
+    ///
+    /// let orbit = CompactOrbit::new_circular(
+    ///     radius,
+    ///     inclination,
+    ///     longitude_of_ascending_node,
+    ///     mean_anomaly_at_epoch,
+    ///     gravitational_parameter,
+    /// );
+    ///
+    /// assert_eq!(orbit.eccentricity, 0.0);
+    /// assert_eq!(orbit.periapsis, radius);
+    /// assert_eq!(orbit.inclination, inclination);
+    /// assert_eq!(orbit.arg_pe, 0.0);
+    /// assert_eq!(orbit.long_asc_node, longitude_of_ascending_node);
+    /// assert_eq!(orbit.mean_anomaly, mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.mu, gravitational_parameter);
+    /// # }
+    /// ```
+    pub fn new_circular(
+        radius: f64,
+        inclination: f64,
+        long_asc_node: f64,
+        mean_anomaly: f64,
+        mu: f64,
+    ) -> Self {
+        Self {
+            eccentricity: 0.0,
+            periapsis: radius,
+            inclination,
+            arg_pe: 0.0,
+            long_asc_node,
+            mean_anomaly,
+            mu,
+        }
+    }
+
+    /// Creates a new `CompactOrbit` instance parallel to
+    /// the XY plane with the given parameters.
+    ///
+    /// Note: This function uses eccentricity instead of apoapsis.  
+    /// If you want to provide an apoapsis instead, consider using the
+    /// [`CompactOrbit::new_flat_with_apoapsis`] function instead.
+    ///
+    /// # Parameters
+    /// - `eccentricity`: The eccentricity of the orbit.
+    /// - `periapsis`: The periapsis of the orbit, in meters.
+    /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
+    /// - `mean_anomaly`: The mean anomaly of the orbit at epoch, in radians.
+    /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait};
+    ///
+    /// # fn main() {
+    /// let eccentricity = 2.0;
+    /// let periapsis = 8.0;
+    /// let argument_of_periapsis = 2.1;
+    /// let mean_anomaly_at_epoch = 9.8;
+    /// let gravitational_parameter = 5.0;
+    ///
+    /// let orbit = CompactOrbit::new_flat(
+    ///     eccentricity,
+    ///     periapsis,
+    ///     argument_of_periapsis,
+    ///     mean_anomaly_at_epoch,
+    ///     gravitational_parameter,
+    /// );
+    ///
+    /// assert_eq!(orbit.eccentricity, eccentricity);
+    /// assert_eq!(orbit.periapsis, periapsis);
+    /// assert_eq!(orbit.inclination, 0.0);
+    /// assert_eq!(orbit.arg_pe, argument_of_periapsis);
+    /// assert_eq!(orbit.long_asc_node, 0.0);
+    /// assert_eq!(orbit.mean_anomaly, mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.mu, gravitational_parameter);
+    /// # }
+    /// ```
+    pub fn new_flat(
+        eccentricity: f64,
+        periapsis: f64,
+        arg_pe: f64,
+        mean_anomaly: f64,
+        mu: f64,
+    ) -> Self {
+        Self {
+            eccentricity,
+            periapsis,
+            inclination: 0.0,
+            arg_pe,
+            long_asc_node: 0.0,
+            mean_anomaly,
+            mu,
+        }
+    }
+
+    /// Creates a new `CompactOrbit` instance parallel to
+    /// the XY plane with the given parameters.
+    ///
+    /// Note: This function uses apoapsis instead of eccentricity.  
+    /// Because of this, it's not recommended to create
+    /// parabolic or hyperbolic trajectories with this function.  
+    /// If you're looking to initialize a parabolic or hyperbolic
+    /// trajectory, consider using the [`CompactOrbit::new_flat`] function instead.
+    ///
+    /// # Parameters
+    /// - `apoapsis`: The apoapsis of the orbit, in meters.
+    /// - `periapsis`: The periapsis of the orbit, in meters.
+    /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
+    /// - `mean_anomaly`: The mean anomaly of the orbit at epoch, in radians.
+    /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait};
+    ///
+    /// # fn main() {
+    /// let apoapsis = 10.1;
+    /// let periapsis = 8.0;
+    /// let argument_of_periapsis = 2.1;
+    /// let mean_anomaly_at_epoch = 9.8;
+    /// let gravitational_parameter = 5.0;
+    ///
+    /// let orbit = CompactOrbit::new_flat_with_apoapsis(
+    ///     apoapsis,
+    ///     periapsis,
+    ///     argument_of_periapsis,
+    ///     mean_anomaly_at_epoch,
+    ///     gravitational_parameter,
+    /// );
+    ///
+    /// let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
+    ///
+    /// assert_eq!(orbit.eccentricity, eccentricity);
+    /// assert_eq!(orbit.periapsis, periapsis);
+    /// assert_eq!(orbit.inclination, 0.0);
+    /// assert_eq!(orbit.arg_pe, argument_of_periapsis);
+    /// assert_eq!(orbit.long_asc_node, 0.0);
+    /// assert_eq!(orbit.mean_anomaly, mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.mu, gravitational_parameter);
+    /// # }
+    /// ```
+    pub fn new_flat_with_apoapsis(
+        apoapsis: f64,
+        periapsis: f64,
+        arg_pe: f64,
+        mean_anomaly: f64,
+        mu: f64,
+    ) -> Self {
+        let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
+        Self {
+            eccentricity,
+            periapsis,
+            inclination: 0.0,
+            arg_pe,
+            long_asc_node: 0.0,
+            mean_anomaly,
+            mu,
+        }
+    }
+
+    /// Creates a new circular `CompactOrbit` instance parallel to
+    /// the XY plane with the given parameters.
+    ///
+    /// # Parameters
+    /// - `radius`: The radius of the orbit, in meters.
+    /// - `mean_anomaly`: The mean anomaly of the orbit at epoch, in radians.
+    /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait};
+    ///
+    /// # fn main() {
+    /// let radius = 90.0;
+    /// let mean_anomaly_at_epoch = 0.5;
+    /// let gravitational_parameter = 6.0;
+    ///
+    /// let orbit = CompactOrbit::new_flat_circular(
+    ///     radius,
+    ///     mean_anomaly_at_epoch,
+    ///     gravitational_parameter
+    /// );
+    ///
+    /// assert_eq!(orbit.eccentricity, 0.0);
+    /// assert_eq!(orbit.periapsis, radius);
+    /// assert_eq!(orbit.inclination, 0.0);
+    /// assert_eq!(orbit.arg_pe, 0.0);
+    /// assert_eq!(orbit.long_asc_node, 0.0);
+    /// assert_eq!(orbit.mean_anomaly, mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.mu, gravitational_parameter);
+    /// # }
+    /// ```
+    pub fn new_flat_circular(radius: f64, mean_anomaly: f64, mu: f64) -> Self {
+        Self {
+            eccentricity: 0.0,
+            periapsis: radius,
+            inclination: 0.0,
+            arg_pe: 0.0,
+            long_asc_node: 0.0,
+            mean_anomaly,
+            mu,
+        }
     }
 }
 

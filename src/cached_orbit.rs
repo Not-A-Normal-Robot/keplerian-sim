@@ -114,7 +114,7 @@ impl Orbit {
     /// If you want to provide an apoapsis instead, consider using the
     /// [`Orbit::with_apoapsis`] function instead.
     ///
-    /// ### Parameters
+    /// # Parameters
     /// - `eccentricity`: The eccentricity of the orbit.
     /// - `periapsis`: The periapsis of the orbit, in meters.
     /// - `inclination`: The inclination of the orbit, in radians.
@@ -122,6 +122,39 @@ impl Orbit {
     /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
     /// - `mean_anomaly`: The mean anomaly of the orbit at epoch, in radians.
     /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
+    /// # Example
+    ///
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// # fn main() {
+    /// let eccentricity = 0.2;
+    /// let periapsis = 2.8;
+    /// let inclination = 1.0;
+    /// let argument_of_periapsis = 0.7;
+    /// let longitude_of_ascending_node = 4.5;
+    /// let mean_anomaly_at_epoch = 2.9;
+    /// let gravitational_parameter = 9.2;
+    ///
+    /// let orbit = Orbit::new(
+    ///     eccentricity,
+    ///     periapsis,
+    ///     inclination,
+    ///     argument_of_periapsis,
+    ///     longitude_of_ascending_node,
+    ///     mean_anomaly_at_epoch,
+    ///     gravitational_parameter
+    /// );
+    ///
+    /// assert_eq!(orbit.get_eccentricity(), eccentricity);
+    /// assert_eq!(orbit.get_periapsis(), periapsis);
+    /// assert_eq!(orbit.get_inclination(), inclination);
+    /// assert_eq!(orbit.get_arg_pe(), argument_of_periapsis);
+    /// assert_eq!(orbit.get_long_asc_node(), longitude_of_ascending_node);
+    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.get_gravitational_parameter(), gravitational_parameter);
+    /// # }
+    /// ```
     pub fn new(
         eccentricity: f64,
         periapsis: f64,
@@ -152,14 +185,49 @@ impl Orbit {
     /// If you're looking to initialize a parabolic or hyperbolic
     /// trajectory, consider using the [`Orbit::new`] function instead.
     ///
-    /// ### Parameters
+    /// # Parameters
     /// - `apoapsis`: The apoapsis of the orbit, in meters.
     /// - `periapsis`: The periapsis of the orbit, in meters.
     /// - `inclination`: The inclination of the orbit, in radians.
     /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
     /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
-    /// - `mean_anomaly`: The mean anomaly of the orbit, in radians.
+    /// - `mean_anomaly`: The mean anomaly of the orbit at epoch, in radians.
     /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// # fn main() {
+    /// let apoapsis = 4.1;
+    /// let periapsis = 2.8;
+    /// let inclination = 1.0;
+    /// let argument_of_periapsis = 0.7;
+    /// let longitude_of_ascending_node = 4.5;
+    /// let mean_anomaly_at_epoch = 2.9;
+    /// let gravitational_parameter = 9.2;
+    ///
+    /// let orbit = Orbit::with_apoapsis(
+    ///     apoapsis,
+    ///     periapsis,
+    ///     inclination,
+    ///     argument_of_periapsis,
+    ///     longitude_of_ascending_node,
+    ///     mean_anomaly_at_epoch,
+    ///     gravitational_parameter
+    /// );
+    ///
+    /// let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
+    ///
+    /// assert_eq!(orbit.get_eccentricity(), eccentricity);
+    /// assert_eq!(orbit.get_periapsis(), periapsis);
+    /// assert_eq!(orbit.get_inclination(), inclination);
+    /// assert_eq!(orbit.get_arg_pe(), argument_of_periapsis);
+    /// assert_eq!(orbit.get_long_asc_node(), longitude_of_ascending_node);
+    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.get_gravitational_parameter(), gravitational_parameter);
+    /// # }
+    /// ```
     pub fn with_apoapsis(
         apoapsis: f64,
         periapsis: f64,
@@ -179,6 +247,313 @@ impl Orbit {
             mean_anomaly,
             mu,
         )
+    }
+
+    /// Creates a new circular `Orbit` instance with the given parameters.
+    ///
+    /// # Parameters
+    /// - `radius`: The radius of the orbit, in meters.
+    /// - `inclination`: The inclination of the orbit, in radians.
+    /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
+    /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
+    /// - `mean_anomaly`: The mean anomaly of the orbit at epoch, in radians.
+    /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// # fn main() {
+    /// let radius = 4.2;
+    /// let inclination = 1.8;
+    /// let longitude_of_ascending_node = 3.1;
+    /// let mean_anomaly_at_epoch = 1.5;
+    /// let gravitational_parameter = 5.0;
+    ///
+    /// let orbit = Orbit::new_circular(
+    ///     radius,
+    ///     inclination,
+    ///     longitude_of_ascending_node,
+    ///     mean_anomaly_at_epoch,
+    ///     gravitational_parameter,
+    /// );
+    ///
+    /// assert_eq!(orbit.get_eccentricity(), 0.0);
+    /// assert_eq!(orbit.get_periapsis(), radius);
+    /// assert_eq!(orbit.get_inclination(), inclination);
+    /// assert_eq!(orbit.get_arg_pe(), 0.0);
+    /// assert_eq!(orbit.get_long_asc_node(), longitude_of_ascending_node);
+    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.get_gravitational_parameter(), gravitational_parameter);
+    /// # }
+    /// ```
+    pub fn new_circular(
+        radius: f64,
+        inclination: f64,
+        long_asc_node: f64,
+        mean_anomaly: f64,
+        mu: f64,
+    ) -> Self {
+        let matrix = {
+            let mut matrix = Matrix3x2::default();
+
+            let (sin_inc, cos_inc) = inclination.sin_cos();
+            let (sin_lan, cos_lan) = long_asc_node.sin_cos();
+
+            // Based on:
+            // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+            matrix.e11 = cos_lan;
+            matrix.e12 = -(cos_inc * sin_lan);
+
+            matrix.e21 = sin_lan;
+            matrix.e22 = cos_inc * cos_lan;
+
+            matrix.e31 = 0.0;
+            matrix.e32 = sin_inc;
+
+            matrix
+        };
+
+        debug_assert_eq!(
+            matrix,
+            Self::get_transformation_matrix(inclination, 0.0, long_asc_node)
+        );
+
+        Self {
+            eccentricity: 0.0,
+            periapsis: radius,
+            inclination,
+            arg_pe: 0.0,
+            long_asc_node,
+            mean_anomaly,
+            mu,
+            cache: OrbitCachedCalculations {
+                transformation_matrix: matrix,
+            },
+        }
+    }
+
+    /// Creates a new `Orbit` instance parallel to
+    /// the XY plane with the given parameters.
+    ///
+    /// Note: This function uses eccentricity instead of apoapsis.  
+    /// If you want to provide an apoapsis instead, consider using the
+    /// [`Orbit::new_flat_with_apoapsis`] function instead.
+    ///
+    /// # Parameters
+    /// - `eccentricity`: The eccentricity of the orbit.
+    /// - `periapsis`: The periapsis of the orbit, in meters.
+    /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
+    /// - `mean_anomaly`: The mean anomaly of the orbit at epoch, in radians.
+    /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// # fn main() {
+    /// let eccentricity = 2.0;
+    /// let periapsis = 8.0;
+    /// let argument_of_periapsis = 2.1;
+    /// let mean_anomaly_at_epoch = 9.8;
+    /// let gravitational_parameter = 5.0;
+    ///
+    /// let orbit = Orbit::new_flat(
+    ///     eccentricity,
+    ///     periapsis,
+    ///     argument_of_periapsis,
+    ///     mean_anomaly_at_epoch,
+    ///     gravitational_parameter,
+    /// );
+    ///
+    /// assert_eq!(orbit.get_eccentricity(), eccentricity);
+    /// assert_eq!(orbit.get_periapsis(), periapsis);
+    /// assert_eq!(orbit.get_inclination(), 0.0);
+    /// assert_eq!(orbit.get_arg_pe(), argument_of_periapsis);
+    /// assert_eq!(orbit.get_long_asc_node(), 0.0);
+    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.get_gravitational_parameter(), gravitational_parameter);
+    /// # }
+    /// ```
+    pub fn new_flat(
+        eccentricity: f64,
+        periapsis: f64,
+        arg_pe: f64,
+        mean_anomaly: f64,
+        mu: f64,
+    ) -> Self {
+        let matrix = {
+            let mut matrix = Matrix3x2::default();
+
+            let (sin_arg_pe, cos_arg_pe) = arg_pe.sin_cos();
+
+            // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+            matrix.e11 = cos_arg_pe;
+            matrix.e12 = -sin_arg_pe;
+
+            matrix.e21 = sin_arg_pe;
+            matrix.e22 = cos_arg_pe;
+
+            matrix.e31 = 0.0;
+            matrix.e32 = 0.0;
+
+            matrix
+        };
+
+        debug_assert_eq!(matrix, Self::get_transformation_matrix(0.0, arg_pe, 0.0));
+
+        Self {
+            eccentricity,
+            periapsis,
+            inclination: 0.0,
+            arg_pe,
+            long_asc_node: 0.0,
+            mean_anomaly,
+            mu,
+            cache: OrbitCachedCalculations {
+                transformation_matrix: matrix,
+            },
+        }
+    }
+
+    /// Creates a new `Orbit` instance parallel to
+    /// the XY plane with the given parameters.
+    ///
+    /// Note: This function uses apoapsis instead of eccentricity.  
+    /// Because of this, it's not recommended to create
+    /// parabolic or hyperbolic trajectories with this function.  
+    /// If you're looking to initialize a parabolic or hyperbolic
+    /// trajectory, consider using the [`Orbit::new_flat`] function instead.
+    ///
+    /// # Parameters
+    /// - `apoapsis`: The apoapsis of the orbit, in meters.
+    /// - `periapsis`: The periapsis of the orbit, in meters.
+    /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
+    /// - `mean_anomaly`: The mean anomaly of the orbit at epoch, in radians.
+    /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// # fn main() {
+    /// let apoapsis = 10.1;
+    /// let periapsis = 8.0;
+    /// let argument_of_periapsis = 2.1;
+    /// let mean_anomaly_at_epoch = 9.8;
+    /// let gravitational_parameter = 5.0;
+    ///
+    /// let orbit = Orbit::new_flat_with_apoapsis(
+    ///     apoapsis,
+    ///     periapsis,
+    ///     argument_of_periapsis,
+    ///     mean_anomaly_at_epoch,
+    ///     gravitational_parameter,
+    /// );
+    ///
+    /// let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
+    ///
+    /// assert_eq!(orbit.get_eccentricity(), eccentricity);
+    /// assert_eq!(orbit.get_periapsis(), periapsis);
+    /// assert_eq!(orbit.get_inclination(), 0.0);
+    /// assert_eq!(orbit.get_arg_pe(), argument_of_periapsis);
+    /// assert_eq!(orbit.get_long_asc_node(), 0.0);
+    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.get_gravitational_parameter(), gravitational_parameter);
+    /// # }
+    /// ```
+    pub fn new_flat_with_apoapsis(
+        apoapsis: f64,
+        periapsis: f64,
+        arg_pe: f64,
+        mean_anomaly: f64,
+        mu: f64,
+    ) -> Self {
+        let matrix = {
+            let mut matrix = Matrix3x2::default();
+
+            let (sin_arg_pe, cos_arg_pe) = arg_pe.sin_cos();
+
+            // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+            matrix.e11 = cos_arg_pe;
+            matrix.e12 = -sin_arg_pe;
+
+            matrix.e21 = sin_arg_pe;
+            matrix.e22 = cos_arg_pe;
+
+            matrix.e31 = 0.0;
+            matrix.e32 = 0.0;
+
+            matrix
+        };
+
+        debug_assert_eq!(matrix, Self::get_transformation_matrix(0.0, arg_pe, 0.0));
+
+        let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
+
+        Self {
+            eccentricity,
+            periapsis,
+            inclination: 0.0,
+            arg_pe,
+            long_asc_node: 0.0,
+            mean_anomaly,
+            mu,
+            cache: OrbitCachedCalculations {
+                transformation_matrix: matrix,
+            },
+        }
+    }
+
+    /// Creates a new circular `Orbit` instance parallel to
+    /// the XY plane with the given parameters.
+    ///
+    /// # Parameters
+    /// - `radius`: The radius of the orbit, in meters.
+    /// - `mean_anomaly`: The mean anomaly of the orbit at epoch, in radians.
+    /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// # fn main() {
+    /// let radius = 90.0;
+    /// let mean_anomaly_at_epoch = 0.5;
+    /// let gravitational_parameter = 6.0;
+    ///
+    /// let orbit = Orbit::new_flat_circular(
+    ///     radius,
+    ///     mean_anomaly_at_epoch,
+    ///     gravitational_parameter
+    /// );
+    ///
+    /// assert_eq!(orbit.get_eccentricity(), 0.0);
+    /// assert_eq!(orbit.get_periapsis(), radius);
+    /// assert_eq!(orbit.get_inclination(), 0.0);
+    /// assert_eq!(orbit.get_arg_pe(), 0.0);
+    /// assert_eq!(orbit.get_long_asc_node(), 0.0);
+    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.get_gravitational_parameter(), gravitational_parameter);
+    /// # }
+    /// ```
+    pub fn new_flat_circular(radius: f64, mean_anomaly: f64, mu: f64) -> Self {
+        let matrix = Matrix3x2::IDENTITY;
+
+        debug_assert_eq!(matrix, Self::get_transformation_matrix(0.0, 0.0, 0.0));
+
+        Self {
+            eccentricity: 0.0,
+            periapsis: radius,
+            inclination: 0.0,
+            arg_pe: 0.0,
+            long_asc_node: 0.0,
+            mean_anomaly,
+            mu,
+            cache: OrbitCachedCalculations {
+                transformation_matrix: matrix,
+            },
+        }
     }
 
     /// Updates the cached values in the orbit struct.
