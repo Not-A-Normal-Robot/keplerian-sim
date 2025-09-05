@@ -1,4 +1,6 @@
 name: Rust Tests and MSRV
+permissions:
+  contents: read
 
 on:
   push:
