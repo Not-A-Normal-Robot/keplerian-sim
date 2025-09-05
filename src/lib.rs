@@ -2637,10 +2637,14 @@ pub trait OrbitTrait {
 
     /// Gets the altitude of the body from its parent at a given angle (true anomaly) in the orbit.
     ///
-    ///
     /// # Angle
     /// The angle is expressed in radians, and ranges from 0 to tau.  
     /// Anything out of range will get wrapped around.
+    ///
+    /// Note that some angles, even within 0 to tau, are impossible for
+    /// hyperbolic orbits and may result in invalid values.
+    /// Check for the range of angles for a hyperbolic orbit using
+    /// [`get_true_anomaly_range`][OrbitTrait::get_true_anomaly_range].
     ///
     /// # Performance
     /// This function is performant, however, if you already
@@ -2684,6 +2688,11 @@ pub trait OrbitTrait {
     /// # Angle
     /// The angle is expressed in radians, and ranges from 0 to tau.  
     /// Anything out of range will get wrapped around.
+    ///
+    /// Note that some angles, even within 0 to tau, are impossible for
+    /// hyperbolic orbits and may result in invalid values.
+    /// Check for the range of angles for a hyperbolic orbit using
+    /// [`get_true_anomaly_range`][OrbitTrait::get_true_anomaly_range].
     ///
     /// # Performance
     /// This function, by itself, is performant and is unlikely
@@ -2730,7 +2739,7 @@ pub trait OrbitTrait {
         semi_latus_rectum: f64,
         cos_true_anomaly: f64,
     ) -> f64 {
-        (semi_latus_rectum / (1.0 + self.get_eccentricity() * cos_true_anomaly)).abs()
+        semi_latus_rectum / (1.0 + self.get_eccentricity() * cos_true_anomaly)
     }
 
     /// Gets the altitude at a given eccentric anomaly in the orbit.

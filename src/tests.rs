@@ -1988,7 +1988,7 @@ fn test_altitude() {
 
             let pos = orbit.get_position_at_true_anomaly(angle);
             let flat_pos = orbit.get_pqw_position_at_true_anomaly(angle);
-            let altitude = orbit.get_altitude_at_true_anomaly(angle);
+            let altitude = orbit.get_altitude_at_true_anomaly(angle).abs();
 
             let pos_alt = (pos.x.powi(2) + pos.y.powi(2) + pos.z.powi(2)).sqrt();
 
