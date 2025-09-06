@@ -3230,6 +3230,7 @@ pub trait OrbitTrait {
     /// reciprocal of the eccentricity, you may use the unchecked version
     /// of this function for a small performance boost:  
     /// [`get_true_anomaly_at_altitude_unchecked`][OrbitTrait::get_true_anomaly_at_altitude_unchecked]
+    #[doc(alias = "get_angle_at_altitude")]
     fn get_true_anomaly_at_altitude(&self, altitude: f64) -> f64 {
         self.get_true_anomaly_at_altitude_unchecked(
             self.get_semi_latus_rectum(),
@@ -3277,6 +3278,7 @@ pub trait OrbitTrait {
     /// # Performance
     /// This function is moderately performant and is unlikely to be
     /// the culprit of any performance issues.
+    #[doc(alias = "get_angle_at_altitude_unchecked")]
     fn get_true_anomaly_at_altitude_unchecked(
         &self,
         semi_latus_rectum: f64,
