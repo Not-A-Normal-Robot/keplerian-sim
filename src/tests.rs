@@ -2237,8 +2237,12 @@ fn test_alt_to_true_anom_base(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
         return;
     }
 
+    // CHECK_ITERATIONS may not be divisible by 4
+    // as it will make f -> r -> f check
+    // fail because it tries to get the apoapsis
+    const CHECK_ITERATIONS: usize = 99;
+
     // Check r -> f -> r
-    const CHECK_ITERATIONS: usize = 64;
     for i in 0..CHECK_ITERATIONS {
         let altitude = if orbit.get_eccentricity() < 1.0 {
             // We want CHECK_ITERATIONS midpoints, never any of the ends.
@@ -2315,8 +2319,8 @@ fn test_alt_to_true_anom_base(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
                     Orbit: {orbit:?}"
                 )
             });
-        (0..CHECK_ITERATIONS)
-            .map(|x| (x + 2) as f64 * apoapsis)
+        (2..CHECK_ITERATIONS + 2)
+            .map(|x| x as f64 * apoapsis)
             .for_each(|altitude| {
                 assert!(
                     orbit.get_true_anomaly_at_altitude(altitude).is_finite(),

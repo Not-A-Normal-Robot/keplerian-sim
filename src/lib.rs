@@ -3248,7 +3248,6 @@ pub trait OrbitTrait {
         self.get_transformation_matrix().dot_vec(position)
     }
 
-    // TODO: Tests
     /// Gets the true anomaly where a certain altitude is reached.
     ///
     /// Returns NaN if the orbit is circular or there are no solutions.
