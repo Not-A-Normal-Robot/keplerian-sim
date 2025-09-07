@@ -2702,7 +2702,7 @@ pub trait OrbitTrait {
     /// Note that some angles, even within 0 to tau, are impossible for
     /// hyperbolic orbits and may result in invalid values.
     /// Check for the range of angles for a hyperbolic orbit using
-    /// [`get_true_anomaly_range`][OrbitTrait::get_true_anomaly_range].
+    /// [`get_hyperbolic_true_anomaly_asymptote`][OrbitTrait::get_hyperbolic_true_anomaly_asymptote].
     ///
     /// # Performance
     /// This function is performant, however, if you already
@@ -2750,7 +2750,7 @@ pub trait OrbitTrait {
     /// Note that some angles, even within 0 to tau, are impossible for
     /// hyperbolic orbits and may result in invalid values.
     /// Check for the range of angles for a hyperbolic orbit using
-    /// [`get_true_anomaly_range`][OrbitTrait::get_true_anomaly_range].
+    /// [`get_hyperbolic_true_anomaly_asymptote`][OrbitTrait::get_hyperbolic_true_anomaly_asymptote].
     ///
     /// # Performance
     /// This function, by itself, is performant and is unlikely
