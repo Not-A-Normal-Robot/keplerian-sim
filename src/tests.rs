@@ -2269,9 +2269,30 @@ fn test_alt_to_true_anom_base(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
         );
     }
 
-    // TODO: BEFORE MERGE:
     // Check f -> r -> f
+    let max_f = if orbit.get_eccentricity() < 1.0 {
+        TAU
+    } else {
+        orbit.get_hyperbolic_true_anomaly_asymptote()
+    };
 
+    let min_f = -max_f;
+
+    (0..CHECK_ITERATIONS)
+        .map(|x| (x + 1) as f64 / (CHECK_ITERATIONS + 2) as f64)
+        .map(|frac| frac * max_f + min_f)
+        .for_each(|f| {
+            let r = orbit.get_altitude_at_true_anomaly(f);
+            let new_f = orbit.get_true_anomaly_at_altitude(r);
+
+            assert_almost_eq(
+                f.abs().rem_euclid(PI),
+                new_f.rem_euclid(PI),
+                &format!("f -> r -> f ({f} -> {r} -> {new_f}) true anomaly conversion for orbit {orbit:?}"),
+            );
+        });
+
+    // NaN checks
     if orbit.get_eccentricity() <= 1.0 {
         // Check if NaN appears when r < r_p, e ≤ 1
         assert!(orbit
@@ -2280,7 +2301,6 @@ fn test_alt_to_true_anom_base(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
     } else {
         // Check if NaN appears when r_a < r < r_p, e > 1
         // Check if NaN doesn't appear when r < r_a, e > 1
-        const CHECK_ITERATIONS: usize = 64;
         let periapsis = orbit.get_periapsis();
         let apoapsis = orbit.get_apoapsis();
 
