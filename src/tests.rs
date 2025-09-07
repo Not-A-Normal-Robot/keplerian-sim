@@ -2278,17 +2278,17 @@ fn test_alt_to_true_anom_base(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
 
     let min_f = -max_f;
 
-    (0..CHECK_ITERATIONS)
-        .map(|x| (x + 1) as f64 / (CHECK_ITERATIONS + 2) as f64)
+    (1..=CHECK_ITERATIONS)
+        .map(|x| x as f64 / (CHECK_ITERATIONS + 2) as f64)
         .map(|frac| frac * max_f + min_f)
         .for_each(|f| {
             let r = orbit.get_altitude_at_true_anomaly(f);
             let new_f = orbit.get_true_anomaly_at_altitude(r);
 
             assert_almost_eq(
-                f.abs().rem_euclid(PI),
-                new_f.rem_euclid(PI),
-                &format!("f -> r -> f ({f} -> {r} -> {new_f}) true anomaly conversion for orbit {orbit:?}"),
+                f.cos(),
+                new_f.cos(),
+                &format!("f -> r -> f ({f} -> {r} -> {new_f}) conversion for {orbit:?}"),
             );
         });
 
@@ -2304,8 +2304,8 @@ fn test_alt_to_true_anom_base(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
         let periapsis = orbit.get_periapsis();
         let apoapsis = orbit.get_apoapsis();
 
-        (0..CHECK_ITERATIONS)
-            .map(|x| (x + 1) as f64 / (CHECK_ITERATIONS + 2) as f64)
+        (1..=CHECK_ITERATIONS)
+            .map(|x| x as f64 / (CHECK_ITERATIONS + 2) as f64)
             .map(|frac| frac * periapsis + apoapsis)
             .for_each(|altitude| {
                 assert!(
