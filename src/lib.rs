@@ -942,6 +942,64 @@ pub trait OrbitTrait {
         self.get_semi_major_axis() - self.get_periapsis()
     }
 
+    /// Gets the true anomaly asymptote (f_∞) of the hyperbolic trajectory.
+    ///
+    /// This returns a positive number between π/2 and π for open
+    /// trajectories, and NaN for closed orbits.
+    ///
+    /// This can be used to get the range of possible true anomalies that
+    /// a hyperbolic trajectory can be in.  
+    /// This function returns the maximum true anomaly, and the minimum
+    /// true anomaly can be derived simply by negating the result:
+    /// ```text
+    /// f_-∞ = -f_∞
+    /// ```
+    /// The minimum and maximum together represent the range of possible
+    /// true anomalies.
+    ///
+    /// # Performance
+    /// This function is moderately performant and contains only one
+    /// trigonometry operation.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// // Closed (elliptic) orbit with eccentricity = 0.8
+    /// let closed = Orbit::new_flat(0.8, 1.0, 0.0, 0.0, 1.0);
+    ///
+    /// // True anomaly asymptote is only defined for open orbits,
+    /// // i.e., eccentricity ≥ 1
+    /// assert!(closed.get_hyperbolic_true_anomaly_asymptote().is_nan());
+    ///
+    /// let parabolic = Orbit::new_flat(1.0, 1.0, 0.0, 0.0, 1.0);
+    /// assert_eq!(
+    ///     parabolic.get_hyperbolic_true_anomaly_asymptote(),
+    ///     std::f64::consts::PI
+    /// );
+    ///
+    /// let hyperbolic = Orbit::new_flat(2.0, 1.0, 0.0, 0.0, 1.0);
+    /// let asymptote = 2.0943951023931957;
+    /// assert_eq!(
+    ///     hyperbolic.get_hyperbolic_true_anomaly_asymptote(),
+    ///     asymptote
+    /// );
+    ///
+    /// // At asymptote, point is infinitely far away
+    /// assert!(
+    ///     !hyperbolic.get_altitude_at_true_anomaly(asymptote).is_finite()
+    /// )
+    /// ```
+    #[doc(alias = "get_theta_infinity")]
+    #[doc(alias = "get_hyperbolic_true_anomaly_range")]
+    fn get_hyperbolic_true_anomaly_asymptote(&self) -> f64 {
+        // https://en.wikipedia.org/wiki/Hyperbolic_trajectory#Parameters_describing_a_hyperbolic_trajectory
+        // 2f_∞ = 2cos^-1(-1/e)
+        // ⇒ f_∞ = acos(-1/e)
+        use std::ops::Neg;
+        self.get_eccentricity().recip().neg().acos()
+    }
+
     /// Gets the apoapsis of the orbit.  
     /// Returns infinity for parabolic orbits.  
     /// Returns negative values for hyperbolic orbits.  
