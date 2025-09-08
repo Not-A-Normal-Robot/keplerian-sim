@@ -3456,6 +3456,7 @@ pub trait OrbitTrait {
     ///
     /// In simple terms, it tells you how, and in which direction,
     /// the orbit "tilts".
+    #[doc(alias = "get_argument_of_periapsis")]
     fn get_arg_pe(&self) -> f64;
 
     /// Sets the argument of periapsis of the orbit in radians.
@@ -3468,6 +3469,7 @@ pub trait OrbitTrait {
     ///
     /// In simple terms, it tells you how, and in which direction,
     /// the orbit "tilts".
+    #[doc(alias = "set_argument_of_periapsis")]
     fn set_arg_pe(&mut self, arg_pe: f64);
 
     /// Gets the longitude of ascending node of the orbit in radians.
@@ -3480,6 +3482,7 @@ pub trait OrbitTrait {
     ///
     /// In simple terms, it tells you how, and in which direction,
     /// the orbit "tilts".
+    #[doc(alias = "get_longitude_of_ascending_node")]
     fn get_long_asc_node(&self) -> f64;
 
     /// Sets the longitude of ascending node of the orbit in radians.
@@ -3492,6 +3495,7 @@ pub trait OrbitTrait {
     ///
     /// In simple terms, it tells you how, and in which direction,
     /// the orbit "tilts".
+    #[doc(alias = "set_longitude_of_ascending_node")]
     fn set_long_asc_node(&mut self, long_asc_node: f64);
 
     /// Gets the mean anomaly of the orbit at a certain epoch.
