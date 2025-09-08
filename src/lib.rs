@@ -1219,9 +1219,22 @@ pub trait OrbitTrait {
     ///
     /// \- [Wikipedia](https://en.wikipedia.org/wiki/Orbital_node)
     ///
+    /// # True anomaly domain
+    /// In the case of open (parabolic/hyperbolic) trajectories, this function
+    /// can return a true anomaly outside the valid range. This indicates
+    /// that that open trajectory does not have an AN/DN crossing.
+    ///
+    /// It is the caller's job to check for itself whether this true anomaly is
+    /// within the valid range. This can be done using the
+    /// [`get_hyperbolic_true_anomaly_asymptote`][OrbitTrait::get_hyperbolic_true_anomaly_asymptote]
+    /// function.
+    ///
+    /// This out-of-range issue does not appear in closed (elliptic) orbits.
+    ///
     /// # Performance
     /// This function is very performant and should not be the cause
     /// of any performance problems.
+    // TODO: Example
     fn get_true_anomaly_at_z_ascending_node(&self) -> f64 {
         // true anomaly `f` of one of the nodes.
         // we don't know if this is AN or DN yet.
@@ -1253,9 +1266,22 @@ pub trait OrbitTrait {
     ///
     /// \- [Wikipedia](https://en.wikipedia.org/wiki/Orbital_node)
     ///
+    /// # True anomaly domain
+    /// In the case of open (parabolic/hyperbolic) trajectories, this function
+    /// can return a true anomaly outside the valid range. This indicates
+    /// that that open trajectory does not have an AN/DN crossing.
+    ///
+    /// It is the caller's job to check for itself whether this true anomaly is
+    /// within the valid range. This can be done using the
+    /// [`get_hyperbolic_true_anomaly_asymptote`][OrbitTrait::get_hyperbolic_true_anomaly_asymptote]
+    /// function.
+    ///
+    /// This out-of-range issue does not appear in closed (elliptic) orbits.
+    ///
     /// # Performance
     /// This function is very performant and should not be the cause
     /// of any performance problems.
+    // TODO: Example
     fn get_true_anomaly_at_z_descending_node(&self) -> f64 {
         // true anomaly `f` of one of the nodes.
         // we don't know if this is AN or DN yet.
