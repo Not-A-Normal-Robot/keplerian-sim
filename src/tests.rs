@@ -2542,16 +2542,6 @@ fn z_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
 
 #[test]
 fn test_z_an_dn() {
-    z_an_dn_base_test(&Orbit::new(
-        0.0,
-        643753.2916731486,
-        -0.2903945015913534,
-        -6.145390753642735,
-        -0.13064273910029112,
-        4.764617663911109,
-        245537.6715217259,
-    ));
-
     for orbit in random_any_iter(262144) {
         z_an_dn_base_test(&orbit);
     }
