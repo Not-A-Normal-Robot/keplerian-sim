@@ -2289,6 +2289,8 @@ fn test_alt_to_true_anom_base(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
             let r = orbit.get_altitude_at_true_anomaly(f);
             let new_f = orbit.get_true_anomaly_at_altitude(r);
 
+            // We compare their cosines because it's the simplest way to do
+            // angle wrapping equality (e.g., 2π = 0 for true anomaly)
             assert_almost_eq(
                 f.cos(),
                 new_f.cos(),
