@@ -1004,7 +1004,7 @@ pub trait OrbitTrait {
     ///         .get_altitude_at_true_anomaly_unchecked(
     ///             hyperbolic.get_semi_latus_rectum(),
     ///             asymptote_cos
-    ///     )
+    ///         )
     ///         .is_infinite()
     /// )
     /// ```
