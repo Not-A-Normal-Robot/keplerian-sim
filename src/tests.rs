@@ -2552,7 +2552,7 @@ fn test_z_an_dn() {
         245537.6715217259,
     ));
 
-    for orbit in random_any_iter(4096) {
+    for orbit in random_any_iter(262144) {
         z_an_dn_base_test(&orbit);
     }
 }

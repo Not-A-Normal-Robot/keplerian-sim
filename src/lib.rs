@@ -1240,7 +1240,7 @@ pub trait OrbitTrait {
         // we don't know if this is AN or DN yet.
         let node_f = (-self.get_arg_pe()).rem_euclid(TAU);
 
-        if self.get_inclination().rem_euclid(PI) < PI {
+        if self.get_inclination().rem_euclid(TAU) < PI {
             node_f
         } else {
             (node_f + PI).rem_euclid(TAU)
@@ -1287,7 +1287,7 @@ pub trait OrbitTrait {
         // we don't know if this is AN or DN yet.
         let node_f = (-self.get_arg_pe()).rem_euclid(TAU);
 
-        if self.get_inclination().rem_euclid(PI) < PI {
+        if self.get_inclination().rem_euclid(TAU) < PI {
             (node_f + PI).rem_euclid(TAU)
         } else {
             node_f
