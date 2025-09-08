@@ -1234,7 +1234,34 @@ pub trait OrbitTrait {
     /// # Performance
     /// This function is very performant and should not be the cause
     /// of any performance problems.
-    // TODO: Example
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// # fn main() {
+    /// let orbit = Orbit::new_circular(
+    ///     1.0, // radius
+    ///     1.0, // inclination
+    ///     2.0, // longitude of AN
+    ///     0.0, // mean anomaly (irrelevant)
+    ///     1.0, // mu (irrelevant)
+    /// );
+    ///
+    /// let f_an = orbit.get_true_anomaly_at_z_ascending_node();
+    ///
+    /// assert!(
+    ///     orbit.get_velocity_at_true_anomaly(f_an).z > 0.0
+    /// );
+    ///
+    /// let f_dn = (f_an + std::f64::consts::PI)
+    ///     .rem_euclid(std::f64::consts::TAU);
+    ///
+    /// assert!(
+    ///     orbit.get_velocity_at_true_anomaly(f_dn).z < 0.0
+    /// );
+    /// # }
+    /// ```
     fn get_true_anomaly_at_z_ascending_node(&self) -> f64 {
         // true anomaly `f` of one of the nodes.
         // we don't know if this is AN or DN yet.
@@ -1281,7 +1308,34 @@ pub trait OrbitTrait {
     /// # Performance
     /// This function is very performant and should not be the cause
     /// of any performance problems.
-    // TODO: Example
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// # fn main() {
+    /// let orbit = Orbit::new_circular(
+    ///     1.0, // radius
+    ///     1.0, // inclination
+    ///     2.0, // longitude of AN
+    ///     0.0, // mean anomaly (irrelevant)
+    ///     1.0, // mu (irrelevant)
+    /// );
+    ///
+    /// let f_dn = orbit.get_true_anomaly_at_z_descending_node();
+    ///
+    /// assert!(
+    ///     orbit.get_velocity_at_true_anomaly(f_dn).z < 0.0
+    /// );
+    ///
+    /// let f_an = (f_dn + std::f64::consts::PI)
+    ///     .rem_euclid(std::f64::consts::TAU);
+    ///
+    /// assert!(
+    ///     orbit.get_velocity_at_true_anomaly(f_an).z > 0.0
+    /// );
+    /// # }
+    /// ```
     fn get_true_anomaly_at_z_descending_node(&self) -> f64 {
         // true anomaly `f` of one of the nodes.
         // we don't know if this is AN or DN yet.
