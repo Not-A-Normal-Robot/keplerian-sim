@@ -1393,8 +1393,29 @@ pub trait OrbitTrait {
     /// This function does not check the validity of the given plane normal.  
     /// The caller is responsible to make sure that the plane normal is of length 1.  
     /// Invalid inputs may result in nonsensical outputs.
-    fn get_true_anomaly_at_plane_ascending_node(&self, _plane_normal: DVec3) -> f64 {
-        todo!("get_true_anomaly_at_plane_ascending_node");
+    ///
+    /// # Performance
+    /// TODO
+    fn get_true_anomaly_at_plane_ascending_node(&self, plane_normal: DVec3) -> f64 {
+        // https://orbital-mechanics.space/classical-orbital-elements/orbital-elements-and-the-state-vector.html#step-4right-ascension-of-the-ascending-node
+        //
+        //     N = K × h
+        // ...where:
+        // N = Line of nodes <https://en.wikipedia.org/wiki/Line_of_nodes>
+        // K = plane normal (usually XZ-plane = Z-up, now custom-defined)
+        // h = well..
+        //     In the website they use a specific angular momentum.
+        //     In this case however, the w-hat basis vector
+        //     (in the PQW coordinate system) can be used instead
+        //     since we kinda normalize it anyway in the next steps,
+        //     so it all works out.
+        let line_of_nodes = plane_normal.cross(self.get_orbital_plane_normal());
+
+        self.get_true_anomaly_at_plane_ascending_node_unchecked(line_of_nodes)
+    }
+
+    fn get_true_anomaly_at_plane_ascending_node_unchecked(&self, line_of_nodes: DVec3) -> f64 {
+        todo!("get_true_anomaly_at_plane_ascending_node_unchecked");
     }
 
     // TODO: POST-PARABOLIC SUPPORT: Add note about parabolic eccentric anomaly (?), remove parabolic support sections
