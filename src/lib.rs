@@ -1199,7 +1199,6 @@ pub trait OrbitTrait {
         true_anomaly + self.get_longitude_of_periapsis()
     }
 
-    // TODO: Tests
     /// Gets the true anomaly at the ascending node with respect to the
     /// XY plane (at Z = 0).
     ///
