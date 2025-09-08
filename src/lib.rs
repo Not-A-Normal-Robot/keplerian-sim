@@ -985,9 +985,27 @@ pub trait OrbitTrait {
     ///     asymptote
     /// );
     ///
-    /// // At asymptote, point is infinitely far away
+    /// // At the asymptote, the altitude is infinite.
+    /// // Note: We can't use the regular `get_altitude_at_true_anomaly` here
+    /// // because it is less accurate (since it uses cos() while the asymptote uses
+    /// // acos(), and the roundtrip causes precision loss).
+    /// // We use the unchecked version with the exact cosine value
+    /// // of the true anomaly (-1/e) to avoid float inaccuracies.
+    /// let asymptote_cos = -1.0 / hyperbolic.get_eccentricity();
+    ///
+    /// // We first check that asymptote_cos is close to cos(asymptote):
     /// assert!(
-    ///     !hyperbolic.get_altitude_at_true_anomaly(asymptote).is_finite()
+    ///     (asymptote_cos - asymptote.cos()).abs() < 1e-15
+    /// );
+    ///
+    /// // Then we can be fairly confident this will be exactly infinite:
+    /// assert!(
+    ///     hyperbolic
+    ///         .get_altitude_at_true_anomaly_unchecked(
+    ///             hyperbolic.get_semi_latus_rectum(),
+    ///             asymptote_cos
+    ///     )
+    ///         .is_infinite()
     /// )
     /// ```
     #[doc(alias = "get_theta_infinity")]
