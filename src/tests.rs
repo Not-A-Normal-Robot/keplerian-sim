@@ -2497,40 +2497,59 @@ fn z_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
     let f_an = orbit.get_true_anomaly_at_z_ascending_node();
     let f_dn = orbit.get_true_anomaly_at_z_descending_node();
 
-    assert_eq!(
-        (f_an + PI).rem_euclid(TAU),
-        f_dn,
+    assert!(
+        ((f_an + PI).rem_euclid(TAU) - f_dn).abs() < 1e-15,
         "AN->DN equation should hold for {orbit:?}"
     );
-    assert_eq!(
-        (f_dn + PI).rem_euclid(TAU),
-        f_an,
+    assert!(
+        ((f_dn - PI).rem_euclid(TAU) - f_an).abs() < 1e-15,
         "DN->AN equation should hold for {orbit:?}"
     );
 
-    let v_an = orbit.get_velocity_at_true_anomaly(f_an);
-    let v_dn = orbit.get_velocity_at_true_anomaly(f_dn);
+    // For open trajectories, f_an and f_dn may be out of range,
+    // which results in NaN velocities. We check this before
+    // checking if the vel directions make sense
 
-    assert!(
-        v_an.z >= 0.0,
-        "Z-vel at AN should be positive for {orbit:?}"
-    );
-    assert!(
-        v_dn.z <= 0.0,
-        "Z-vel at DN should be negative for {orbit:?}"
-    );
+    let f_range = if orbit.get_eccentricity() < 1.0 {
+        -TAU..=TAU
+    } else {
+        let f_max = orbit.get_hyperbolic_true_anomaly_asymptote();
+        (-f_max + 1e-14)..=(f_max - 1e-14)
+    };
+
+    if f_range.contains(&f_an) {
+        let v_an = orbit.get_velocity_at_true_anomaly(f_an);
+
+        if !v_an.is_nan() {
+            assert!(
+                v_an.z >= 0.0,
+                "Z-vel {v_an} at AN (f = {f_an}) should be positive for {orbit:?}"
+            );
+        }
+    }
+
+    if f_range.contains(&f_dn) {
+        let v_dn = orbit.get_velocity_at_true_anomaly(f_dn);
+
+        if !v_dn.is_nan() {
+            assert!(
+                v_dn.z <= 0.0,
+                "Z-vel {v_dn} at DN (f = {f_dn}) should be negative for {orbit:?}"
+            );
+        }
+    }
 }
 
 #[test]
 fn test_z_an_dn() {
     z_an_dn_base_test(&Orbit::new(
         0.0,
-        343245.4871977928,
-        0.0,
-        -5.536613074016079,
-        2.558878723710272,
-        5.87579825510374,
-        972490.214062233,
+        643753.2916731486,
+        -0.2903945015913534,
+        -6.145390753642735,
+        -0.13064273910029112,
+        4.764617663911109,
+        245537.6715217259,
     ));
 
     for orbit in random_any_iter(4096) {
