@@ -2547,6 +2547,21 @@ fn test_z_an_dn() {
     }
 }
 
+fn orbital_plane_normal_base_test(orbit: &impl OrbitTrait) {
+    let p = orbit.transform_pqw_vector(DVec2::new(1.0, 0.0));
+    let q = orbit.transform_pqw_vector(DVec2::new(0.0, 1.0));
+    let w = p.cross(q);
+
+    assert_eq!(orbit.get_orbital_plane_normal(), w);
+}
+
+#[test]
+fn test_orbital_plane_normal_getter() {
+    for orbit in random_any_iter(262144) {
+        orbital_plane_normal_base_test(&orbit);
+    }
+}
+
 mod monotone_cubic_solver {
     use crate::solve_monotone_cubic;
 

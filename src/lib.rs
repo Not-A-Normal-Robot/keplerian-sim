@@ -1335,6 +1335,7 @@ pub trait OrbitTrait {
     /// );
     /// # }
     /// ```
+    // TODO: DOC: Show general-plane AN/DN as alternatives to XY AN/DN
     fn get_true_anomaly_at_z_descending_node(&self) -> f64 {
         // true anomaly `f` of one of the nodes.
         // we don't know if this is AN or DN yet.
@@ -1345,6 +1346,55 @@ pub trait OrbitTrait {
         } else {
             node_f
         }
+    }
+
+    /// Gets the unit vector perpendicular to the orbital plane.
+    ///
+    /// # Performance
+    /// This function is significantly faster in the cached version of the
+    /// orbit struct ([`Orbit`]) than the compact version ([`CompactOrbit`]).  
+    /// Consider using the cached version if this function will be called often.
+    ///
+    /// The cached version only needs to do a cross-product, and therefore is
+    /// very performant.
+    ///
+    /// The compact version additionally has to compute many multiplications,
+    /// additions, and several trig operations.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use glam::DVec3;
+    ///
+    /// let mut orbit = Orbit::new_flat_circular(1.0, 0.0, 1.0);
+    ///
+    /// assert_eq!(orbit.get_orbital_plane_normal, DVec3::new(0.0, 0.0, 1.0));
+    ///
+    /// orbit.set_inclination(std::f64::consts::PI);
+    ///
+    /// assert_eq!(orbit.get_orbital_plane_normal, DVec3::new(0.0, 0.0, -1.0));
+    /// ```
+    fn get_orbital_plane_normal(&self) -> DVec3 {
+        let mat = self.get_transformation_matrix();
+
+        // Deconstruct into PQW basis vectors
+        let p = DVec3::new(mat.e11, mat.e21, mat.e31);
+
+        let q = DVec3::new(mat.e12, mat.e22, mat.e32);
+
+        p.cross(q)
+    }
+
+    // TODO: DOC: Show XY AN/DN as alternatives to general-plane AN/DN
+    /// Gets the true anomaly of an ascending node, given a reference plane's
+    /// normal vector.
+    ///
+    /// # Unchecked Operation
+    /// This function does not check the validity of the given plane normal.  
+    /// The caller is responsible to make sure that the plane normal is of length 1.  
+    /// Invalid inputs may result in nonsensical outputs.
+    fn get_true_anomaly_at_plane_ascending_node(&self, _plane_normal: DVec3) -> f64 {
+        todo!("get_true_anomaly_at_plane_ascending_node");
     }
 
     // TODO: POST-PARABOLIC SUPPORT: Add note about parabolic eccentric anomaly (?), remove parabolic support sections
