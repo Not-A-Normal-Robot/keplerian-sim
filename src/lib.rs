@@ -1199,6 +1199,75 @@ pub trait OrbitTrait {
         true_anomaly + self.get_longitude_of_periapsis()
     }
 
+    // TODO: Tests
+    /// Gets the true anomaly at the ascending node with respect to the
+    /// XY plane (at Z = 0).
+    ///
+    /// If you want the descending node as well, it is faster to use the
+    /// following formula than to call the corresponding descending node
+    /// function:
+    /// ```
+    /// # use core::f64::consts::{PI, TAU};
+    /// # let f_AN = 0.42;
+    /// # let
+    /// f_DN = (f_AN + PI).rem_euclid(TAU)
+    /// # ;
+    /// ```
+    ///
+    /// An orbital node is either of the two points where an orbit intersects
+    /// a plane of reference to which it is inclined.
+    ///
+    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Orbital_node)
+    ///
+    /// # Performance
+    /// This function is very performant and should not be the cause
+    /// of any performance problems.
+    fn get_true_anomaly_at_z_ascending_node(&self) -> f64 {
+        // true anomaly `f` of one of the nodes.
+        // we don't know if this is AN or DN yet.
+        let node_f = (-self.get_arg_pe()).rem_euclid(TAU);
+
+        if self.get_inclination().rem_euclid(PI) < PI {
+            node_f
+        } else {
+            (node_f + PI).rem_euclid(TAU)
+        }
+    }
+
+    /// Gets the true anomaly at the descending node with respect to the
+    /// XY plane (at Z = 0).
+    ///
+    /// If you want the ascending node as well, it is faster to use the
+    /// following formula than to call the corresponding descending node
+    /// function:
+    /// ```
+    /// # use core::f64::consts::{PI, TAU};
+    /// # let f_DN = 0.42;
+    /// # let
+    /// f_AN = (f_DN + PI).rem_euclid(TAU)
+    /// # ;
+    /// ```
+    ///
+    /// An orbital node is either of the two points where an orbit intersects
+    /// a plane of reference to which it is inclined.
+    ///
+    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Orbital_node)
+    ///
+    /// # Performance
+    /// This function is very performant and should not be the cause
+    /// of any performance problems.
+    fn get_true_anomaly_at_z_descending_node(&self) -> f64 {
+        // true anomaly `f` of one of the nodes.
+        // we don't know if this is AN or DN yet.
+        let node_f = (-self.get_arg_pe()).rem_euclid(TAU);
+
+        if self.get_inclination().rem_euclid(PI) < PI {
+            (node_f + PI).rem_euclid(TAU)
+        } else {
+            node_f
+        }
+    }
+
     // TODO: POST-PARABOLIC SUPPORT: Add note about parabolic eccentric anomaly (?), remove parabolic support sections
     /// Gets the eccentric anomaly at a given mean anomaly in the orbit.
     ///
