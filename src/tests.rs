@@ -152,6 +152,19 @@ fn assert_almost_eq_vec3(a: DVec3, b: DVec3, what: &str) {
     assert_almost_eq(a.z, b.z, &format!("Z coord of {desc}"));
 }
 
+fn assert_almost_eq_rescale(a: f64, b: f64, what: &str) {
+    assert_eq!(
+        a.signum(),
+        b.signum(),
+        "sign of given params not the same: {what}"
+    );
+
+    let a_scale = a.abs().log2();
+    let b_scale = b.abs().log2();
+
+    assert_almost_eq(a_scale, b_scale, &format!("logarithmic scale of {what}"));
+}
+
 fn assert_almost_eq_vec3_rescale(a: DVec3, b: DVec3, what: &str) {
     let desc = format!("{a:?} vs {b:?}; {what}");
     let a_norm = a.normalize();
@@ -2198,6 +2211,285 @@ fn test_sv_to_orbit() {
                 ),
             );
         }
+    }
+}
+
+fn test_alt_to_true_anom_base(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
+    if orbit.get_eccentricity() == 0.0 {
+        assert!(
+            orbit
+                .get_true_anomaly_at_altitude(orbit.get_periapsis() - 0.1)
+                .is_nan(),
+            "Circular orbits should result in NaN (-)"
+        );
+        assert!(
+            orbit
+                .get_true_anomaly_at_altitude(orbit.get_periapsis())
+                .is_nan(),
+            "Circular orbits should result in NaN (n)"
+        );
+        assert!(
+            orbit
+                .get_true_anomaly_at_altitude(orbit.get_periapsis() + 0.1)
+                .is_nan(),
+            "Circular orbits should result in NaN (+)"
+        );
+        return;
+    }
+
+    // CHECK_ITERATIONS may not be divisible by 4
+    // as it will make f -> r -> f check
+    // fail because it tries to get the apoapsis
+    const CHECK_ITERATIONS: usize = 99;
+
+    // Check r -> f -> r
+    for i in 0..CHECK_ITERATIONS {
+        let altitude = if orbit.get_eccentricity() < 1.0 {
+            // We want CHECK_ITERATIONS midpoints, never any of the ends.
+            let apoapsis = orbit.get_apoapsis();
+            let diff = apoapsis - orbit.get_periapsis();
+
+            let divisor = CHECK_ITERATIONS + 2;
+            let index = i + 1;
+
+            (diff * index as f64) / divisor as f64 + orbit.get_periapsis()
+        } else {
+            orbit.get_periapsis() * (2 + i) as f64
+        };
+
+        let true_anom = orbit.get_true_anomaly_at_altitude(altitude);
+
+        assert!(
+            true_anom.is_finite(),
+            "r -> f -> r: True anomaly is {true_anom} (not finite). Orbit: {orbit:?}"
+        );
+
+        let new_altitude = orbit.get_altitude_at_true_anomaly(true_anom);
+
+        assert_almost_eq_rescale(
+            altitude,
+            new_altitude,
+            "Altitudes before vs after true anomaly conversion",
+        );
+    }
+
+    // Check f -> r -> f
+    let max_f = if orbit.get_eccentricity() < 1.0 {
+        TAU
+    } else {
+        orbit.get_hyperbolic_true_anomaly_asymptote()
+    };
+
+    let min_f = -max_f;
+
+    (1..=CHECK_ITERATIONS)
+        .map(|x| x as f64 / (CHECK_ITERATIONS + 2) as f64)
+        .map(|frac| frac * max_f + min_f)
+        .for_each(|f| {
+            let r = orbit.get_altitude_at_true_anomaly(f);
+            let new_f = orbit.get_true_anomaly_at_altitude(r);
+
+            // We compare their cosines because it's the simplest way to do
+            // angle wrapping equality (e.g., 2π = 0 for true anomaly)
+            assert_almost_eq(
+                f.cos(),
+                new_f.cos(),
+                &format!("f -> r -> f ({f} -> {r} -> {new_f}) conversion for {orbit:?}"),
+            );
+        });
+
+    // NaN checks
+    if orbit.get_eccentricity() <= 1.0 {
+        // Check if NaN appears when r < r_p, e ≤ 1
+        assert!(orbit
+            .get_true_anomaly_at_altitude(orbit.get_periapsis() * 0.5)
+            .is_nan());
+    } else {
+        // Check if NaN appears when r_a < r < r_p, e > 1
+        // Check if NaN doesn't appear when r < r_a, e > 1
+        let periapsis = orbit.get_periapsis();
+        let apoapsis = orbit.get_apoapsis();
+
+        (1..=CHECK_ITERATIONS)
+            .map(|x| x as f64 / (CHECK_ITERATIONS + 2) as f64)
+            .map(|frac| frac * periapsis + apoapsis)
+            .for_each(|altitude| {
+                assert!(
+                    orbit.get_true_anomaly_at_altitude(altitude).is_nan(),
+                    "r_a < r < r_p, e > 1\n\
+                    altitude should be out of range and result in NaN\n\
+                    Orbit: {orbit:?}"
+                )
+            });
+        (2..CHECK_ITERATIONS + 2)
+            .map(|x| x as f64 * apoapsis)
+            .for_each(|altitude| {
+                assert!(
+                    orbit.get_true_anomaly_at_altitude(altitude).is_finite(),
+                    "r < r_a, e > 1\n\
+                    result should be mathematically valid although outside valid M_h or H\n\
+                    Orbit: {orbit:?}"
+                )
+            })
+    }
+}
+
+#[test]
+fn test_alt_to_true_anom() {
+    let known_orbits = [
+        Orbit::new(
+            108.12478516555166,
+            739446.3739243945,
+            4.4379866572367686,
+            -3.837745491000056,
+            -2.723528963332692,
+            -1.235055257543035,
+            88693.72512103277,
+        ),
+        Orbit::new(
+            0.9966834605870825,
+            233530.8545930106,
+            0.0,
+            6.265961424477499,
+            4.903832903204938,
+            3.3032020837017892,
+            594980.7007391909,
+        ),
+        Orbit::new(
+            2.786789256572612,
+            169320.70777622596,
+            0.0,
+            -1.7310518382457545,
+            -4.49795466065101,
+            2.1129080263390723,
+            543463.4795382554,
+        ),
+        Orbit::new(
+            148.19488171395574,
+            884847.2512842646,
+            0.0,
+            -3.9145535884386926,
+            3.3494081091913586,
+            6.266067874410721,
+            659705.008372745,
+        ),
+        Orbit::new(
+            1.7105101322365424,
+            329370.2648665676,
+            -5.775473180092787,
+            -1.7208954811340194,
+            -1.6626463267393303,
+            -5.874038755244536,
+            802179.9169292466,
+        ),
+        Orbit::new(
+            145.94844015040508,
+            203908.025622657,
+            -2.40655171307567,
+            3.9435683505524715,
+            -2.5384292539624265,
+            -4.604755233153464,
+            169792.97276552342,
+        ),
+        Orbit::new(
+            1.1855842085394555,
+            816102.3199830793,
+            0.0,
+            3.4437691346789023,
+            -3.3613404930844695,
+            -4.542697384938566,
+            509523.27973998577,
+        ),
+        Orbit::new(
+            2.961364164842913,
+            621917.9015228765,
+            0.0,
+            4.285330127811376,
+            2.276790533032832,
+            1.9511505828892588,
+            425581.3212116419,
+        ),
+        Orbit::new(
+            1.0,
+            638736.116675038,
+            0.0,
+            -6.2285141477259005,
+            5.762865231402442,
+            -3.484031308878359,
+            878536.8370220523,
+        ),
+        Orbit::new(
+            0.9929105972509886,
+            128589.50974964743,
+            0.0,
+            -3.314959795311654,
+            1.4208937183840566,
+            -0.578931201049965,
+            600281.5404856752,
+        ),
+        Orbit::new(
+            0.0,
+            654207.4308727328,
+            0.0,
+            5.927773945968786,
+            0.9737752128280057,
+            4.345813362095528,
+            839697.9513802704,
+        ),
+        Orbit::new(
+            13.58212992975093,
+            815604.474807989,
+            0.0,
+            1.3140099764135718,
+            2.65264265032366,
+            -0.1227234741863299,
+            940369.9821905283,
+        ),
+        Orbit::new(
+            0.0,
+            918529.8000047116,
+            0.0,
+            -4.029356132377893,
+            4.12743273252093,
+            -5.680671790639481,
+            464424.01626417803,
+        ),
+        Orbit::new(
+            2.5885349497922467,
+            441863.5169381175,
+            -1.3020833891335872,
+            0.22730327862308286,
+            2.1924698142340446,
+            -1.3124860767349373,
+            16513.878288684613,
+        ),
+        Orbit::new(
+            8.422998841188784,
+            943468.2020044628,
+            0.0,
+            5.864647753975204,
+            -5.457490050870641,
+            6.21356244211619,
+            698090.9211077694,
+        ),
+    ];
+
+    for orbit in known_orbits {
+        if orbit.get_eccentricity() != 0.0 {
+            assert_almost_eq(
+                orbit.get_true_anomaly_at_altitude(orbit.get_periapsis() * 1.000000000000005),
+                0.0,
+                &format!(
+                    "Orbit periapsis true anomaly should be zero\n\
+                    Orbit: {orbit:?}"
+                ),
+            );
+        }
+        test_alt_to_true_anom_base(&orbit);
+    }
+
+    for orbit in random_any_iter(4096) {
+        test_alt_to_true_anom_base(&orbit);
     }
 }
 
