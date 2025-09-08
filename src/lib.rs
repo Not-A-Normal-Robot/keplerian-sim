@@ -1168,6 +1168,37 @@ pub trait OrbitTrait {
     /// ```
     fn get_transformation_matrix(&self) -> Matrix3x2;
 
+    /// Gets the longitude of periapsis of this orbit.
+    ///
+    /// The longitude of the periapsis, also called longitude of the pericenter,
+    /// of an orbiting body is the longitude (measured from the point of the
+    /// vernal equinox) at which the periapsis (closest approach to the
+    /// central body) would occur if the body's orbit inclination were zero.  
+    /// It is usually denoted ϖ.
+    ///
+    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Longitude_of_periapsis)
+    ///
+    /// # Performance
+    /// This function is very performant and should not be the cause
+    /// of any performance problems.
+    fn get_longitude_of_periapsis(&self) -> f64 {
+        self.get_arg_pe() + self.get_long_asc_node()
+    }
+
+    /// Gets the true longitude at a true anomaly in the orbit.
+    ///
+    /// True longitude is the ecliptic longitude at which an
+    /// orbiting body could actually be found if its inclination were zero.
+    ///
+    /// \- [Wikipedia](https://en.wikipedia.org/wiki/True_longitude)
+    ///
+    /// # Performance
+    /// This function is very performant and should not be the cause
+    /// of any performance problems.
+    fn get_true_longitude_at_true_anomaly(&self, true_anomaly: f64) -> f64 {
+        true_anomaly + self.get_longitude_of_periapsis()
+    }
+
     // TODO: POST-PARABOLIC SUPPORT: Add note about parabolic eccentric anomaly (?), remove parabolic support sections
     /// Gets the eccentric anomaly at a given mean anomaly in the orbit.
     ///
