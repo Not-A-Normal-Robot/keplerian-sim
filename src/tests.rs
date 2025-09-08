@@ -2493,6 +2493,51 @@ fn test_alt_to_true_anom() {
     }
 }
 
+fn z_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
+    let f_an = orbit.get_true_anomaly_at_z_ascending_node();
+    let f_dn = orbit.get_true_anomaly_at_z_descending_node();
+
+    assert_eq!(
+        (f_an + PI).rem_euclid(TAU),
+        f_dn,
+        "AN->DN equation should hold for {orbit:?}"
+    );
+    assert_eq!(
+        (f_dn + PI).rem_euclid(TAU),
+        f_an,
+        "DN->AN equation should hold for {orbit:?}"
+    );
+
+    let v_an = orbit.get_velocity_at_true_anomaly(f_an);
+    let v_dn = orbit.get_velocity_at_true_anomaly(f_dn);
+
+    assert!(
+        v_an.z >= 0.0,
+        "Z-vel at AN should be positive for {orbit:?}"
+    );
+    assert!(
+        v_dn.z <= 0.0,
+        "Z-vel at DN should be negative for {orbit:?}"
+    );
+}
+
+#[test]
+fn test_z_an_dn() {
+    z_an_dn_base_test(&Orbit::new(
+        0.0,
+        343245.4871977928,
+        0.0,
+        -5.536613074016079,
+        2.558878723710272,
+        5.87579825510374,
+        972490.214062233,
+    ));
+
+    for orbit in random_any_iter(4096) {
+        z_an_dn_base_test(&orbit);
+    }
+}
+
 mod monotone_cubic_solver {
     use crate::solve_monotone_cubic;
 
