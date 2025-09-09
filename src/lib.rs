@@ -1389,21 +1389,107 @@ pub trait OrbitTrait {
     /// Gets the true anomaly of an ascending node, given a reference plane's
     /// normal vector.
     ///
-    /// # Unchecked Operation
-    /// This function does not check the validity of the given plane normal.  
-    /// The caller is responsible to make sure that the plane normal is of length 1.  
-    /// Invalid inputs may result in nonsensical outputs.
+    /// Note that the plane normal *need not be* of length 1. Any length should
+    /// work provided that it is not too extreme (i.e., not too close to 0 or
+    /// near infinity). If it is too extreme, you may get NaNs as the output.
+    ///
+    /// **You will also get a NaN if the plane normals of the
+    /// two orbits match exactly.** In that scenario there is no ascending
+    /// nor descending node.
+    ///
+    /// This can be used to get the ascending node compared to another orbit,
+    /// similar to the AN/DN labels that appear in Kerbal Space Program after you
+    /// pick a target vessel/body.
+    ///
+    /// To do that, you can get the plane normal of the other orbit using
+    /// [`get_orbital_plane_normal`][OrbitTrait::get_orbital_plane_normal],
+    /// then feed that into the original orbit's ascending node getter.
+    ///
     ///
     /// # Performance
-    /// TODO
+    /// This function is significantly faster in the cached version of the
+    /// orbit struct ([`Orbit`]) than the compact version ([`CompactOrbit`]).  
+    /// Consider using the cached version if this function will be called often.
+    ///
+    /// The cached version only needs to do a cross-product, and therefore is
+    /// very performant.
+    ///
+    /// The compact version additionally has to compute many multiplications,
+    /// additions, and several trig operations.
+    ///
+    /// Note that if you want to get both the ascending node
+    /// and descending node, you can use the equality below to compute
+    /// the descending node from the ascending node.
+    /// This is far more performant than calling this function and
+    /// [`get_true_anomaly_at_desc_node_with_plane`][OrbitTrait::get_true_anomaly_at_desc_node_with_plane]
+    /// separately.
+    ///
+    /// ```
+    /// # use core::f64::consts::{PI, TAU};
+    /// # let f_AN = 0.42;
+    /// # let
+    /// f_DN = (f_AN + PI).rem_euclid(TAU)
+    /// # ;
+    /// ```
+    ///
+    /// TODO: Document domain
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use std::f64::consts::{PI, TAU};
+    ///
+    /// # fn assert_almost_eq(a: f64, b: f64) {
+    /// #     assert!((a - b).abs() < 1e-13)
+    /// # }
+    ///
+    /// let this_orbit = Orbit::new(
+    ///     0.8, // Eccentricity
+    ///     28.4, // Periapsis
+    ///     1.98, // Inclination
+    ///     2.91, // Argument of periapsis
+    ///     0.50, // Longitude of ascending node (rel. to XY plane)
+    ///     2.9, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter
+    /// );
+    ///
+    /// let other_orbit = Orbit::new(
+    ///     0.6, // Eccentricity
+    ///     11.0, // Periapsis
+    ///     3.01, // Inclination
+    ///     1.59, // Argument of periapsis
+    ///     0.44, // Longitude of ascending node (rel. to XY plane)
+    ///     1.25, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter
+    /// );
+    ///
+    /// let this_normal = this_orbit.get_orbital_plane_normal();
+    /// let other_normal = other_orbit.get_orbital_plane_normal();
+    ///
+    /// let this_an = this_orbit.get_true_anomaly_at_asc_node_with_plane(other_normal);
+    /// # assert_almost_eq(this_an, 0.0); // TODO
+    /// let this_dn = (this_an + PI).rem_euclid(TAU);
+    /// # assert_almost_eq(this_dn, 0.0); // TODO
+    ///
+    /// let other_an = other_orbit.get_true_anomaly_at_asc_node_with_plane(this_normal);
+    /// # assert_almost_eq(other_an, 0.0); // TODO
+    /// let other_dn = (other_an + PI).rem_euclid(TAU);
+    /// # assert_almost_eq(other_dn, 0.0); // TODO
+    /// ```
     fn get_true_anomaly_at_asc_node_with_plane(&self, plane_normal: DVec3) -> f64 {
+        // We first get the longitude of ascending node relative to the new
+        // plane normal instead of the one we store (which is relative to the
+        // XY plane with a normal of +Z).
+
+        // Equations from:
         // https://orbital-mechanics.space/classical-orbital-elements/orbital-elements-and-the-state-vector.html#step-4right-ascension-of-the-ascending-node
         //
-        //     N = K × h
+        //     vec_N = vec_K × vec_h
+        //
         // ...where:
-        // N = Line of nodes <https://en.wikipedia.org/wiki/Line_of_nodes>
-        // K = plane normal (usually XZ-plane = Z-up, now custom-defined)
-        // h = well..
+        // vec_N = Line of nodes <https://en.wikipedia.org/wiki/Line_of_nodes>
+        // vec_K = plane normal (usually XZ-plane = Z-up, now custom-defined)
+        // vec_h = well..
         //     In the website they use a specific angular momentum.
         //     In this case however, the w-hat basis vector
         //     (in the PQW coordinate system) can be used instead
@@ -1411,11 +1497,21 @@ pub trait OrbitTrait {
         //     so it all works out.
         let line_of_nodes = plane_normal.cross(self.get_orbital_plane_normal());
 
-        self.get_true_anomaly_at_asc_node_with_plane_unchecked(line_of_nodes)
-    }
+        // Ω (unnormalized) = N.x / ||N||
 
-    fn get_true_anomaly_at_asc_node_with_plane_unchecked(&self, _line_of_nodes: DVec3) -> f64 {
-        todo!("get_true_anomaly_at_plane_ascending_node_unchecked");
+        let lan_unnormalized = line_of_nodes.x / line_of_nodes.length();
+
+        let lan = if line_of_nodes.y >= 0.0 {
+            lan_unnormalized
+        } else {
+            TAU - lan_unnormalized
+        };
+
+        if self.get_inclination().rem_euclid(TAU) <= PI {
+            -lan
+        } else {
+            (PI - lan).rem_euclid(TAU)
+        }
     }
 
     // TODO: POST-PARABOLIC SUPPORT: Add note about parabolic eccentric anomaly (?), remove parabolic support sections

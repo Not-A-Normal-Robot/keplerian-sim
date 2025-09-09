@@ -4,7 +4,7 @@ extern crate std;
 
 use glam::{DVec2, DVec3};
 
-use crate::{CompactOrbit, Orbit, OrbitTrait, StateVectors};
+use crate::{CompactOrbit, Matrix3x2, Orbit, OrbitTrait, StateVectors};
 use std::f64::consts::{PI, TAU};
 
 const ALMOST_EQ_TOLERANCE: f64 = 1e-6;
@@ -2559,6 +2559,40 @@ fn orbital_plane_normal_base_test(orbit: &impl OrbitTrait) {
 fn test_orbital_plane_normal_getter() {
     for orbit in random_any_iter(262144) {
         orbital_plane_normal_base_test(&orbit);
+    }
+}
+
+fn orbit_plane_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
+    // TODO:
+    // Test AN<->DN conversions
+    // Test NaN cases
+    let other_random = random_any();
+    let other_flat = {
+        let mut orbit = other_random.clone();
+        orbit.set_inclination(0.0);
+        orbit.set_arg_pe(0.0);
+        orbit.set_long_asc_node(0.0);
+        assert_eq!(orbit.get_transformation_matrix(), Matrix3x2::IDENTITY);
+        orbit
+    };
+
+    let flat_an =
+        orbit.get_true_anomaly_at_asc_node_with_plane(other_flat.get_orbital_plane_normal());
+    if !flat_an.is_nan() {
+        let flat_an_2 = orbit.get_true_anomaly_at_asc_node();
+
+        assert_almost_eq(
+            flat_an,
+            flat_an_2,
+            &format!("XY AN for orbits {orbit:?} and {other_flat:?}"),
+        );
+    }
+}
+
+#[test]
+fn orbit_plane_an_dn() {
+    for orbit in random_any_iter(2048) {
+        orbit_plane_an_dn_base_test(&orbit);
     }
 }
 
