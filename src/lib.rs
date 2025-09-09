@@ -1247,7 +1247,7 @@ pub trait OrbitTrait {
     ///     1.0, // mu (irrelevant)
     /// );
     ///
-    /// let f_an = orbit.get_true_anomaly_at_z_ascending_node();
+    /// let f_an = orbit.get_true_anomaly_at_asc_node();
     ///
     /// assert!(
     ///     orbit.get_velocity_at_true_anomaly(f_an).z > 0.0
@@ -1321,7 +1321,7 @@ pub trait OrbitTrait {
     ///     1.0, // mu (irrelevant)
     /// );
     ///
-    /// let f_dn = orbit.get_true_anomaly_at_z_descending_node();
+    /// let f_dn = orbit.get_true_anomaly_at_desc_node();
     ///
     /// assert!(
     ///     orbit.get_velocity_at_true_anomaly(f_dn).z < 0.0
@@ -1368,11 +1368,11 @@ pub trait OrbitTrait {
     ///
     /// let mut orbit = Orbit::new_flat_circular(1.0, 0.0, 1.0);
     ///
-    /// assert_eq!(orbit.get_orbital_plane_normal, DVec3::new(0.0, 0.0, 1.0));
+    /// assert_eq!(orbit.get_orbital_plane_normal(), DVec3::new(0.0, 0.0, 1.0));
     ///
     /// orbit.set_inclination(std::f64::consts::PI);
     ///
-    /// assert_eq!(orbit.get_orbital_plane_normal, DVec3::new(0.0, 0.0, -1.0));
+    /// assert_eq!(orbit.get_orbital_plane_normal().z, -1.0);
     /// ```
     fn get_orbital_plane_normal(&self) -> DVec3 {
         let mat = self.get_transformation_matrix();
