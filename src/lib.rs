@@ -1497,9 +1497,9 @@ pub trait OrbitTrait {
         //     so it all works out.
         let line_of_nodes = plane_normal.cross(self.get_orbital_plane_normal());
 
-        // Ω (unnormalized) = N.x / ||N||
+        // Ω (unnormalized) = cos^-1(N.x / ||N||)
 
-        let lan_unnormalized = line_of_nodes.x / line_of_nodes.length();
+        let lan_unnormalized = (line_of_nodes.x / line_of_nodes.length()).acos();
 
         let lan = if line_of_nodes.y >= 0.0 {
             lan_unnormalized
