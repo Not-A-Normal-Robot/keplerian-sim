@@ -1495,23 +1495,9 @@ pub trait OrbitTrait {
         //     (in the PQW coordinate system) can be used instead
         //     since we kinda normalize it anyway in the next steps,
         //     so it all works out.
-        let line_of_nodes = plane_normal.cross(self.get_orbital_plane_normal());
-
-        // Ω (unnormalized) = cos^-1(N.x / ||N||)
-
-        let lan_unnormalized = (line_of_nodes.x / line_of_nodes.length()).acos();
-
-        let lan = if line_of_nodes.y >= 0.0 {
-            lan_unnormalized
-        } else {
-            TAU - lan_unnormalized
-        };
-
-        if self.get_inclination().rem_euclid(TAU) <= PI {
-            -lan
-        } else {
-            (PI - lan).rem_euclid(TAU)
-        }
+        let self_normal = self.get_orbital_plane_normal();
+        let line_of_nodes = plane_normal.cross(self_normal);
+        todo!();
     }
 
     // TODO: POST-PARABOLIC SUPPORT: Add note about parabolic eccentric anomaly (?), remove parabolic support sections
