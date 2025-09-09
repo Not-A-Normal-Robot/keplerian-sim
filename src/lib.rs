@@ -1261,7 +1261,7 @@ pub trait OrbitTrait {
     /// );
     /// # }
     /// ```
-    fn get_true_anomaly_at_z_ascending_node(&self) -> f64 {
+    fn get_true_anomaly_at_asc_node(&self) -> f64 {
         // true anomaly `f` of one of the nodes.
         // we don't know if this is AN or DN yet.
         let node_f = (-self.get_arg_pe()).rem_euclid(TAU);
@@ -1336,7 +1336,7 @@ pub trait OrbitTrait {
     /// # }
     /// ```
     // TODO: DOC: Show general-plane AN/DN as alternatives to XY AN/DN
-    fn get_true_anomaly_at_z_descending_node(&self) -> f64 {
+    fn get_true_anomaly_at_desc_node(&self) -> f64 {
         // true anomaly `f` of one of the nodes.
         // we don't know if this is AN or DN yet.
         let node_f = (-self.get_arg_pe()).rem_euclid(TAU);
@@ -1396,7 +1396,7 @@ pub trait OrbitTrait {
     ///
     /// # Performance
     /// TODO
-    fn get_true_anomaly_at_plane_ascending_node(&self, plane_normal: DVec3) -> f64 {
+    fn get_true_anomaly_at_asc_node_with_plane(&self, plane_normal: DVec3) -> f64 {
         // https://orbital-mechanics.space/classical-orbital-elements/orbital-elements-and-the-state-vector.html#step-4right-ascension-of-the-ascending-node
         //
         //     N = K × h
@@ -1411,10 +1411,10 @@ pub trait OrbitTrait {
         //     so it all works out.
         let line_of_nodes = plane_normal.cross(self.get_orbital_plane_normal());
 
-        self.get_true_anomaly_at_plane_ascending_node_unchecked(line_of_nodes)
+        self.get_true_anomaly_at_asc_node_with_plane_unchecked(line_of_nodes)
     }
 
-    fn get_true_anomaly_at_plane_ascending_node_unchecked(&self, line_of_nodes: DVec3) -> f64 {
+    fn get_true_anomaly_at_asc_node_with_plane_unchecked(&self, _line_of_nodes: DVec3) -> f64 {
         todo!("get_true_anomaly_at_plane_ascending_node_unchecked");
     }
 

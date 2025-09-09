@@ -2494,8 +2494,8 @@ fn test_alt_to_true_anom() {
 }
 
 fn z_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
-    let f_an = orbit.get_true_anomaly_at_z_ascending_node();
-    let f_dn = orbit.get_true_anomaly_at_z_descending_node();
+    let f_an = orbit.get_true_anomaly_at_asc_node();
+    let f_dn = orbit.get_true_anomaly_at_desc_node();
 
     assert!(
         ((f_an + PI).rem_euclid(TAU) - f_dn).abs() < 1e-15,
