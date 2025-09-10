@@ -1884,7 +1884,6 @@ pub trait OrbitTrait {
         // ...where:
         // \hat{p} = P basis vector in PQW coordinate system
 
-        // TODO: Determine if this needs clamping
         let arg_pe_pre = (basis_p.dot(line_of_nodes.normalize())).acos();
 
         // The next equation from the website basically states:
@@ -1953,7 +1952,6 @@ pub trait OrbitTrait {
         // ...where:
         // k = the unit normal vector of the reference plane (`plane_normal`).
 
-        // TODO: Determine if this needs clamping
         let inclination = (basis_w.dot(plane_normal)).acos();
 
         if inclination.rem_euclid(TAU) < PI {
