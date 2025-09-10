@@ -1350,6 +1350,11 @@ pub trait OrbitTrait {
     /// Gets the true anomaly at the ascending node with respect to the
     /// XY plane (at Z = 0).
     ///
+    /// An orbital node is either of the two points where an orbit intersects
+    /// a plane of reference to which it is inclined.
+    ///
+    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Orbital_node)
+    ///
     /// If you want the descending node as well, it is faster to use the
     /// following formula than to call the corresponding descending node
     /// function:
@@ -1361,10 +1366,9 @@ pub trait OrbitTrait {
     /// # ;
     /// ```
     ///
-    /// An orbital node is either of the two points where an orbit intersects
-    /// a plane of reference to which it is inclined.
-    ///
-    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Orbital_node)
+    /// If you want the ascending node with respect to another plane, use
+    /// [`get_true_anomaly_at_asc_node_with_plane`][OrbitTrait::get_true_anomaly_at_asc_node_with_plane]
+    /// instead.
     ///
     /// # True anomaly domain
     /// In the case of open (parabolic/hyperbolic) trajectories, this function
@@ -1381,6 +1385,10 @@ pub trait OrbitTrait {
     /// # Performance
     /// This function is very performant and should not be the cause
     /// of any performance problems.
+    ///
+    /// This function is significatnly faster than the general-plane function
+    /// [`get_true_anomaly_at_asc_node_with_plane`][OrbitTrait::get_true_anomaly_at_asc_node_with_plane]
+    /// as it is more specialized for this calculation.
     ///
     /// # Example
     /// ```
@@ -1409,7 +1417,6 @@ pub trait OrbitTrait {
     /// );
     /// # }
     /// ```
-    // TODO: DOC: Show general-plane AN/DN as alternatives to XY AN/DN
     fn get_true_anomaly_at_asc_node(&self) -> f64 {
         // true anomaly `f` of one of the nodes.
         // we don't know if this is AN or DN yet.
@@ -1425,6 +1432,11 @@ pub trait OrbitTrait {
     /// Gets the true anomaly at the descending node with respect to the
     /// XY plane (at Z = 0).
     ///
+    /// An orbital node is either of the two points where an orbit intersects
+    /// a plane of reference to which it is inclined.
+    ///
+    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Orbital_node)
+    ///
     /// If you want the ascending node as well, it is faster to use the
     /// following formula than to call the corresponding descending node
     /// function:
@@ -1436,10 +1448,9 @@ pub trait OrbitTrait {
     /// # ;
     /// ```
     ///
-    /// An orbital node is either of the two points where an orbit intersects
-    /// a plane of reference to which it is inclined.
-    ///
-    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Orbital_node)
+    /// If you want the descending node with respect to another plane, use
+    /// [`get_true_anomaly_at_desc_node_with_plane`][OrbitTrait::get_true_anomaly_at_desc_node_with_plane]
+    /// instead.
     ///
     /// # True anomaly domain
     /// In the case of open (parabolic/hyperbolic) trajectories, this function
@@ -1456,6 +1467,10 @@ pub trait OrbitTrait {
     /// # Performance
     /// This function is very performant and should not be the cause
     /// of any performance problems.
+    ///
+    /// This function is significatnly faster than the general-plane function
+    /// [`get_true_anomaly_at_desc_node_with_plane`][OrbitTrait::get_true_anomaly_at_desc_node_with_plane]
+    /// as it is more specialized for this calculation.
     ///
     /// # Example
     /// ```
@@ -1484,7 +1499,6 @@ pub trait OrbitTrait {
     /// );
     /// # }
     /// ```
-    // TODO: DOC: Show general-plane AN/DN as alternatives to XY AN/DN
     fn get_true_anomaly_at_desc_node(&self) -> f64 {
         // true anomaly `f` of one of the nodes.
         // we don't know if this is AN or DN yet.
@@ -1497,7 +1511,6 @@ pub trait OrbitTrait {
         }
     }
 
-    // TODO: DOC: Show XY AN/DN as alternatives to general-plane AN/DN
     /// Gets the true anomaly of an ascending node, given a reference plane's
     /// normal vector.
     ///
@@ -1520,7 +1533,7 @@ pub trait OrbitTrait {
     /// outputs.
     ///
     /// # Performance
-    /// This function is significantly faster in the cached version of the
+    /// This function is moderately faster in the cached version of the
     /// orbit struct ([`Orbit`]) than the compact version ([`CompactOrbit`]).  
     /// Consider using the cached version if this function will be called often.
     ///
@@ -1545,16 +1558,31 @@ pub trait OrbitTrait {
     /// # ;
     /// ```
     ///
-    /// TODO: Document domain
+    /// Also, if you only need the ascending node with respect to the XY
+    /// plane (with a +Z normal vector), consider using the specialized
+    /// [`get_true_anomaly_at_asc_node`][OrbitTrait::get_true_anomaly_at_asc_node]
+    /// function instead as it is much more performant.
+    ///
+    /// # True anomaly domain
+    /// In the case of open (parabolic/hyperbolic) trajectories, this function
+    /// can return a true anomaly outside the valid range. This indicates
+    /// that that open trajectory does not have an AN/DN crossing.
+    ///
+    /// It is the caller's job to check for itself whether this true anomaly is
+    /// within the valid range. This can be done using the
+    /// [`get_hyperbolic_true_anomaly_asymptote`][OrbitTrait::get_hyperbolic_true_anomaly_asymptote]
+    /// function.
+    ///
+    /// This out-of-range issue does not appear in closed (elliptic) orbits.
     ///
     /// # Example
     /// ```
     /// use keplerian_sim::{Orbit, OrbitTrait};
     /// use std::f64::consts::{PI, TAU};
     ///
-    /// # fn assert_almost_eq(a: f64, b: f64) {
-    /// #     assert!((a - b).abs() < 1e-13)
-    /// # }
+    /// fn assert_almost_eq(a: f64, b: f64) {
+    ///     assert!((a - b).abs() < 1e-13, "{a} != {b}");
+    /// }
     ///
     /// let this_orbit = Orbit::new(
     ///     0.8, // Eccentricity
@@ -1580,15 +1608,14 @@ pub trait OrbitTrait {
     /// let other_normal = other_orbit.get_pqw_basis_vectors().2;
     ///
     /// let this_an = this_orbit.get_true_anomaly_at_asc_node_with_plane(other_normal);
-    /// # return; // TODO: Remove
-    /// # assert_almost_eq(this_an, 0.0); // TODO: Figure out the correct values
     /// let this_dn = (this_an + PI).rem_euclid(TAU);
-    /// # assert_almost_eq(this_dn, 0.0); // TODO: Figure out the correct values
+    /// assert_almost_eq(this_an, 0.2224161750528122);
+    /// assert_almost_eq(this_dn, 3.3640088286426053);
     ///
     /// let other_an = other_orbit.get_true_anomaly_at_asc_node_with_plane(this_normal);
-    /// # assert_almost_eq(other_an, 0.0); // TODO: Figure out the correct values
     /// let other_dn = (other_an + PI).rem_euclid(TAU);
-    /// # assert_almost_eq(other_dn, 0.0); // TODO: Figure out the correct values
+    /// assert_almost_eq(other_an, 4.628980494949403);
+    /// assert_almost_eq(other_dn, 1.4873878413596096);
     /// ```
     fn get_true_anomaly_at_asc_node_with_plane(&self, plane_normal: DVec3) -> f64 {
         // We first get the line of nodes relative to the new
@@ -1709,6 +1736,230 @@ pub trait OrbitTrait {
             node_f.rem_euclid(TAU)
         } else {
             (node_f + PI).rem_euclid(TAU)
+        }
+    }
+
+    /// Gets the true anomaly of a descending node, given a reference plane's
+    /// normal vector.
+    ///
+    /// This can be used to get the descending node compared to another orbit,
+    /// similar to the AN/DN labels that appear in Kerbal Space Program after you
+    /// pick a target vessel/body.
+    ///
+    /// **You will also get a NaN if the plane normals of the
+    /// two orbits match exactly.** In that scenario there is no ascending
+    /// nor descending node.
+    ///
+    /// To do that, you can get the plane normal of the other orbit using
+    /// [`get_pqw_basis_vectors`][OrbitTrait::get_pqw_basis_vectors],
+    /// then feed that into the original orbit's descending node getter.
+    ///
+    /// # Unchecked Operation
+    /// It is the caller's job to make sure that the given
+    /// plane normal is of length 1.  
+    /// If the given plane normal is not of length 1, you may get nonsensical
+    /// outputs.
+    ///
+    /// # Performance
+    /// This function is moderately faster in the cached version of the
+    /// orbit struct ([`Orbit`]) than the compact version ([`CompactOrbit`]).  
+    /// Consider using the cached version if this function will be called often.
+    ///
+    /// Note that if you want to get both the ascending node
+    /// and descending node, you can use the equality below to compute
+    /// the descending node from the ascending node.
+    /// This is far more performant than calling this function and
+    /// [`get_true_anomaly_at_asc_node_with_plane`][OrbitTrait::get_true_anomaly_at_asc_node_with_plane]
+    /// separately.
+    ///
+    /// ```
+    /// # use core::f64::consts::{PI, TAU};
+    /// # let f_DN = 0.42;
+    /// # let
+    /// f_AN = (f_DN + PI).rem_euclid(TAU)
+    /// # ;
+    /// ```
+    ///
+    /// Also, if you only need the descending node with respect to the XY
+    /// plane (with a +Z normal vector), consider using the specialized
+    /// [`get_true_anomaly_at_desc_node`][OrbitTrait::get_true_anomaly_at_desc_node]
+    /// function instead as it is much more performant.
+    ///
+    /// # True anomaly domain
+    /// In the case of open (parabolic/hyperbolic) trajectories, this function
+    /// can return a true anomaly outside the valid range. This indicates
+    /// that that open trajectory does not have an AN/DN crossing.
+    ///
+    /// It is the caller's job to check for itself whether this true anomaly is
+    /// within the valid range. This can be done using the
+    /// [`get_hyperbolic_true_anomaly_asymptote`][OrbitTrait::get_hyperbolic_true_anomaly_asymptote]
+    /// function.
+    ///
+    /// This out-of-range issue does not appear in closed (elliptic) orbits.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use std::f64::consts::{PI, TAU};
+    ///
+    /// fn assert_almost_eq(a: f64, b: f64) {
+    ///     assert!((a - b).abs() < 1e-13, "{a} != {b}");
+    /// }
+    ///
+    /// let this_orbit = Orbit::new(
+    ///     0.8, // Eccentricity
+    ///     28.4, // Periapsis
+    ///     1.98, // Inclination
+    ///     2.91, // Argument of periapsis
+    ///     0.50, // Longitude of ascending node (rel. to XY plane)
+    ///     2.9, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter
+    /// );
+    ///
+    /// let other_orbit = Orbit::new(
+    ///     0.6, // Eccentricity
+    ///     11.0, // Periapsis
+    ///     3.01, // Inclination
+    ///     1.59, // Argument of periapsis
+    ///     0.44, // Longitude of ascending node (rel. to XY plane)
+    ///     1.25, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter
+    /// );
+    ///
+    /// let this_normal = this_orbit.get_pqw_basis_vectors().2;
+    /// let other_normal = other_orbit.get_pqw_basis_vectors().2;
+    ///
+    /// let this_dn = this_orbit.get_true_anomaly_at_desc_node_with_plane(other_normal);
+    /// let this_an = (this_dn + PI).rem_euclid(TAU);
+    /// assert_almost_eq(this_an, 0.2224161750528122);
+    /// assert_almost_eq(this_dn, 3.3640088286426053);
+    ///
+    /// let other_dn = other_orbit.get_true_anomaly_at_desc_node_with_plane(this_normal);
+    /// let other_an = (other_dn + PI).rem_euclid(TAU);
+    /// assert_almost_eq(other_an, 4.628980494949403);
+    /// assert_almost_eq(other_dn, 1.4873878413596096);
+    /// ```
+    fn get_true_anomaly_at_desc_node_with_plane(&self, plane_normal: DVec3) -> f64 {
+        // We first get the line of nodes relative to the new
+        // plane normal instead of the one we store (which is relative to the
+        // XY plane with a normal of +Z).
+        //
+        // https://orbital-mechanics.space/classical-orbital-elements/orbital-elements-and-the-state-vector.html#step-4right-ascension-of-the-ascending-node
+        //
+        //     vec_N = vec_K × vec_h
+        //
+        // ...where:
+        // vec_N = Line of nodes <https://en.wikipedia.org/wiki/Line_of_nodes>
+        // vec_K = plane normal (usually XZ-plane = Z-up, now custom-defined)
+        // vec_h = well..
+        //     In the website they use a specific angular momentum.
+        //     In this case however, the w-hat basis vector
+        //     (in the PQW coordinate system) can be used instead
+        //     since we kinda normalize it anyway in the next steps,
+        //     so it all works out.
+        let (basis_p, _, basis_w) = self.get_pqw_basis_vectors();
+        let line_of_nodes = plane_normal.cross(basis_w);
+
+        // Then we can calculate the argument of periapsis.
+        // https://orbital-mechanics.space/classical-orbital-elements/orbital-elements-and-the-state-vector.html#step-6argument-of-periapsis
+        //
+        //    ω_pre = cos^-1(vec_e ⋅ vec_N / e ||vec_N||)
+        //
+        // ...where:
+        // vec_e = Eccentricity vector
+        // vec_N = Line of nodes
+        // e = Eccentricity scalar
+        //
+        // We can simplify and generalize this to make it compatible with
+        // the case where e = 0.
+        //
+        // From `vec_e := e * \hat{p}`,
+        // notice that in the ω_pre equation we have `vec_e / e`.
+        // This can be transformed into just `\hat{p}` which is much more stable.
+        //
+        // Therefore:
+        //
+        //    ω_pre = cos^-1(\hat{p} ⋅ vec_N / ||vec_N||)
+        //
+        // ...where:
+        // \hat{p} = P basis vector in PQW coordinate system
+
+        // TODO: Determine if this needs clamping
+        let arg_pe_pre = (basis_p.dot(line_of_nodes.normalize())).acos();
+
+        // The next equation from the website basically states:
+        //
+        //      ω = {vec_e.z >= 0: ω_pre; τ - ω_pre}
+        //
+        // We can simplify `vec_e.z`:
+        // vec_e := e * \hat{p}
+        // => vec_e.z = e * \hat{p}.z
+        //
+        //      vec_e.z >= 0  ==>  e * \hat{p}.z >= 0
+        //
+        // Since eccentricity `e` is defined to be nonnegative,
+        // and we only need the sign (`>= 0`), we can simplify
+        // this further:
+        //
+        //      e * \hat{p}.z >= 0  ==>  \hat{p}.z >= 0
+        //
+        // Rewriting the original expression:
+        //
+        //      ω = {\hat{p}.z >= 0: ω_pre; τ - ω_pre}
+        //
+        // HOWEVER: This is only correct if we use the +Z vector as plane normal.
+        // We'll want to project the \hat{p} vector into the plane normal instead:
+        //
+        //      ω = {\hat{p} ⋅ k >= 0: ω_pre; τ - ω_pre}
+
+        let arg_pe = if basis_p.dot(plane_normal) >= 0.0 {
+            arg_pe_pre
+        } else {
+            TAU - arg_pe_pre
+        };
+
+        // True anomaly `f` of one of the nodes.
+        // We don't know if this is AN or DN yet.
+        // We need the inclination relative to the reference plane to
+        // find that out.
+        let node_f = -arg_pe;
+
+        // Next we need the inclination relative to the reference plane.
+        // Next equation from the same page as before, different section:
+        // https://orbital-mechanics.space/classical-orbital-elements/orbital-elements-and-the-state-vector.html#step-3inclination
+        //
+        //      i = cos^-1(h_z / ||h||)
+        //
+        // which can be rearranged into:
+        //
+        //      i = cos^-1(\hat{w}.z)
+        //
+        // (We can replace normalized h with \hat{w}. See the first comment block
+        // of this function for the reason why.)
+        //
+        // HOWEVER: This equation is for the inclination relative to the XY plane,
+        // where its normal is the +Z unit vector.
+        // We want to get the inclination relative to the given plane normal.
+        //
+        // Given that \hat{w}.z returns the same as \hat{w} ⋅ [0, 0, 1],
+        // we can generalize this to project the \hat{w} vector into any
+        // other vector instead of just the +Z unit vector.
+        //
+        // This means, to get the inclination relative to the reference plane,
+        // we can dot it with the plane normal:
+        //
+        //      i = cos^-1(\hat{w} ⋅ k)
+        //
+        // ...where:
+        // k = the unit normal vector of the reference plane (`plane_normal`).
+
+        // TODO: Determine if this needs clamping
+        let inclination = (basis_w.dot(plane_normal)).acos();
+
+        if inclination.rem_euclid(TAU) < PI {
+            (node_f + PI).rem_euclid(TAU)
+        } else {
+            node_f.rem_euclid(TAU)
         }
     }
 
