@@ -1627,18 +1627,14 @@ pub trait OrbitTrait {
         // notice that in the ω_pre equation we have `vec_e / e`.
         // This can be transformed into just `\hat{p}` which is much more stable.
         //
-        // Also, since we assume the caller already gives a vec_N of
-        // length 1 (see function docstring), we can skip the normalization
-        // step (where we divide by the length of vec_N).
-        //
         // Therefore:
         //
-        //    ω_pre = cos^-1(\hat{p} ⋅ vec_N)
+        //    ω_pre = cos^-1(\hat{p} ⋅ vec_N / ||vec_N||)
         //
         // ...where:
         // \hat{p} = P basis vector in PQW coordinate system
 
-        let arg_pe_pre = (basis_p.dot(line_of_nodes)).acos();
+        let arg_pe_pre = (basis_p.dot(line_of_nodes.normalize())).acos();
 
         // The next equation from the website basically states:
         //
