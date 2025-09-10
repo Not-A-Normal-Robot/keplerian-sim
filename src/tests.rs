@@ -2576,8 +2576,7 @@ fn orbit_plane_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
         orbit
     };
 
-    let flat_an =
-        orbit.get_true_anomaly_at_asc_node_with_plane(other_flat.get_pqw_basis_vectors().2);
+    let flat_an = orbit.get_true_anomaly_at_asc_node_with_plane(DVec3::Z);
     if !flat_an.is_nan() {
         let flat_an_2 = orbit.get_true_anomaly_at_asc_node();
 
@@ -2585,6 +2584,44 @@ fn orbit_plane_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
             flat_an,
             flat_an_2,
             &format!("XY AN for orbits {orbit:?} and {other_flat:?}"),
+        );
+    }
+
+    let flat_dn = (flat_an + PI).rem_euclid(TAU);
+    if !flat_dn.is_nan() {
+        let flat_dn_2 = orbit.get_true_anomaly_at_desc_node();
+
+        assert_almost_eq(
+            flat_dn,
+            flat_dn_2,
+            &format!("XY DN for orbits {orbit:?} and {other_flat:?}"),
+        )
+    }
+
+    let other_plane = other_random.get_pqw_basis_vectors().2;
+    let plane_an = orbit.get_true_anomaly_at_asc_node_with_plane(other_plane);
+    let v_an = orbit.get_velocity_at_true_anomaly(plane_an);
+    if !v_an.is_nan() {
+        let similarity = v_an.dot(other_plane);
+
+        assert!(
+            similarity > 0.0,
+            "Using f = {plane_an}, expected v_an {v_an} to point roughly {other_plane}.\n\
+            Got similarity of {similarity} < 0.\n\
+            Orbit: {orbit:?}"
+        );
+    }
+
+    let plane_dn = (plane_an + PI).rem_euclid(TAU);
+    let v_dn = orbit.get_velocity_at_true_anomaly(plane_dn);
+    if !v_dn.is_nan() {
+        let similarity = v_dn.dot(other_plane);
+
+        assert!(
+            similarity < 0.0,
+            "Using f = {plane_dn}, expected v_dn {v_dn} to point roughly opposite of {other_plane}.\n\
+            Got similarity of {similarity} > 0.\n\
+            Orbit: {orbit:?}"
         );
     }
 }
