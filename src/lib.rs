@@ -1407,14 +1407,13 @@ pub trait OrbitTrait {
     /// # }
     /// ```
     // TODO: DOC: Show general-plane AN/DN as alternatives to XY AN/DN
-    // TODO: PERF: Only do max. one rem_euclid op
     fn get_true_anomaly_at_asc_node(&self) -> f64 {
         // true anomaly `f` of one of the nodes.
         // we don't know if this is AN or DN yet.
-        let node_f = (-self.get_arg_pe()).rem_euclid(TAU);
+        let node_f = -self.get_arg_pe();
 
         if self.get_inclination().rem_euclid(TAU) < PI {
-            node_f
+            node_f.rem_euclid(TAU)
         } else {
             (node_f + PI).rem_euclid(TAU)
         }
@@ -1483,16 +1482,15 @@ pub trait OrbitTrait {
     /// # }
     /// ```
     // TODO: DOC: Show general-plane AN/DN as alternatives to XY AN/DN
-    // TODO: PERF: Only do max. one rem_euclid op
     fn get_true_anomaly_at_desc_node(&self) -> f64 {
         // true anomaly `f` of one of the nodes.
         // we don't know if this is AN or DN yet.
-        let node_f = (-self.get_arg_pe()).rem_euclid(TAU);
+        let node_f = -self.get_arg_pe();
 
         if self.get_inclination().rem_euclid(TAU) < PI {
             (node_f + PI).rem_euclid(TAU)
         } else {
-            node_f
+            node_f.rem_euclid(TAU)
         }
     }
 
