@@ -1386,7 +1386,7 @@ pub trait OrbitTrait {
     /// This function is very performant and should not be the cause
     /// of any performance problems.
     ///
-    /// This function is significatnly faster than the general-plane function
+    /// This function is significantly faster than the general-plane function
     /// [`get_true_anomaly_at_asc_node_with_plane`][OrbitTrait::get_true_anomaly_at_asc_node_with_plane]
     /// as it is more specialized for this calculation.
     ///
@@ -1468,7 +1468,7 @@ pub trait OrbitTrait {
     /// This function is very performant and should not be the cause
     /// of any performance problems.
     ///
-    /// This function is significatnly faster than the general-plane function
+    /// This function is significantly faster than the general-plane function
     /// [`get_true_anomaly_at_desc_node_with_plane`][OrbitTrait::get_true_anomaly_at_desc_node_with_plane]
     /// as it is more specialized for this calculation.
     ///
