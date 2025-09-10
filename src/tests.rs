@@ -2564,7 +2564,6 @@ fn test_orbital_plane_normal_getter() {
 
 fn orbit_plane_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
     // TODO:
-    // Test AN<->DN conversions
     // Test NaN cases
     let other_random = random_any();
     let other_flat = {
@@ -2577,6 +2576,8 @@ fn orbit_plane_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
     };
 
     let flat_an = orbit.get_true_anomaly_at_asc_node_with_plane(DVec3::Z);
+    let flat_dn = (flat_an + PI).rem_euclid(TAU);
+
     if !flat_an.is_nan() {
         let flat_an_2 = orbit.get_true_anomaly_at_asc_node();
 
@@ -2586,8 +2587,6 @@ fn orbit_plane_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
             &format!("XY AN for orbits {orbit:?} and {other_flat:?}"),
         );
     }
-
-    let flat_dn = (flat_an + PI).rem_euclid(TAU);
     if !flat_dn.is_nan() {
         let flat_dn_2 = orbit.get_true_anomaly_at_desc_node();
 
@@ -2595,11 +2594,53 @@ fn orbit_plane_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
             flat_dn,
             flat_dn_2,
             &format!("XY DN for orbits {orbit:?} and {other_flat:?}"),
-        )
+        );
+    }
+
+    if !flat_an.is_nan() && !flat_dn.is_nan() {
+        let flat_an_conv = (flat_dn + PI).rem_euclid(TAU);
+        assert_almost_eq(
+            flat_an,
+            flat_an_conv,
+            &format!("XY DN->AN conv ({flat_dn}->{flat_an_conv} != {flat_an})"),
+        );
+
+        let flat_dn_conv = (flat_an + PI).rem_euclid(TAU);
+        assert_almost_eq(
+            flat_dn,
+            flat_dn_conv,
+            &format!("XY AN->DN conv ({flat_an}->{flat_dn_conv} != {flat_dn})"),
+        );
     }
 
     let other_plane = other_random.get_pqw_basis_vectors().2;
     let plane_an = orbit.get_true_anomaly_at_asc_node_with_plane(other_plane);
+    let plane_dn = orbit.get_true_anomaly_at_desc_node_with_plane(other_plane);
+
+    if !plane_an.is_nan() && !plane_dn.is_nan() {
+        let plane_an_conv = (plane_dn + PI).rem_euclid(TAU);
+        assert_almost_eq(
+            plane_an,
+            plane_an_conv,
+            &format!(
+                "General DN->AN conv ({plane_dn}->{plane_an_conv} != {plane_an}).\n\
+                Other plane: {other_plane}\n\
+                {orbit:?}"
+            ),
+        );
+
+        let plane_dn_conv = (plane_an + PI).rem_euclid(TAU);
+        assert_almost_eq(
+            plane_dn,
+            plane_dn_conv,
+            &format!(
+                "General AN->DN conv ({plane_an}->{plane_dn_conv} != {plane_dn}).\n\
+                Other plane: {other_plane}\n\
+                {orbit:?}"
+            ),
+        );
+    }
+
     let v_an = orbit.get_velocity_at_true_anomaly(plane_an);
     if !v_an.is_nan() {
         let similarity = v_an.dot(other_plane);
@@ -2612,7 +2653,6 @@ fn orbit_plane_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
         );
     }
 
-    let plane_dn = (plane_an + PI).rem_euclid(TAU);
     let v_dn = orbit.get_velocity_at_true_anomaly(plane_dn);
     if !v_dn.is_nan() {
         let similarity = v_dn.dot(other_plane);
