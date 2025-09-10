@@ -1518,7 +1518,7 @@ pub trait OrbitTrait {
     /// similar to the AN/DN labels that appear in Kerbal Space Program after you
     /// pick a target vessel/body.
     ///
-    /// **You will also get a NaN if the plane normals of the
+    /// **You will get a NaN if the plane normals of the
     /// two orbits match exactly.** In that scenario there is no ascending
     /// nor descending node.
     ///
@@ -1746,7 +1746,7 @@ pub trait OrbitTrait {
     /// similar to the AN/DN labels that appear in Kerbal Space Program after you
     /// pick a target vessel/body.
     ///
-    /// **You will also get a NaN if the plane normals of the
+    /// **You will get a NaN if the plane normals of the
     /// two orbits match exactly.** In that scenario there is no ascending
     /// nor descending node.
     ///
