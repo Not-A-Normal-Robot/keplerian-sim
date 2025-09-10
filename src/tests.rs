@@ -2552,7 +2552,7 @@ fn orbital_plane_normal_base_test(orbit: &impl OrbitTrait) {
     let q = orbit.transform_pqw_vector(DVec2::new(0.0, 1.0));
     let w = p.cross(q);
 
-    assert_eq!(orbit.get_orbital_plane_normal(), w);
+    assert_eq!(orbit.get_pqw_basis_vectors(), (p, q, w));
 }
 
 #[test]
@@ -2577,7 +2577,7 @@ fn orbit_plane_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
     };
 
     let flat_an =
-        orbit.get_true_anomaly_at_asc_node_with_plane(other_flat.get_orbital_plane_normal());
+        orbit.get_true_anomaly_at_asc_node_with_plane(other_flat.get_pqw_basis_vectors().2);
     if !flat_an.is_nan() {
         let flat_an_2 = orbit.get_true_anomaly_at_asc_node();
 

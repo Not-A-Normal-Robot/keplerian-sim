@@ -1168,6 +1168,50 @@ pub trait OrbitTrait {
     /// ```
     fn get_transformation_matrix(&self) -> Matrix3x2;
 
+    /// Gets the basis vectors for the perifocal coordinate (PQW)
+    /// system.
+    ///
+    /// # Output
+    /// This function returns a tuple of three vectors. The vectors
+    /// are the p, q, and w basis vectors, respectively.
+    ///
+    /// The p basis vector is a unit vector that points to the periapsis.  
+    /// The q basis vector is orthogonal to that and points 90° counterclockwise
+    /// from the periapsis on the orbital plane.  
+    /// The w basis vector is orthogonal to the orbital plane.
+    ///
+    /// For more information about the PQW system, visit the
+    /// [Wikipedia article](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
+    ///
+    /// # Performance
+    /// For [`CompactOrbit`], this will perform a few trigonometric operations
+    /// and multiplications, and therefore is not too performant.  
+    ///
+    /// For [`Orbit`], this will only need to compute a cross product, and
+    /// therefore is much more performant.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use glam::DVec3;
+    ///
+    /// let orbit = Orbit::default();
+    /// let (p, q, w) = orbit.get_pqw_basis_vectors();
+    ///
+    /// assert_eq!(p, DVec3::X);
+    /// assert_eq!(q, DVec3::Y);
+    /// assert_eq!(w, DVec3::Z);
+    /// ```
+    fn get_pqw_basis_vectors(&self) -> (DVec3, DVec3, DVec3) {
+        let mat = self.get_transformation_matrix();
+
+        let p = DVec3::new(mat.e11, mat.e21, mat.e31);
+        let q = DVec3::new(mat.e12, mat.e22, mat.e32);
+        let w = p.cross(q);
+
+        (p, q, w)
+    }
+
     /// Gets the longitude of periapsis of this orbit.
     ///
     /// The longitude of the periapsis, also called longitude of the pericenter,
@@ -1348,43 +1392,6 @@ pub trait OrbitTrait {
         }
     }
 
-    /// Gets the unit vector perpendicular to the orbital plane.
-    ///
-    /// # Performance
-    /// This function is significantly faster in the cached version of the
-    /// orbit struct ([`Orbit`]) than the compact version ([`CompactOrbit`]).  
-    /// Consider using the cached version if this function will be called often.
-    ///
-    /// The cached version only needs to do a cross-product, and therefore is
-    /// very performant.
-    ///
-    /// The compact version additionally has to compute many multiplications,
-    /// additions, and several trig operations.
-    ///
-    /// # Example
-    /// ```
-    /// use keplerian_sim::{Orbit, OrbitTrait};
-    /// use glam::DVec3;
-    ///
-    /// let mut orbit = Orbit::new_flat_circular(1.0, 0.0, 1.0);
-    ///
-    /// assert_eq!(orbit.get_orbital_plane_normal(), DVec3::new(0.0, 0.0, 1.0));
-    ///
-    /// orbit.set_inclination(std::f64::consts::PI);
-    ///
-    /// assert_eq!(orbit.get_orbital_plane_normal().z, -1.0);
-    /// ```
-    fn get_orbital_plane_normal(&self) -> DVec3 {
-        let mat = self.get_transformation_matrix();
-
-        // Deconstruct into PQW basis vectors
-        let p = DVec3::new(mat.e11, mat.e21, mat.e31);
-
-        let q = DVec3::new(mat.e12, mat.e22, mat.e32);
-
-        p.cross(q)
-    }
-
     // TODO: DOC: Show XY AN/DN as alternatives to general-plane AN/DN
     /// Gets the true anomaly of an ascending node, given a reference plane's
     /// normal vector.
@@ -1495,8 +1502,8 @@ pub trait OrbitTrait {
         //     (in the PQW coordinate system) can be used instead
         //     since we kinda normalize it anyway in the next steps,
         //     so it all works out.
-        let self_normal = self.get_orbital_plane_normal();
-        let line_of_nodes = plane_normal.cross(self_normal);
+        let self_normal = self.get_pqw_basis_vectors().2;
+        let _line_of_nodes = plane_normal.cross(self_normal);
         todo!();
     }
 
