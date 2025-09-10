@@ -1212,6 +1212,107 @@ pub trait OrbitTrait {
         (p, q, w)
     }
 
+    /// Gets the eccentricity vector of this orbit.
+    ///
+    /// The eccentricity vector of a Kepler orbit is the dimensionless vector
+    /// with direction pointing from apoapsis to periapsis and with magnitude
+    /// equal to the orbit's scalar eccentricity.
+    ///
+    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Eccentricity_vector)
+    ///
+    /// # Performance
+    /// This function is significantly faster in the cached version of the
+    /// orbit struct ([`Orbit`]) than the compact version ([`CompactOrbit`]).  
+    /// Consider using the cached version if this function will be called often.
+    ///
+    /// Alternatively, if you want to keep using the compact version and know
+    /// the periapsis unit vector, use the unchecked version:
+    /// [`get_eccentricity_vector_unchecked`][OrbitTrait::get_eccentricity_vector_unchecked]
+    ///
+    /// The cached version only needs to do a multiplication, and therefore is
+    /// very performant.
+    ///
+    /// The compact version additionally has to compute many multiplications,
+    /// additions, and several trig operations.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use glam::DVec3;
+    ///
+    /// // Parabolic orbit (e = 1)
+    /// let orbit = Orbit::new_flat(1.0, 1.0, 0.0, 0.0, 1.0);
+    /// let eccentricity_vector = orbit.get_eccentricity_vector();
+    ///
+    /// assert_eq!(
+    ///     eccentricity_vector,
+    ///     DVec3::X
+    /// );
+    /// ```
+    fn get_eccentricity_vector(&self) -> DVec3 {
+        self.get_eccentricity_vector_unchecked(self.get_pqw_basis_vectors().0)
+    }
+
+    /// Gets the eccentricity vector of this orbit.
+    ///
+    /// The eccentricity vector of a Kepler orbit is the dimensionless vector
+    /// with direction pointing from apoapsis to periapsis and with magnitude
+    /// equal to the orbit's scalar eccentricity.
+    ///
+    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Eccentricity_vector)
+    ///
+    /// # Unchecked Operation
+    /// This function does not check for the validity of the given
+    /// P basis vector. The given P vector should be of length 1.
+    ///
+    /// It is expected that callers get this basis vector
+    /// from either the transformation matrix or the
+    /// [`get_pqw_basis_vectors`][OrbitTrait::get_pqw_basis_vectors]
+    /// function.
+    ///
+    /// # Performance
+    /// This function, by itself, is very performant, and should not be
+    /// the cause of any performance problems.
+    ///
+    /// However, for the cached orbit struct ([`Orbit`]), this function
+    /// has the same performance as the safer
+    /// [`get_eccentricity_vector`][OrbitTrait::get_eccentricity_vector]
+    /// function. There should be no need to use this function if you are
+    /// using the cached orbit struct.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait};
+    /// use glam::DVec3;
+    ///
+    /// // Parabolic orbit (e = 1)
+    /// let orbit = CompactOrbit::new_flat(1.0, 1.0, 0.0, 0.0, 1.0);
+    ///
+    /// // Expensive op for compact orbit: get basis vectors
+    /// let basis_vectors = orbit.get_pqw_basis_vectors();
+    ///
+    /// // Use basis vectors for something...
+    /// assert_eq!(
+    ///     basis_vectors,
+    ///     (DVec3::X, DVec3::Y, DVec3::Z)
+    /// );
+    ///
+    /// // You can reuse it here! No need to recompute (as long as
+    /// // orbit hasn't changed)
+    /// let eccentricity_vector = orbit.get_eccentricity_vector_unchecked(
+    ///     // basis vectors: P, Q, and W; we get the first one (0th index)
+    ///     basis_vectors.0
+    /// );
+    ///
+    /// assert_eq!(
+    ///     eccentricity_vector,
+    ///     DVec3::X
+    /// );
+    /// ```
+    fn get_eccentricity_vector_unchecked(&self, p_vector: DVec3) -> DVec3 {
+        self.get_eccentricity() * p_vector
+    }
+
     /// Gets the longitude of periapsis of this orbit.
     ///
     /// The longitude of the periapsis, also called longitude of the pericenter,
@@ -1305,6 +1406,8 @@ pub trait OrbitTrait {
     /// );
     /// # }
     /// ```
+    // TODO: DOC: Show general-plane AN/DN as alternatives to XY AN/DN
+    // TODO: PERF: Only do max. one rem_euclid op
     fn get_true_anomaly_at_asc_node(&self) -> f64 {
         // true anomaly `f` of one of the nodes.
         // we don't know if this is AN or DN yet.
@@ -1380,6 +1483,7 @@ pub trait OrbitTrait {
     /// # }
     /// ```
     // TODO: DOC: Show general-plane AN/DN as alternatives to XY AN/DN
+    // TODO: PERF: Only do max. one rem_euclid op
     fn get_true_anomaly_at_desc_node(&self) -> f64 {
         // true anomaly `f` of one of the nodes.
         // we don't know if this is AN or DN yet.
@@ -1488,7 +1592,6 @@ pub trait OrbitTrait {
         // plane normal instead of the one we store (which is relative to the
         // XY plane with a normal of +Z).
 
-        // Equations from:
         // https://orbital-mechanics.space/classical-orbital-elements/orbital-elements-and-the-state-vector.html#step-4right-ascension-of-the-ascending-node
         //
         //     vec_N = vec_K × vec_h
@@ -1502,9 +1605,64 @@ pub trait OrbitTrait {
         //     (in the PQW coordinate system) can be used instead
         //     since we kinda normalize it anyway in the next steps,
         //     so it all works out.
-        let self_normal = self.get_pqw_basis_vectors().2;
-        let _line_of_nodes = plane_normal.cross(self_normal);
-        todo!();
+        let (basis_p, _, basis_w) = self.get_pqw_basis_vectors();
+        let line_of_nodes = plane_normal.cross(basis_w);
+        let eccentricity_vector = self.get_eccentricity_vector_unchecked(basis_p);
+
+        // https://orbital-mechanics.space/classical-orbital-elements/orbital-elements-and-the-state-vector.html#step-6argument-of-periapsis
+        //
+        //    ω_pre = cos^-1(vec_e ⋅ vec_N / e ||vec_N||)
+        //
+        // ...where:
+        // vec_e = Eccentricity vector
+        // vec_N = Line of nodes
+        // e = Eccentricity scalar
+        //
+        // We can simplify and generalize this to make it compatible with
+        // the case where e = 0.
+        //
+        // From `vec_e := e * \hat{p}`,
+        // notice that in the ω_pre equation we have `vec_e / e`.
+        // This can be transformed into just `\hat{p}` which is much more stable.
+        //
+        // Therefore:
+        //
+        //    ω_pre = cos^-1(\hat{p} ⋅ vec_N / ||vec_N||)
+        //
+        // ...where:
+        // \hat{p} = P basis vector in PQW coordinate system
+
+        let arg_pe_pre = (basis_p.dot(line_of_nodes.normalize())).acos();
+
+        // The next equation from the website basically states:
+        //
+        //      ω = {vec_e.z >= 0: ω_pre; τ - ω_pre}
+        //
+        // We can simplify `vec_e.z`:
+        // vec_e := e * \hat{p}
+        // => vec_e.z = e * \hat{p}.z
+        //
+        //      vec_e.z >= 0  ==>  e * \hat{p}.z >= 0
+        //
+        // Since eccentricity `e` is defined to be nonnegative,
+        // and we only need the sign (`>= 0`), we can simplify
+        // this further:
+        //
+        //      e * \hat{p}.z >= 0  ==>  \hat{p}.z >= 0
+        //
+        // Rewriting the original expression:
+        //
+        //      ω = {\hat{p}.z >= 0: ω_pre; τ - ω_pre}
+
+        let arg_pe = if basis_p.z >= 0.0 {
+            arg_pe_pre
+        } else {
+            TAU - arg_pe_pre
+        };
+
+        let node_f = (-arg_pe).rem_euclid(TAU);
+
+        todo!("get_true_anomaly_at_asc_node_with_plane");
     }
 
     // TODO: POST-PARABOLIC SUPPORT: Add note about parabolic eccentric anomaly (?), remove parabolic support sections
