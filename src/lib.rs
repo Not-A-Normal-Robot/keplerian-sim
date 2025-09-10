@@ -1270,6 +1270,9 @@ pub trait OrbitTrait {
     /// [`get_pqw_basis_vectors`][OrbitTrait::get_pqw_basis_vectors]
     /// function.
     ///
+    /// If the given P vector is not of length 1, you may get
+    /// nonsensical outputs.
+    ///
     /// # Performance
     /// This function, by itself, is very performant, and should not be
     /// the cause of any performance problems.
@@ -1498,22 +1501,23 @@ pub trait OrbitTrait {
     /// Gets the true anomaly of an ascending node, given a reference plane's
     /// normal vector.
     ///
-    /// Note that the plane normal *need not be* of length 1. Any length should
-    /// work provided that it is not too extreme (i.e., not too close to 0 or
-    /// near infinity). If it is too extreme, you may get NaNs as the output.
+    /// This can be used to get the ascending node compared to another orbit,
+    /// similar to the AN/DN labels that appear in Kerbal Space Program after you
+    /// pick a target vessel/body.
     ///
     /// **You will also get a NaN if the plane normals of the
     /// two orbits match exactly.** In that scenario there is no ascending
     /// nor descending node.
     ///
-    /// This can be used to get the ascending node compared to another orbit,
-    /// similar to the AN/DN labels that appear in Kerbal Space Program after you
-    /// pick a target vessel/body.
-    ///
     /// To do that, you can get the plane normal of the other orbit using
-    /// [`get_orbital_plane_normal`][OrbitTrait::get_orbital_plane_normal],
+    /// [`get_pqw_basis_vectors`][OrbitTrait::get_pqw_basis_vectors],
     /// then feed that into the original orbit's ascending node getter.
     ///
+    /// # Unchecked Operation
+    /// It is the caller's job to make sure that the given
+    /// plane normal is of length 1.  
+    /// If the given plane normal is not of length 1, you may get nonsensical
+    /// outputs.
     ///
     /// # Performance
     /// This function is significantly faster in the cached version of the
@@ -1572,8 +1576,8 @@ pub trait OrbitTrait {
     ///     1.0, // Gravitational parameter
     /// );
     ///
-    /// let this_normal = this_orbit.get_orbital_plane_normal();
-    /// let other_normal = other_orbit.get_orbital_plane_normal();
+    /// let this_normal = this_orbit.get_pqw_basis_vectors().2;
+    /// let other_normal = other_orbit.get_pqw_basis_vectors().2;
     ///
     /// let this_an = this_orbit.get_true_anomaly_at_asc_node_with_plane(other_normal);
     /// # assert_almost_eq(this_an, 0.0); // TODO
@@ -1586,10 +1590,10 @@ pub trait OrbitTrait {
     /// # assert_almost_eq(other_dn, 0.0); // TODO
     /// ```
     fn get_true_anomaly_at_asc_node_with_plane(&self, plane_normal: DVec3) -> f64 {
-        // We first get the longitude of ascending node relative to the new
+        // We first get the line of nodes relative to the new
         // plane normal instead of the one we store (which is relative to the
         // XY plane with a normal of +Z).
-
+        //
         // https://orbital-mechanics.space/classical-orbital-elements/orbital-elements-and-the-state-vector.html#step-4right-ascension-of-the-ascending-node
         //
         //     vec_N = vec_K × vec_h
@@ -1605,8 +1609,8 @@ pub trait OrbitTrait {
         //     so it all works out.
         let (basis_p, _, basis_w) = self.get_pqw_basis_vectors();
         let line_of_nodes = plane_normal.cross(basis_w);
-        let eccentricity_vector = self.get_eccentricity_vector_unchecked(basis_p);
 
+        // Then we can calculate the argument of periapsis.
         // https://orbital-mechanics.space/classical-orbital-elements/orbital-elements-and-the-state-vector.html#step-6argument-of-periapsis
         //
         //    ω_pre = cos^-1(vec_e ⋅ vec_N / e ||vec_N||)
@@ -1623,14 +1627,18 @@ pub trait OrbitTrait {
         // notice that in the ω_pre equation we have `vec_e / e`.
         // This can be transformed into just `\hat{p}` which is much more stable.
         //
+        // Also, since we assume the caller already gives a vec_N of
+        // length 1 (see function docstring), we can skip the normalization
+        // step (where we divide by the length of vec_N).
+        //
         // Therefore:
         //
-        //    ω_pre = cos^-1(\hat{p} ⋅ vec_N / ||vec_N||)
+        //    ω_pre = cos^-1(\hat{p} ⋅ vec_N)
         //
         // ...where:
         // \hat{p} = P basis vector in PQW coordinate system
 
-        let arg_pe_pre = (basis_p.dot(line_of_nodes.normalize())).acos();
+        let arg_pe_pre = (basis_p.dot(line_of_nodes)).acos();
 
         // The next equation from the website basically states:
         //
@@ -1658,9 +1666,48 @@ pub trait OrbitTrait {
             TAU - arg_pe_pre
         };
 
-        let node_f = (-arg_pe).rem_euclid(TAU);
+        // True anomaly `f` of one of the nodes.
+        // We don't know if this is AN or DN yet.
+        // We need the inclination relative to the reference plane to
+        // find that out.
+        let node_f = -arg_pe;
 
-        todo!("get_true_anomaly_at_asc_node_with_plane");
+        // Next we need the inclination relative to the reference plane.
+        // Next equation from the same page as before, different section:
+        // https://orbital-mechanics.space/classical-orbital-elements/orbital-elements-and-the-state-vector.html#step-3inclination
+        //
+        //      i = cos^-1(h_z / ||h||)
+        //
+        // which can be rearranged into:
+        //
+        //      i = cos^-1(\hat{w}.z)
+        //
+        // (We can replace normalized h with \hat{w}. See the first comment block
+        // of this function for the reason why.)
+        //
+        // HOWEVER: This equation is for the inclination relative to the XY plane,
+        // where its normal is the +Z unit vector.
+        // We want to get the inclination relative to the given plane normal.
+        //
+        // Given that \hat{w}.z returns the same as \hat{w} ⋅ [0, 0, 1],
+        // we can generalize this to project the \hat{w} vector into any
+        // other vector instead of just the +Z unit vector.
+        //
+        // This means, to get the inclination relative to the reference plane,
+        // we can dot it with the plane normal:
+        //
+        //      i = cos^-1(\hat{w} ⋅ k)
+        //
+        // ...where:
+        // k = the unit normal vector of the reference plane (`plane_normal`).
+
+        let inclination = (basis_w.dot(plane_normal)).acos();
+
+        if inclination.rem_euclid(TAU) < PI {
+            node_f.rem_euclid(TAU)
+        } else {
+            (node_f + PI).rem_euclid(TAU)
+        }
     }
 
     // TODO: POST-PARABOLIC SUPPORT: Add note about parabolic eccentric anomaly (?), remove parabolic support sections
