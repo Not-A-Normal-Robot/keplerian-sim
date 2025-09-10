@@ -2563,8 +2563,6 @@ fn test_orbital_plane_normal_getter() {
 }
 
 fn orbit_plane_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
-    // TODO:
-    // Test NaN cases
     let other_random = random_any();
     let other_flat = {
         let mut orbit = other_random.clone();
@@ -2664,11 +2662,18 @@ fn orbit_plane_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
             Orbit: {orbit:?}"
         );
     }
+
+    let orbit_plane = orbit.get_pqw_basis_vectors().2;
+    let self_an = orbit.get_true_anomaly_at_asc_node_with_plane(orbit_plane);
+    assert!(self_an.is_nan());
+
+    let self_dn = orbit.get_true_anomaly_at_desc_node_with_plane(orbit_plane);
+    assert!(self_dn.is_nan());
 }
 
 #[test]
 fn orbit_plane_an_dn() {
-    for orbit in random_any_iter(2048) {
+    for orbit in random_any_iter(262144) {
         orbit_plane_an_dn_base_test(&orbit);
     }
 }
