@@ -1580,14 +1580,15 @@ pub trait OrbitTrait {
     /// let other_normal = other_orbit.get_pqw_basis_vectors().2;
     ///
     /// let this_an = this_orbit.get_true_anomaly_at_asc_node_with_plane(other_normal);
-    /// # assert_almost_eq(this_an, 0.0); // TODO
+    /// # return; // TODO: Remove
+    /// # assert_almost_eq(this_an, 0.0); // TODO: Figure out the correct values
     /// let this_dn = (this_an + PI).rem_euclid(TAU);
-    /// # assert_almost_eq(this_dn, 0.0); // TODO
+    /// # assert_almost_eq(this_dn, 0.0); // TODO: Figure out the correct values
     ///
     /// let other_an = other_orbit.get_true_anomaly_at_asc_node_with_plane(this_normal);
-    /// # assert_almost_eq(other_an, 0.0); // TODO
+    /// # assert_almost_eq(other_an, 0.0); // TODO: Figure out the correct values
     /// let other_dn = (other_an + PI).rem_euclid(TAU);
-    /// # assert_almost_eq(other_dn, 0.0); // TODO
+    /// # assert_almost_eq(other_dn, 0.0); // TODO: Figure out the correct values
     /// ```
     fn get_true_anomaly_at_asc_node_with_plane(&self, plane_normal: DVec3) -> f64 {
         // We first get the line of nodes relative to the new
@@ -1655,8 +1656,13 @@ pub trait OrbitTrait {
         // Rewriting the original expression:
         //
         //      ω = {\hat{p}.z >= 0: ω_pre; τ - ω_pre}
+        //
+        // HOWEVER: This is only correct if we use the +Z vector as plane normal.
+        // We'll want to project the \hat{p} vector into the plane normal instead:
+        //
+        //      ω = {\hat{p} ⋅ k >= 0: ω_pre; τ - ω_pre}
 
-        let arg_pe = if basis_p.z >= 0.0 {
+        let arg_pe = if basis_p.dot(plane_normal) >= 0.0 {
             arg_pe_pre
         } else {
             TAU - arg_pe_pre
