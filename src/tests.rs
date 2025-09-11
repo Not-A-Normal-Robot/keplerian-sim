@@ -2678,6 +2678,26 @@ fn orbit_plane_an_dn() {
     }
 }
 
+#[test]
+fn time_at_periapsis() {
+    for orbit in random_any_iter(262144) {
+        if orbit.get_eccentricity() == 1.0 {
+            assert!(!orbit.get_time_at_periapsis().is_finite());
+            continue;
+        }
+
+        let time = orbit.get_time_at_periapsis();
+
+        let mean = orbit.get_mean_anomaly_at_time(time);
+
+        assert_almost_eq(
+            mean,
+            0.0,
+            &format!("Mean anomaly at t={time} expected 0, found {mean}\n{orbit:?}"),
+        );
+    }
+}
+
 mod monotone_cubic_solver {
     use crate::solve_monotone_cubic;
 

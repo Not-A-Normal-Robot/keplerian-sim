@@ -1162,6 +1162,36 @@ pub trait OrbitTrait {
         TAU * self.get_orbital_period().recip()
     }
 
+    // TODO: PARABOLIC SUPPORT: This function returns NaN on parabolic
+    /// Gets the time when the orbit is in periapsis, in seconds since epoch.
+    ///
+    /// This returns the time when mean anomaly equals zero.  
+    /// This means although it will represent a time of periapsis,
+    /// it doesn't mean "next periapsis" nor "previous periapsis",
+    /// it just means "a periapsis", at least for closed orbits
+    /// (e < 1).
+    ///
+    /// # Parabolic Support
+    /// This function does not support parabolic trajectories yet.  
+    /// Calling this function on a parabolic trajectory results in a
+    /// non-finite number.
+    ///
+    /// # Performance
+    /// This function is performant and is unlikely to be the cause
+    /// of any performance issues.
+    fn get_time_at_periapsis(&self) -> f64 {
+        // We want to find M = 0
+        // Per `get_mean_anomaly_at_time`:
+        // M = t * sqrt(mu / |a^3|) + M_0
+        // 0 = t * sqrt(mu / |a^3|) + M_0
+        // -M_0 = t * sqrt(mu / |a^3|)
+        // t * sqrt(mu / |a^3|) = -M_0
+        // t = -M_0 / sqrt(mu / |a^3|)
+
+        -self.get_mean_anomaly_at_epoch()
+            / (self.get_gravitational_parameter() / self.get_semi_major_axis().powi(3).abs()).sqrt()
+    }
+
     /// Gets the transformation matrix needed to tilt a 2D vector into the
     /// tilted orbital plane.
     ///
