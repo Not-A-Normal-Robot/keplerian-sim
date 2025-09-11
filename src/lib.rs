@@ -1146,6 +1146,22 @@ pub trait OrbitTrait {
     /// ```
     fn set_apoapsis_force(&mut self, apoapsis: f64);
 
+    /// Gets the mean motion of the orbit, in radians per second.
+    ///
+    /// Mean motion (represented by `n`) is the angular speed required for
+    /// a body to complete one orbit, assuming constant speed in a circular
+    /// orbit which completes in the same time as the variable speed,
+    /// elliptical orbit of the actual body.
+    ///
+    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Mean_motion)
+    ///
+    /// # Performance
+    /// This function is performant and is unlikely to be the cause
+    /// of any performance issues.
+    fn get_mean_motion(&self) -> f64 {
+        TAU * self.get_orbital_period().recip()
+    }
+
     /// Gets the transformation matrix needed to tilt a 2D vector into the
     /// tilted orbital plane.
     ///
@@ -4521,7 +4537,7 @@ pub trait OrbitTrait {
     /// The time is measured in seconds.
     ///
     /// # Performance
-    /// This function is performant and should not be the cause of any
+    /// This function is performant and is unlikely to be the cause of any
     /// performance issues.
     fn get_orbital_period(&self) -> f64 {
         // T = 2pi * sqrt(a^3 / GM)
