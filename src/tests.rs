@@ -4,7 +4,7 @@ extern crate std;
 
 use glam::{DVec2, DVec3};
 
-use crate::{CompactOrbit, Orbit, OrbitTrait, StateVectors};
+use crate::{CompactOrbit, Matrix3x2, Orbit, OrbitTrait, StateVectors};
 use std::f64::consts::{PI, TAU};
 
 const ALMOST_EQ_TOLERANCE: f64 = 1e-6;
@@ -2490,6 +2490,191 @@ fn test_alt_to_true_anom() {
 
     for orbit in random_any_iter(4096) {
         test_alt_to_true_anom_base(&orbit);
+    }
+}
+
+fn z_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
+    let f_an = orbit.get_true_anomaly_at_asc_node();
+    let f_dn = orbit.get_true_anomaly_at_desc_node();
+
+    assert!(
+        ((f_an + PI).rem_euclid(TAU) - f_dn).abs() < 1e-15,
+        "AN->DN equation should hold for {orbit:?}"
+    );
+    assert!(
+        ((f_dn - PI).rem_euclid(TAU) - f_an).abs() < 1e-15,
+        "DN->AN equation should hold for {orbit:?}"
+    );
+
+    // For open trajectories, f_an and f_dn may be out of range,
+    // which results in NaN velocities. We check this before
+    // checking if the vel directions make sense
+
+    let f_range = if orbit.get_eccentricity() < 1.0 {
+        -TAU..=TAU
+    } else {
+        let f_max = orbit.get_hyperbolic_true_anomaly_asymptote();
+        (-f_max + 1e-14)..=(f_max - 1e-14)
+    };
+
+    if f_range.contains(&f_an) {
+        let v_an = orbit.get_velocity_at_true_anomaly(f_an);
+
+        if !v_an.is_nan() {
+            assert!(
+                v_an.z >= 0.0,
+                "Z-vel {v_an} at AN (f = {f_an}) should be positive for {orbit:?}"
+            );
+        }
+    }
+
+    if f_range.contains(&f_dn) {
+        let v_dn = orbit.get_velocity_at_true_anomaly(f_dn);
+
+        if !v_dn.is_nan() {
+            assert!(
+                v_dn.z <= 0.0,
+                "Z-vel {v_dn} at DN (f = {f_dn}) should be negative for {orbit:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn test_z_an_dn() {
+    for orbit in random_any_iter(262144) {
+        z_an_dn_base_test(&orbit);
+    }
+}
+
+fn orbital_plane_normal_base_test(orbit: &impl OrbitTrait) {
+    let p = orbit.transform_pqw_vector(DVec2::new(1.0, 0.0));
+    let q = orbit.transform_pqw_vector(DVec2::new(0.0, 1.0));
+    let w = p.cross(q);
+
+    assert_eq!(orbit.get_pqw_basis_vectors(), (p, q, w));
+}
+
+#[test]
+fn test_orbital_plane_normal_getter() {
+    for orbit in random_any_iter(262144) {
+        orbital_plane_normal_base_test(&orbit);
+    }
+}
+
+fn orbit_plane_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
+    let other_random = random_any();
+    let other_flat = {
+        let mut orbit = other_random.clone();
+        orbit.set_inclination(0.0);
+        orbit.set_arg_pe(0.0);
+        orbit.set_long_asc_node(0.0);
+        assert_eq!(orbit.get_transformation_matrix(), Matrix3x2::IDENTITY);
+        orbit
+    };
+
+    let flat_an = orbit.get_true_anomaly_at_asc_node_with_plane(DVec3::Z);
+    let flat_dn = (flat_an + PI).rem_euclid(TAU);
+
+    if !flat_an.is_nan() {
+        let flat_an_2 = orbit.get_true_anomaly_at_asc_node();
+
+        assert_almost_eq(
+            flat_an,
+            flat_an_2,
+            &format!("XY AN for orbits {orbit:?} and {other_flat:?}"),
+        );
+    }
+    if !flat_dn.is_nan() {
+        let flat_dn_2 = orbit.get_true_anomaly_at_desc_node();
+
+        assert_almost_eq(
+            flat_dn,
+            flat_dn_2,
+            &format!("XY DN for orbits {orbit:?} and {other_flat:?}"),
+        );
+    }
+
+    if !flat_an.is_nan() && !flat_dn.is_nan() {
+        let flat_an_conv = (flat_dn + PI).rem_euclid(TAU);
+        assert_almost_eq(
+            flat_an,
+            flat_an_conv,
+            &format!("XY DN->AN conv ({flat_dn}->{flat_an_conv} != {flat_an})"),
+        );
+
+        let flat_dn_conv = (flat_an + PI).rem_euclid(TAU);
+        assert_almost_eq(
+            flat_dn,
+            flat_dn_conv,
+            &format!("XY AN->DN conv ({flat_an}->{flat_dn_conv} != {flat_dn})"),
+        );
+    }
+
+    let other_plane = other_random.get_pqw_basis_vectors().2;
+    let plane_an = orbit.get_true_anomaly_at_asc_node_with_plane(other_plane);
+    let plane_dn = orbit.get_true_anomaly_at_desc_node_with_plane(other_plane);
+
+    if !plane_an.is_nan() && !plane_dn.is_nan() {
+        let plane_an_conv = (plane_dn + PI).rem_euclid(TAU);
+        assert_almost_eq(
+            plane_an,
+            plane_an_conv,
+            &format!(
+                "General DN->AN conv ({plane_dn}->{plane_an_conv} != {plane_an}).\n\
+                Other plane: {other_plane}\n\
+                {orbit:?}"
+            ),
+        );
+
+        let plane_dn_conv = (plane_an + PI).rem_euclid(TAU);
+        assert_almost_eq(
+            plane_dn,
+            plane_dn_conv,
+            &format!(
+                "General AN->DN conv ({plane_an}->{plane_dn_conv} != {plane_dn}).\n\
+                Other plane: {other_plane}\n\
+                {orbit:?}"
+            ),
+        );
+    }
+
+    let v_an = orbit.get_velocity_at_true_anomaly(plane_an);
+    if !v_an.is_nan() {
+        let similarity = v_an.dot(other_plane);
+
+        assert!(
+            similarity > 0.0,
+            "Using f = {plane_an}, expected v_an {v_an} to point roughly {other_plane}.\n\
+            Got similarity of {similarity} < 0.\n\
+            Orbit: {orbit:?}"
+        );
+    }
+
+    let v_dn = orbit.get_velocity_at_true_anomaly(plane_dn);
+    if !v_dn.is_nan() {
+        let similarity = v_dn.dot(other_plane);
+
+        assert!(
+            similarity < 0.0,
+            "Using f = {plane_dn}, expected v_dn {v_dn} to point roughly opposite of {other_plane}.\n\
+            Got similarity of {similarity} > 0.\n\
+            Orbit: {orbit:?}"
+        );
+    }
+
+    let orbit_plane = orbit.get_pqw_basis_vectors().2;
+    let self_an = orbit.get_true_anomaly_at_asc_node_with_plane(orbit_plane);
+    assert!(self_an.is_nan());
+
+    let self_dn = orbit.get_true_anomaly_at_desc_node_with_plane(orbit_plane);
+    assert!(self_dn.is_nan());
+}
+
+#[test]
+fn orbit_plane_an_dn() {
+    for orbit in random_any_iter(262144) {
+        orbit_plane_an_dn_base_test(&orbit);
     }
 }
 
