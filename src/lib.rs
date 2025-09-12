@@ -4228,6 +4228,78 @@ pub trait OrbitTrait {
     /// (Keplerian orbits are conic sections, so the concepts still apply)
     fn get_eccentricity(&self) -> f64;
 
+    /// Gets whether or not the orbit is circular.
+    ///
+    /// A circular orbit has an eccentricity of 0.
+    #[inline]
+    fn is_circular(&self) -> bool {
+        self.get_eccentricity() == 0.0
+    }
+
+    /// Gets whether or not the orbit is strictly elliptic.
+    ///
+    /// A strictly elliptic orbit has an eccentricity between
+    /// 0 and 1.
+    ///
+    /// For getting whether or not the orbit is circular
+    /// or elliptic, use [`is_closed`][OrbitTrait::is_closed]
+    #[inline]
+    fn is_elliptic(&self) -> bool {
+        let eccentricity = self.get_eccentricity();
+
+        eccentricity < 1.0 && eccentricity > 0.0
+    }
+
+    /// Gets whether or not the orbit is closed.
+    ///
+    /// A closed orbit can be either circular or elliptic,
+    /// i.e. has an eccentricity of less than 1.
+    ///
+    /// For getting whether or not the orbit is circular (e = 0),
+    /// use [`is_circular`][OrbitTrait::is_circular].
+    ///
+    /// For getting whether or not the orbit is strictly
+    /// elliptic (0 < e < 1), use [`is_elliptic`][OrbitTrait::is_elliptic].
+    #[inline]
+    fn is_closed(&self) -> bool {
+        self.get_eccentricity() < 1.0
+    }
+
+    /// Gets whether or not the trajectory is parabolic.
+    ///
+    /// A parabolic trajectory has an eccentricity of exactly 1.
+    #[inline]
+    fn is_parabolic(&self) -> bool {
+        self.get_eccentricity() == 1.0
+    }
+
+    /// Gets whether or not the trajectory is hyperbolic.
+    ///
+    /// A hyperbolic trajectory has an eccentricity of greater than 1.
+    ///
+    /// For getting whether or not the trajectory is open — i.e.,
+    /// has an eccentricity of *at least* 1 — use
+    /// [`is_open`][OrbitTrait::is_open].
+    #[inline]
+    fn is_hyperbolic(&self) -> bool {
+        self.get_eccentricity() > 1.0
+    }
+
+    /// Gets whether or not the trajectory is open.
+    ///
+    /// An open trajectory has an eccentricity of at least 1, i.e.,
+    /// is either a parabolic trajectory or a hyperbolic trajectory.
+    ///
+    /// For getting whether or not a trajectory is parabolic (e = 1),
+    /// use [`is_parabolic`][OrbitTrait::is_parabolic].
+    ///
+    /// For getting whether or not a trajectory is hyperbolic (e > 1),
+    /// use [`is_hyperbolic`][OrbitTrait::is_hyperbolic].
+    #[inline]
+    fn is_open(&self) -> bool {
+        self.get_eccentricity() >= 1.0
+    }
+
     /// Sets the eccentricity of the orbit.
     ///
     /// The eccentricity of an orbit is a measure of how much it deviates
