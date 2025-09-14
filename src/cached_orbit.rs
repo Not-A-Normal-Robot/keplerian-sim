@@ -1,3 +1,4 @@
+use glam::DVec3;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -633,8 +634,30 @@ impl OrbitTrait for Orbit {
         }
     }
 
+    #[inline]
     fn get_transformation_matrix(&self) -> Matrix3x2 {
         self.cache.transformation_matrix
+    }
+
+    #[inline]
+    fn get_pqw_basis_vector_p(&self) -> DVec3 {
+        let m = self.cache.transformation_matrix;
+        DVec3::new(m.e11, m.e21, m.e31)
+    }
+
+    #[inline]
+    fn get_pqw_basis_vector_q(&self) -> DVec3 {
+        let m = self.cache.transformation_matrix;
+        DVec3::new(m.e12, m.e22, m.e32)
+    }
+
+    #[inline]
+    fn get_pqw_basis_vector_w(&self) -> DVec3 {
+        let m = self.cache.transformation_matrix;
+
+        let p = DVec3::new(m.e11, m.e21, m.e31);
+        let q = DVec3::new(m.e12, m.e22, m.e32);
+        p.cross(q)
     }
 
     #[inline]

@@ -47,6 +47,15 @@
 //! # }
 //! #
 //! ```
+//!
+//! ## Note on apside terminology
+//!
+//! This crate uses the term "periapsis" and "apoapsis" for the *distances*
+//! from the origin to the closest and furthest points of the orbit, respectively.
+//!
+//! This crate uses the term "perifocus" and "apofocus" for the points themselves.
+//!
+//! Learn more about apsides: <https://en.wikipedia.org/wiki/Apsis>
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
@@ -1018,6 +1027,198 @@ pub trait OrbitTrait {
         self.get_eccentricity().recip().neg().acos()
     }
 
+    /// Gets the position of the perifocus.
+    ///
+    /// # Performance
+    /// In the cached orbit struct ([`Orbit`]), this function is
+    /// very performant and only involves three multiplications.
+    ///
+    /// However, in the compact orbit struct ([`CompactOrbit`]), this
+    /// is a lot slower and involves some trigonometric calculations.
+    /// If you already know the P basis vector of the PQW coordinate system,
+    /// you may use the unchecked version instead
+    /// ([`get_perifocus_position_unchecked`][OrbitTrait::get_perifocus_position_unchecked]),
+    /// which is a lot faster and would skip repeated calculations.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use glam::DVec3;
+    ///
+    /// let orbit = Orbit::new_flat(
+    ///     0.25, // Eccentricity
+    ///     1.0, // Periapsis
+    ///     0.0, // Argument of periapsis
+    ///     0.0, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter
+    /// );
+    ///
+    /// assert_eq!(
+    ///     orbit.get_perifocus_position(),
+    ///     DVec3::new(1.0, 0.0, 0.0)
+    /// );
+    /// ```
+    #[inline]
+    fn get_perifocus_position(&self) -> DVec3 {
+        self.get_perifocus_position_unchecked(self.get_pqw_basis_vector_p())
+    }
+
+    /// Gets the perifocus position based on a known P basis vector.
+    ///
+    /// The P basis vector is one of the basis vector from the PQW
+    /// coordinate system.
+    ///
+    /// Learn more about the PQW system: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
+    ///
+    /// # Unchecked Operation
+    /// This function does not check that the given `p_vector`
+    /// is a unit vector nor whether it actually is the basis vector in the
+    /// PQW coordinate system.
+    ///
+    /// It is expected that callers get this vector from either
+    /// the transformation matrix
+    /// ([`get_transformation_matrix`][OrbitTrait::get_transformation_matrix]),
+    /// the basis vector collective getter
+    /// ([`get_pqw_basis_vectors`][OrbitTrait::get_pqw_basis_vectors]),
+    /// or the individual basis vector getter
+    /// ([`get_pqw_basis_vector_p`][OrbitTrait::get_pqw_basis_vector_p]).
+    ///
+    /// A safe wrapper is available, but that may be slower; see the
+    /// Performance section for details.
+    ///
+    /// # Performance
+    /// There is no reason to use this if you are using the cached
+    /// orbit struct ([`Orbit`]) as the performance is identical to the
+    /// wrapper function.
+    ///
+    /// However, in the compact orbit struct ([`CompactOrbit`]), this
+    /// skips some expensive trigonometry operations and therefore is
+    /// a lot faster than the wrapper function.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait};
+    /// use glam::DVec3;
+    ///
+    /// let orbit = CompactOrbit::new_flat(
+    ///     0.25, // Eccentricity
+    ///     1.0, // Periapsis
+    ///     0.0, // Argument of periapsis
+    ///     0.0, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter
+    /// );
+    ///
+    /// let p_vector = orbit.get_pqw_basis_vector_p();
+    ///
+    /// // Use p_vector here...
+    /// // Use it again for perifocus position!
+    ///
+    /// assert_eq!(
+    ///     orbit.get_perifocus_position_unchecked(p_vector),
+    ///     DVec3::new(1.0, 0.0, 0.0)
+    /// );
+    /// ```
+    #[inline]
+    fn get_perifocus_position_unchecked(&self, p_vector: DVec3) -> DVec3 {
+        self.get_periapsis() * p_vector
+    }
+
+    /// Gets the position of the apofocus.
+    ///
+    /// # Performance
+    /// In the cached orbit struct ([`Orbit`]), this function is
+    /// very performant and only involves three multiplications.
+    ///
+    /// However, in the compact orbit struct ([`CompactOrbit`]), this
+    /// is a lot slower and involves some trigonometric calculations.
+    /// If you already know the P basis vector of the PQW coordinate system,
+    /// you may use the unchecked version instead
+    /// ([`get_apofocus_position_unchecked`][OrbitTrait::get_apofocus_position_unchecked]),
+    /// which is a lot faster and would skip repeated calculations.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use glam::DVec3;
+    ///
+    /// let orbit = Orbit::new_flat(
+    ///     0.25, // Eccentricity
+    ///     1.0, // Periapsis
+    ///     0.0, // Argument of periapsis
+    ///     0.0, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter
+    /// );
+    ///
+    /// assert_eq!(
+    ///     orbit.get_apofocus_position(),
+    ///     DVec3::new(-1.6666666666666665, 0.0, 0.0)
+    /// );
+    /// ```
+    #[inline]
+    fn get_apofocus_position(&self) -> DVec3 {
+        self.get_apofocus_position_unchecked(self.get_pqw_basis_vector_p())
+    }
+
+    /// Gets the apofocus position based on a known P basis vector.
+    ///
+    /// The P basis vector is one of the basis vector from the PQW
+    /// coordinate system.
+    ///
+    /// Learn more about the PQW system: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
+    ///
+    /// # Unchecked Operation
+    /// This function does not check that the given `p_vector`
+    /// is a unit vector nor whether it actually is the basis vector in the
+    /// PQW coordinate system.
+    ///
+    /// It is expected that callers get this vector from either
+    /// the transformation matrix
+    /// ([`get_transformation_matrix`][OrbitTrait::get_transformation_matrix]),
+    /// the basis vector collective getter
+    /// ([`get_pqw_basis_vectors`][OrbitTrait::get_pqw_basis_vectors]),
+    /// or the individual basis vector getter
+    /// ([`get_pqw_basis_vector_p`][OrbitTrait::get_pqw_basis_vector_p]).
+    ///
+    /// A safe wrapper is available, but that may be slower; see the
+    /// Performance section for details.
+    ///
+    /// # Performance
+    /// There is no reason to use this if you are using the cached
+    /// orbit struct ([`Orbit`]) as the performance is identical to the
+    /// wrapper function.
+    ///
+    /// However, in the compact orbit struct ([`CompactOrbit`]), this
+    /// skips some expensive trigonometry operations and therefore is
+    /// a lot faster than the wrapper function.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait};
+    /// use glam::DVec3;
+    ///
+    /// let orbit = CompactOrbit::new_flat(
+    ///     0.25, // Eccentricity
+    ///     1.0, // Periapsis
+    ///     0.0, // Argument of periapsis
+    ///     0.0, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter
+    /// );
+    ///
+    /// let p_vector = orbit.get_pqw_basis_vector_p();
+    ///
+    /// // Use p_vector here...
+    /// // Use it again for apofocus position!
+    ///
+    /// assert_eq!(
+    ///     orbit.get_apofocus_position_unchecked(p_vector),
+    ///     DVec3::new(-1.6666666666666665, 0.0, 0.0)
+    /// );
+    /// ```
+    #[inline]
+    fn get_apofocus_position_unchecked(&self, p_vector: DVec3) -> DVec3 {
+        -self.get_apoapsis() * p_vector
+    }
+
     /// Gets the apoapsis of the orbit.  
     /// Returns infinity for parabolic orbits.  
     /// Returns negative values for hyperbolic orbits.  
@@ -1257,6 +1458,128 @@ pub trait OrbitTrait {
 
         (p, q, w)
     }
+
+    /// Gets the p basis vector for the perifocal coordinate (PQW)
+    /// system.
+    ///
+    /// The p basis vector is a unit vector that points to the periapsis.  
+    ///
+    /// For more information about the PQW system, visit the
+    /// [Wikipedia article](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
+    ///
+    /// # Performance
+    /// For [`CompactOrbit`], this will perform a few trigonometric operations
+    /// and multiplications, and therefore is not too performant.  
+    ///
+    /// For [`Orbit`], this will only need to access the cache, and
+    /// therefore is much more performant.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, CompactOrbit, OrbitTrait};
+    /// use glam::DVec3;
+    ///
+    /// let orbit = Orbit::default();
+    /// let p = orbit.get_pqw_basis_vector_p();
+    /// let q = orbit.get_pqw_basis_vector_q();
+    /// let w = orbit.get_pqw_basis_vector_w();
+    ///
+    /// assert_eq!(p, DVec3::X);
+    /// assert_eq!(q, DVec3::Y);
+    /// assert_eq!(w, DVec3::Z);
+    ///
+    /// let compact_orbit = CompactOrbit::default();
+    /// let p = compact_orbit.get_pqw_basis_vector_p();
+    /// let q = compact_orbit.get_pqw_basis_vector_q();
+    /// let w = compact_orbit.get_pqw_basis_vector_w();
+    ///
+    /// assert_eq!(p, DVec3::X);
+    /// assert_eq!(q, DVec3::Y);
+    /// assert_eq!(w, DVec3::Z);
+    /// ```
+    fn get_pqw_basis_vector_p(&self) -> DVec3;
+
+    /// Gets the q basis vector for the perifocal coordinate (PQW)
+    /// system.
+    ///
+    /// The q basis vector is orthogonal to the p basis vector
+    /// and points 90° counterclockwise from the periapsis on the
+    /// orbital plane.  
+    ///
+    /// For more information about the PQW system, visit the
+    /// [Wikipedia article](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
+    ///
+    /// # Performance
+    /// For [`CompactOrbit`], this will perform a few trigonometric operations
+    /// and multiplications, and therefore is not too performant.  
+    ///
+    /// For [`Orbit`], this will only need to access the cache, and
+    /// therefore is much more performant.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, CompactOrbit, OrbitTrait};
+    /// use glam::DVec3;
+    ///
+    /// let orbit = Orbit::default();
+    /// let p = orbit.get_pqw_basis_vector_p();
+    /// let q = orbit.get_pqw_basis_vector_q();
+    /// let w = orbit.get_pqw_basis_vector_w();
+    ///
+    /// assert_eq!(p, DVec3::X);
+    /// assert_eq!(q, DVec3::Y);
+    /// assert_eq!(w, DVec3::Z);
+    ///
+    /// let compact_orbit = CompactOrbit::default();
+    /// let p = compact_orbit.get_pqw_basis_vector_p();
+    /// let q = compact_orbit.get_pqw_basis_vector_q();
+    /// let w = compact_orbit.get_pqw_basis_vector_w();
+    ///
+    /// assert_eq!(p, DVec3::X);
+    /// assert_eq!(q, DVec3::Y);
+    /// assert_eq!(w, DVec3::Z);
+    /// ```
+    fn get_pqw_basis_vector_q(&self) -> DVec3;
+
+    /// Gets the w basis vector for the perifocal coordinate (PQW)
+    /// system.
+    ///
+    /// The w basis vector is orthogonal to the orbital plane.
+    ///
+    /// For more information about the PQW system, visit the
+    /// [Wikipedia article](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
+    ///
+    /// # Performance
+    /// For [`CompactOrbit`], this will perform a few trigonometric operations
+    /// and multiplications, and therefore is not too performant.  
+    ///
+    /// For [`Orbit`], this will only need to compute a cross product, and
+    /// therefore is much more performant.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, CompactOrbit, OrbitTrait};
+    /// use glam::DVec3;
+    ///
+    /// let orbit = Orbit::default();
+    /// let p = orbit.get_pqw_basis_vector_p();
+    /// let q = orbit.get_pqw_basis_vector_q();
+    /// let w = orbit.get_pqw_basis_vector_w();
+    ///
+    /// assert_eq!(p, DVec3::X);
+    /// assert_eq!(q, DVec3::Y);
+    /// assert_eq!(w, DVec3::Z);
+    ///
+    /// let compact_orbit = CompactOrbit::default();
+    /// let p = compact_orbit.get_pqw_basis_vector_p();
+    /// let q = compact_orbit.get_pqw_basis_vector_q();
+    /// let w = compact_orbit.get_pqw_basis_vector_w();
+    ///
+    /// assert_eq!(p, DVec3::X);
+    /// assert_eq!(q, DVec3::Y);
+    /// assert_eq!(w, DVec3::Z);
+    /// ```
+    fn get_pqw_basis_vector_w(&self) -> DVec3;
 
     /// Gets the eccentricity vector of this orbit.
     ///

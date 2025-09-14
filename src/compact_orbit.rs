@@ -1,3 +1,4 @@
+use glam::DVec3;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -570,6 +571,62 @@ impl OrbitTrait for CompactOrbit {
         matrix.e32 = cos_arg_pe * sin_inc;
 
         matrix
+    }
+
+    fn get_pqw_basis_vector_p(&self) -> DVec3 {
+        let (sin_inc, cos_inc) = self.inclination.sin_cos();
+        let (sin_arg_pe, cos_arg_pe) = self.arg_pe.sin_cos();
+        let (sin_lan, cos_lan) = self.long_asc_node.sin_cos();
+
+        // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+        // We use element e11, e21, and e31 for the P basis vector.
+
+        let x = cos_arg_pe * cos_lan - sin_arg_pe * cos_inc * sin_lan;
+        let y = cos_arg_pe * sin_lan + sin_arg_pe * cos_inc * cos_lan;
+        let z = sin_arg_pe * sin_inc;
+
+        DVec3::new(x, y, z)
+    }
+
+    fn get_pqw_basis_vector_q(&self) -> DVec3 {
+        let (sin_inc, cos_inc) = self.inclination.sin_cos();
+        let (sin_arg_pe, cos_arg_pe) = self.arg_pe.sin_cos();
+        let (sin_lan, cos_lan) = self.long_asc_node.sin_cos();
+
+        // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+        // We use element e12, e22, and e32 for the Q basis vector.
+
+        let x = -(sin_arg_pe * cos_lan + cos_arg_pe * cos_inc * sin_lan);
+        let y = cos_arg_pe * cos_inc * cos_lan - sin_arg_pe * sin_lan;
+        let z = cos_arg_pe * sin_inc;
+
+        DVec3::new(x, y, z)
+    }
+
+    fn get_pqw_basis_vector_w(&self) -> DVec3 {
+        let (sin_inc, cos_inc) = self.inclination.sin_cos();
+        let (sin_arg_pe, cos_arg_pe) = self.arg_pe.sin_cos();
+        let (sin_lan, cos_lan) = self.long_asc_node.sin_cos();
+
+        // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+        // We use element e11, e21, and e31 for the P basis vector,
+        // and e12, e22, and e32 for the Q basis vector.
+
+        let p = {
+            let x = cos_arg_pe * cos_lan - sin_arg_pe * cos_inc * sin_lan;
+            let y = cos_arg_pe * sin_lan + sin_arg_pe * cos_inc * cos_lan;
+            let z = sin_arg_pe * sin_inc;
+
+            DVec3::new(x, y, z)
+        };
+        let q = {
+            let x = -(sin_arg_pe * cos_lan + cos_arg_pe * cos_inc * sin_lan);
+            let y = cos_arg_pe * cos_inc * cos_lan - sin_arg_pe * sin_lan;
+            let z = cos_arg_pe * sin_inc;
+
+            DVec3::new(x, y, z)
+        };
+        p.cross(q)
     }
 
     #[inline]

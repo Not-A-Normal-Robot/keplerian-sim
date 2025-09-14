@@ -5,7 +5,10 @@ extern crate std;
 use glam::{DVec2, DVec3};
 
 use crate::{CompactOrbit, Matrix3x2, Orbit, OrbitTrait, StateVectors};
-use std::f64::consts::{PI, TAU};
+use std::{
+    f64::consts::{PI, TAU},
+    fmt::Debug,
+};
 
 const ALMOST_EQ_TOLERANCE: f64 = 1e-6;
 const ORBIT_POLL_ANGLES: usize = 4096;
@@ -1087,6 +1090,17 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
                 .collect::<Vec<_>>(),
             "{reexpanded_message}",
         );
+    }
+    {
+        let original_pqw = orbit.get_pqw_basis_vectors();
+        let compact_pqw = compact_orbit.get_pqw_basis_vectors();
+        let reexpanded_pqw = reexpanded_orbit.get_pqw_basis_vectors();
+
+        let compact_message = format!("{compact_message} (PQW basis vectors)");
+        let reexpanded_message = format!("{reexpanded_message} (PQW basis vectors)");
+
+        assert_eq!(original_pqw, compact_pqw, "{compact_message}");
+        assert_eq!(compact_pqw, reexpanded_pqw, "{reexpanded_message}");
     }
 }
 
@@ -2695,6 +2709,53 @@ fn time_at_periapsis() {
             0.0,
             &format!("Mean anomaly at t={time} expected 0, found {mean}\n{orbit:?}"),
         );
+    }
+}
+
+#[test]
+fn individual_vs_combined_pqw_getters() {
+    fn all_individual_pqw(orbit: &impl OrbitTrait) -> (DVec3, DVec3, DVec3) {
+        let p = orbit.get_pqw_basis_vector_p();
+        let q = orbit.get_pqw_basis_vector_q();
+        let w = orbit.get_pqw_basis_vector_w();
+
+        (p, q, w)
+    }
+
+    for orbit in random_any_iter(262144) {
+        let combined_pqw = orbit.get_pqw_basis_vectors();
+        let individual_pqw = all_individual_pqw(&orbit);
+
+        assert_eq!(combined_pqw, individual_pqw);
+    }
+}
+
+fn get_perifocus_position_base_test(orbit: &impl OrbitTrait) {
+    let from_f = orbit.get_position_at_true_anomaly(0.0);
+    let from_getter = orbit.get_perifocus_position();
+    assert_almost_eq_vec3(from_f, from_getter, "Perifocus positions");
+}
+
+fn get_apofocus_position_base_test(orbit: &(impl OrbitTrait + Debug)) {
+    let from_f = orbit.get_position_at_true_anomaly(PI);
+
+    if orbit.get_eccentricity() > 1.0 {
+        return;
+    } else if orbit.get_eccentricity() == 1.0 {
+        assert!(!from_f.is_finite() || from_f.length() > orbit.get_periapsis() * 1000.0);
+        return;
+    }
+
+    let from_getter = orbit.get_apofocus_position();
+
+    assert_almost_eq_vec3_rescale(from_f, from_getter, "Apofocus positions");
+}
+
+#[test]
+fn get_extrema_positions() {
+    for orbit in random_any_iter(262144) {
+        get_perifocus_position_base_test(&orbit);
+        get_apofocus_position_base_test(&orbit);
     }
 }
 
