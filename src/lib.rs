@@ -1378,7 +1378,14 @@ pub trait OrbitTrait {
     /// assert_eq!(orbit.get_mean_motion(), mean_motion);
     /// ```
     fn get_mean_motion(&self) -> f64 {
-        TAU / self.get_orbital_period()
+        // n = TAU / T, radians
+        //
+        // note: T = 2pi * sqrt(a^3 / GM)
+        //
+        // => n = TAU / (TAU * sqrt(a^3 / GM))
+        // => n = 1 / sqrt(a^3 / GM)
+        // => n = sqrt(GM / a^3)
+        (self.get_gravitational_parameter() / self.get_semi_major_axis().powi(3)).sqrt()
     }
 
     // TODO: PARABOLIC SUPPORT: This function returns NaN on parabolic
@@ -1425,13 +1432,17 @@ pub trait OrbitTrait {
         // We want to find M = 0
         // Per `get_mean_anomaly_at_time`:
         // M = t * sqrt(mu / |a^3|) + M_0
-        // 0 = t * sqrt(mu / |a^3|) + M_0
-        // -M_0 = t * sqrt(mu / |a^3|)
-        // t * sqrt(mu / |a^3|) = -M_0
-        // t = -M_0 / sqrt(mu / |a^3|)
+        // => 0 = t * sqrt(mu / |a^3|) + M_0
+        // => -M_0 = t * sqrt(mu / |a^3|)
+        // => t * sqrt(mu / |a^3|) = -M_0
+        // => t = -M_0 / sqrt(mu / |a^3|)
+        //
+        // note: 1 / sqrt(mu / |a^3|) = sqrt(|a^3| / mu)
+        //
+        // => t = -M_0 * sqrt(|a^3| / mu)
 
         -self.get_mean_anomaly_at_epoch()
-            / (self.get_gravitational_parameter() / self.get_semi_major_axis().powi(3).abs()).sqrt()
+            * (self.get_semi_major_axis().powi(3) / self.get_gravitational_parameter()).sqrt()
     }
 
     /// Gets the transformation matrix needed to tilt a 2D vector into the
