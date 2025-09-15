@@ -2696,11 +2696,11 @@ fn orbit_plane_an_dn() {
 fn time_at_periapsis() {
     for orbit in random_any_iter(262144) {
         if orbit.get_eccentricity() == 1.0 {
-            assert!(!orbit.get_time_at_periapsis().is_finite());
+            assert!(!orbit.get_time_of_periapsis().is_finite());
             continue;
         }
 
-        let time = orbit.get_time_at_periapsis();
+        let time = orbit.get_time_of_periapsis();
 
         let mean = orbit.get_mean_anomaly_at_time(time);
 

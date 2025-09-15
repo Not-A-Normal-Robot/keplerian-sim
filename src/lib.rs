@@ -1359,8 +1359,26 @@ pub trait OrbitTrait {
     /// # Performance
     /// This function is performant and is unlikely to be the cause
     /// of any performance issues.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// let orbit = Orbit::new_flat(
+    ///     0.8, // Eccentricity
+    ///     9.4, // Periapsis
+    ///     2.0, // Argument of periapsis
+    ///     1.5, // Mean anomaly at epoch
+    ///     0.8, // Gravitational parameter
+    /// );
+    ///
+    /// let orbital_period = orbit.get_orbital_period();
+    /// let mean_motion = std::f64::consts::TAU / orbital_period;
+    ///
+    /// assert_eq!(orbit.get_mean_motion(), mean_motion);
+    /// ```
     fn get_mean_motion(&self) -> f64 {
-        TAU * self.get_orbital_period().recip()
+        TAU / self.get_orbital_period()
     }
 
     // TODO: PARABOLIC SUPPORT: This function returns NaN on parabolic
@@ -1380,7 +1398,30 @@ pub trait OrbitTrait {
     /// # Performance
     /// This function is performant and is unlikely to be the cause
     /// of any performance issues.
-    fn get_time_at_periapsis(&self) -> f64 {
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// const PERIAPSIS: f64 = 1.0;
+    ///
+    /// let orbit = Orbit::new_flat(
+    ///     0.3, // Eccentricity
+    ///     PERIAPSIS,
+    ///     2.9, // Argument of periapsis
+    ///     1.5, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter
+    /// );
+    ///
+    /// let time_of_pe = orbit.get_time_of_periapsis();
+    ///
+    /// let alt_of_pe = orbit.get_altitude_at_time(time_of_pe);
+    ///
+    /// assert!(
+    ///     (alt_of_pe - PERIAPSIS).abs() < 1e-15
+    /// );
+    /// ```
+    fn get_time_of_periapsis(&self) -> f64 {
         // We want to find M = 0
         // Per `get_mean_anomaly_at_time`:
         // M = t * sqrt(mu / |a^3|) + M_0
