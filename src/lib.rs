@@ -3547,6 +3547,208 @@ pub trait OrbitTrait {
         self.get_pqw_velocity_at_eccentric_anomaly_unchecked(outer_mult, q_mult, trig_ecc_anom)
     }
 
+    /// Gets the velocity at the periapsis of the orbit
+    /// in the [perifocal coordinate system](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
+    ///
+    /// # Perifocal Coordinate System
+    /// This function returns a vector in the perifocal coordinate (PQW) system, where
+    /// the first element points to the periapsis, and the second element has a
+    /// true anomaly 90 degrees past the periapsis. The third element points perpendicular
+    /// to the orbital plane, and is always zero in this case, and so it is omitted.
+    ///
+    /// Learn more about the PQW system: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
+    ///
+    /// If you want to get the vector in the regular coordinate system instead, use
+    /// [`get_velocity_at_periapsis`][OrbitTrait::get_velocity_at_periapsis] instead.
+    ///
+    /// # Performance
+    /// This function is very performant and should not be the cause of any
+    /// performance issues.
+    ///
+    /// Alternatively, if you only want to know the speed, use
+    /// [`get_speed_at_periapsis`][OrbitTrait::get_speed_at_periapsis] instead.  
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use glam::DVec2;
+    ///
+    /// let mut orbit = Orbit::default();
+    /// orbit.set_periapsis(100.0);
+    /// orbit.set_eccentricity(0.5);
+    ///
+    /// let vel = orbit.get_pqw_velocity_at_periapsis();
+    ///
+    /// assert_eq!(
+    ///     vel,
+    ///     DVec2::new(0.0, orbit.get_speed_at_periapsis())
+    /// );
+    /// ```
+    ///
+    /// # Speed vs. Velocity
+    /// Speed is not to be confused with velocity.  
+    /// Speed tells you how fast something is moving,
+    /// while velocity tells you how fast *and in what direction* it's moving in.
+    fn get_pqw_velocity_at_periapsis(&self) -> DVec2 {
+        DVec2::new(0.0, self.get_speed_at_periapsis())
+    }
+
+    /// Gets the velocity at the apoapsis of the orbit
+    /// in the [perifocal coordinate system](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
+    ///
+    /// # Perifocal Coordinate System
+    /// This function returns a vector in the perifocal coordinate (PQW) system, where
+    /// the first element points to the periapsis, and the second element has a
+    /// true anomaly 90 degrees past the periapsis. The third element points perpendicular
+    /// to the orbital plane, and is always zero in this case, and so it is omitted.
+    ///
+    /// Learn more about the PQW system: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
+    ///
+    /// If you want to get the vector in the regular coordinate system instead, use
+    /// [`get_velocity_at_apoapsis`][OrbitTrait::get_velocity_at_apoapsis] instead.
+    ///
+    /// # Open orbits (eccentricity >= 1)
+    /// This function does not handle open orbits specially, and will return
+    /// a non-physical value. You might want to use the getters for the velocity
+    /// at the incoming and outgoing asymptotes:
+    /// - [`get_pqw_velocity_at_incoming_asymptote`][OrbitTrait::get_pqw_velocity_at_incoming_asymptote]
+    /// - [`get_pqw_velocity_at_outgoing_asymptote`][OrbitTrait::get_pqw_velocity_at_outgoing_asymptote]
+    ///
+    /// # Performance
+    /// This function is very performant and should not be the cause of any
+    /// performance issues.
+    ///
+    /// Alternatively, if you only want to know the speed, use
+    /// [`get_speed_at_apoapsis`][OrbitTrait::get_speed_at_apoapsis] instead.  
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use glam::DVec2;
+    ///
+    /// let mut orbit = Orbit::default();
+    /// orbit.set_periapsis(100.0);
+    /// orbit.set_eccentricity(0.5);
+    ///
+    /// let vel = orbit.get_pqw_velocity_at_apoapsis();
+    ///
+    /// assert_eq!(
+    ///     vel,
+    ///     DVec2::new(0.0, -orbit.get_speed_at_apoapsis())
+    /// );
+    /// ```
+    ///
+    /// # Speed vs. Velocity
+    /// Speed is not to be confused with velocity.  
+    /// Speed tells you how fast something is moving,
+    /// while velocity tells you how fast *and in what direction* it's moving in.
+    fn get_pqw_velocity_at_apoapsis(&self) -> DVec2 {
+        DVec2::new(0.0, -self.get_speed_at_apoapsis())
+    }
+
+    /// Gets the velocity at the incoming asymptote of the trajectory
+    /// in the [perifocal coordinate system](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
+    ///
+    /// # Perifocal Coordinate System
+    /// This function returns a vector in the perifocal coordinate (PQW) system, where
+    /// the first element points to the periapsis, and the second element has a
+    /// true anomaly 90 degrees past the periapsis. The third element points perpendicular
+    /// to the orbital plane, and is always zero in this case, and so it is omitted.
+    ///
+    /// Learn more about the PQW system: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
+    ///
+    /// If you want to get the vector in the regular coordinate system instead, use
+    /// [`get_velocity_at_incoming_asymptote`][OrbitTrait::get_velocity_at_incoming_asymptote]
+    /// instead.
+    ///
+    /// # Unchecked Operation
+    /// This function does not check that the orbit is open.  
+    /// This function will return a NaN vector for closed orbits (e < 1).
+    ///
+    /// # Performance
+    /// This function is very performant and should not be the cause of any
+    /// performance issues.
+    ///
+    /// Alternatively, if you only want to know the speed, use
+    /// [`get_speed_at_infinity`][OrbitTrait::get_speed_at_infinity] instead.  
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use glam::DVec2;
+    ///
+    /// let mut orbit = Orbit::default();
+    /// orbit.set_periapsis(100.0);
+    /// orbit.set_eccentricity(1.5);
+    ///
+    /// let speed = orbit.get_speed_at_infinity();
+    /// let vel = orbit.get_pqw_velocity_at_incoming_asymptote();
+    ///
+    /// assert!((vel.length() - speed).abs() < 1e-15);
+    /// ```
+    ///
+    /// # Speed vs. Velocity
+    /// Speed is not to be confused with velocity.  
+    /// Speed tells you how fast something is moving,
+    /// while velocity tells you how fast *and in what direction* it's moving in.
+    fn get_pqw_velocity_at_incoming_asymptote(&self) -> DVec2 {
+        let asymptote_true_anom = -self.get_hyperbolic_true_anomaly_asymptote();
+        let (sin_true, cos_true) = asymptote_true_anom.sin_cos();
+        -self.get_speed_at_infinity() * DVec2::new(cos_true, sin_true)
+    }
+
+    /// Gets the velocity at the outgoing asymptote of the trajectory
+    /// in the [perifocal coordinate system](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
+    ///
+    /// # Perifocal Coordinate System
+    /// This function returns a vector in the perifocal coordinate (PQW) system, where
+    /// the first element points to the periapsis, and the second element has a
+    /// true anomaly 90 degrees past the periapsis. The third element points perpendicular
+    /// to the orbital plane, and is always zero in this case, and so it is omitted.
+    ///
+    /// Learn more about the PQW system: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
+    ///
+    /// If you want to get the vector in the regular coordinate system instead, use
+    /// [`get_velocity_at_outgoing_asymptote`][OrbitTrait::get_velocity_at_outgoing_asymptote]
+    /// instead.
+    ///
+    /// # Unchecked Operation
+    /// This function does not check that the orbit is open.  
+    /// This function will return a NaN vector for closed orbits (e < 1).
+    ///
+    /// # Performance
+    /// This function is very performant and should not be the cause of any
+    /// performance issues.
+    ///
+    /// Alternatively, if you only want to know the speed, use
+    /// [`get_speed_at_infinity`][OrbitTrait::get_speed_at_infinity] instead.  
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use glam::DVec2;
+    ///
+    /// let mut orbit = Orbit::default();
+    /// orbit.set_periapsis(100.0);
+    /// orbit.set_eccentricity(1.5);
+    ///
+    /// let speed = orbit.get_speed_at_infinity();
+    /// let vel = orbit.get_pqw_velocity_at_outgoing_asymptote();
+    ///
+    /// assert!((vel.length() - speed).abs() < 1e-15);
+    /// ```
+    ///
+    /// # Speed vs. Velocity
+    /// Speed is not to be confused with velocity.  
+    /// Speed tells you how fast something is moving,
+    /// while velocity tells you how fast *and in what direction* it's moving in.
+    #[doc(alias = "get_hyperbolic_excess_pqw_velocity")]
+    fn get_pqw_velocity_at_outgoing_asymptote(&self) -> DVec2 {
+        let asymptote_true_anom = self.get_hyperbolic_true_anomaly_asymptote();
+        let (sin_true, cos_true) = asymptote_true_anom.sin_cos();
+        self.get_speed_at_infinity() * DVec2::new(cos_true, sin_true)
+    }
+
     /// Gets the velocity at a given eccentric anomaly in the orbit
     /// in the [perifocal coordinate system](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
     ///
@@ -4020,6 +4222,145 @@ pub trait OrbitTrait {
     #[doc(alias = "get_velocity_at_angle")]
     fn get_velocity_at_true_anomaly(&self, angle: f64) -> DVec3 {
         self.transform_pqw_vector(self.get_pqw_velocity_at_true_anomaly(angle))
+    }
+
+    /// Gets the velocity at the periapsis of the orbit.
+    ///
+    /// # Performance
+    /// This function is not too performant as it uses some trigonometric operations.
+    /// It is recommended to cache this value if you can.
+    ///
+    /// Alternatively, if you only want to know the speed, use
+    /// [`get_speed_at_periapsis`][OrbitTrait::get_speed_at_periapsis] instead.  
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// let mut orbit = Orbit::default();
+    /// orbit.set_periapsis(100.0);
+    /// orbit.set_eccentricity(0.5);
+    ///
+    /// let speed = orbit.get_speed_at_periapsis();
+    /// let vel = orbit.get_velocity_at_periapsis();
+    ///
+    /// assert!((vel.length() - speed).abs() < 1e-15);
+    /// ```
+    ///
+    /// # Speed vs. Velocity
+    /// Speed is not to be confused with velocity.  
+    /// Speed tells you how fast something is moving,
+    /// while velocity tells you how fast *and in what direction* it's moving in.
+    fn get_velocity_at_periapsis(&self) -> DVec3 {
+        self.transform_pqw_vector(self.get_pqw_velocity_at_periapsis())
+    }
+
+    /// Gets the velocity at the apoapsis of the orbit.
+    ///
+    /// # Performance
+    /// This function is not too performant as it uses some trigonometric operations.
+    /// It is recommended to cache this value if you can.
+    ///
+    /// Alternatively, if you only want to know the speed, use
+    /// [`get_speed_at_apoapsis`][OrbitTrait::get_speed_at_apoapsis] instead.  
+    ///
+    /// # Open orbits (eccentricity >= 1)
+    /// This function does not handle open orbits specially, and will return
+    /// a non-physical value. You might want to use the getters for the velocity
+    /// at the incoming and outgoing asymptotes:
+    /// - [`get_velocity_at_incoming_asymptote`][OrbitTrait::get_velocity_at_incoming_asymptote]
+    /// - [`get_velocity_at_outgoing_asymptote`][OrbitTrait::get_velocity_at_outgoing_asymptote]
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// let mut orbit = Orbit::default();
+    /// orbit.set_periapsis(100.0);
+    /// orbit.set_eccentricity(0.5);
+    ///
+    /// let speed = orbit.get_speed_at_apoapsis();
+    /// let vel = orbit.get_velocity_at_apoapsis();
+    ///
+    /// assert!((vel.length() - speed).abs() < 1e-15);
+    /// ```
+    ///
+    /// # Speed vs. Velocity
+    /// Speed is not to be confused with velocity.  
+    /// Speed tells you how fast something is moving,
+    /// while velocity tells you how fast *and in what direction* it's moving in.
+    fn get_velocity_at_apoapsis(&self) -> DVec3 {
+        self.transform_pqw_vector(self.get_pqw_velocity_at_apoapsis())
+    }
+
+    /// Gets the velocity at the incoming asymptote of the trajectory.
+    ///
+    /// # Performance
+    /// This function is not too performant as it uses some trigonometric operations.
+    /// It is recommended to cache this value if you can.
+    ///
+    /// Alternatively, if you only want to know the speed, use
+    /// [`get_speed_at_infinity`][OrbitTrait::get_speed_at_infinity] instead.  
+    ///
+    /// # Unchecked Operation
+    /// This function does not check that the orbit is open.  
+    /// This function will return a NaN vector for closed orbits (e < 1).
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// let mut orbit = Orbit::default();
+    /// orbit.set_periapsis(100.0);
+    /// orbit.set_eccentricity(1.5);
+    ///
+    /// let speed = orbit.get_speed_at_infinity();
+    /// let vel = orbit.get_velocity_at_incoming_asymptote();
+    ///
+    /// assert!((vel.length() - speed).abs() < 1e-15);
+    /// ```
+    ///
+    /// # Speed vs. Velocity
+    /// Speed is not to be confused with velocity.  
+    /// Speed tells you how fast something is moving,
+    /// while velocity tells you how fast *and in what direction* it's moving in.
+    fn get_velocity_at_incoming_asymptote(&self) -> DVec3 {
+        self.transform_pqw_vector(self.get_pqw_velocity_at_incoming_asymptote())
+    }
+
+    /// Gets the velocity at the outgoing asymptote of the trajectory.
+    ///
+    /// # Performance
+    /// This function is not too performant as it uses some trigonometric operations.
+    /// It is recommended to cache this value if you can.
+    ///
+    /// Alternatively, if you only want to know the speed, use
+    /// [`get_speed_at_infinity`][OrbitTrait::get_speed_at_infinity] instead.  
+    ///
+    /// # Unchecked Operation
+    /// This function does not check that the orbit is open.  
+    /// This function will return a NaN vector for closed orbits (e < 1).
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// let mut orbit = Orbit::default();
+    /// orbit.set_periapsis(100.0);
+    /// orbit.set_eccentricity(1.5);
+    ///
+    /// let speed = orbit.get_speed_at_infinity();
+    /// let vel = orbit.get_velocity_at_outgoing_asymptote();
+    ///
+    /// assert!((vel.length() - speed).abs() < 1e-15);
+    /// ```
+    ///
+    /// # Speed vs. Velocity
+    /// Speed is not to be confused with velocity.  
+    /// Speed tells you how fast something is moving,
+    /// while velocity tells you how fast *and in what direction* it's moving in.
+    fn get_velocity_at_outgoing_asymptote(&self) -> DVec3 {
+        self.transform_pqw_vector(self.get_pqw_velocity_at_outgoing_asymptote())
     }
 
     /// Gets the velocity at a given eccentric anomaly in the orbit.

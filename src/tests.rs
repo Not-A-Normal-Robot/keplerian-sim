@@ -2759,21 +2759,21 @@ fn get_extrema_positions() {
     }
 }
 
-fn get_periapsis_speed_base_test(orbit: &impl OrbitTrait) {
+fn periapsis_speed_base_test(orbit: &impl OrbitTrait) {
     let naive = orbit.get_speed_at_altitude(orbit.get_periapsis());
     let dedicated = orbit.get_speed_at_periapsis();
 
     assert_almost_eq(naive, dedicated, "Periapsis speed");
 }
 
-fn get_apoapsis_speed_base_test(orbit: &impl OrbitTrait) {
+fn apoapsis_speed_base_test(orbit: &impl OrbitTrait) {
     let naive = orbit.get_speed_at_altitude(orbit.get_apoapsis());
     let dedicated = orbit.get_speed_at_apoapsis();
 
     assert_almost_eq(naive, dedicated, "Apoapsis speed");
 }
 
-fn get_limit_speed_base_test(orbit: &impl OrbitTrait) {
+fn limit_speed_base_test(orbit: &impl OrbitTrait) {
     let speed_at_inf = orbit.get_speed_at_infinity();
 
     if orbit.is_closed() {
@@ -2797,9 +2797,106 @@ fn get_limit_speed_base_test(orbit: &impl OrbitTrait) {
 #[test]
 fn get_extrema_speeds() {
     for orbit in random_any_iter(262144) {
-        get_periapsis_speed_base_test(&orbit);
-        get_apoapsis_speed_base_test(&orbit);
-        get_limit_speed_base_test(&orbit);
+        periapsis_speed_base_test(&orbit);
+        apoapsis_speed_base_test(&orbit);
+        limit_speed_base_test(&orbit);
+    }
+}
+
+fn periapsis_vel_base_test(orbit: &impl OrbitTrait) {
+    let naive = orbit.get_velocity_at_eccentric_anomaly(0.0);
+    let specific = orbit.get_velocity_at_periapsis();
+    let speed = orbit.get_speed_at_periapsis();
+
+    if naive.is_finite() {
+        assert_almost_eq_vec3_rescale(naive, specific, "Periapsis vel");
+    }
+    assert_almost_eq_rescale(specific.length(), speed, "Periapsis vel vs spd");
+}
+
+fn apoapsis_vel_base_test(orbit: &impl OrbitTrait) {
+    let specific = orbit.get_velocity_at_apoapsis();
+    let speed = orbit.get_speed_at_apoapsis();
+
+    if specific.length() < f64::EPSILON || speed.abs() < f64::EPSILON {
+        assert_almost_eq(specific.length(), speed, "Apoapsis vel vs spd");
+    } else {
+        assert_almost_eq_rescale(specific.length(), speed, "Apoapsis vel vs spd");
+    }
+
+    if orbit.is_open() {
+        return;
+    }
+
+    let naive = orbit.get_velocity_at_eccentric_anomaly(PI);
+
+    if naive.length() < f64::EPSILON || specific.length() < f64::EPSILON {
+        assert_almost_eq_vec3(naive, specific, "Apoapsis vel");
+    } else {
+        assert_almost_eq_vec3_rescale(naive, specific, "Apoapsis vel");
+    }
+}
+
+fn asymp_vel_base_test(orbit: &impl OrbitTrait) {
+    let asymp_speed = orbit.get_speed_at_infinity();
+    let asymp_in_vel = orbit.get_velocity_at_incoming_asymptote();
+    let asymp_out_vel = orbit.get_velocity_at_outgoing_asymptote();
+
+    if orbit.is_closed() {
+        assert!(asymp_speed.is_nan());
+        assert!(asymp_in_vel.is_nan());
+        assert!(asymp_out_vel.is_nan());
+        return;
+    }
+
+    assert_almost_eq(asymp_speed, asymp_in_vel.length(), "Asymp spd vs in vel");
+    assert_almost_eq(asymp_speed, asymp_out_vel.length(), "Asymp spd vs out vel");
+
+    const ECC_ANOM_STEP: f64 = 100.0;
+    for i in -100..100 {
+        let ecc_anom = i as f64 * ECC_ANOM_STEP;
+        let speed = orbit.get_speed_at_eccentric_anomaly(ecc_anom);
+
+        if speed.is_nan() {
+            continue;
+        }
+
+        // Slight algorithmic differences cause there to be slight differences
+        // meaning we have to tolerate being just a little less than
+        // the asymptote speed
+        const TOLERANCE_FACTOR: f64 = 1.0000001;
+
+        assert!(
+            speed * TOLERANCE_FACTOR >= asymp_speed,
+            "{speed} > {asymp_speed} should be true"
+        );
+    }
+
+    const HUGE_ECC_ANOM: f64 = 10.0;
+
+    let past_vel = orbit.get_velocity_at_eccentric_anomaly(-HUGE_ECC_ANOM);
+    let fut_vel = orbit.get_velocity_at_eccentric_anomaly(HUGE_ECC_ANOM);
+
+    if past_vel.is_finite() {
+        assert!(
+            asymp_in_vel.dot(past_vel) >= 0.0,
+            "{asymp_in_vel} should point the same way as {past_vel}"
+        );
+    }
+    if fut_vel.is_finite() {
+        assert!(
+            asymp_out_vel.dot(fut_vel) >= 0.0,
+            "{asymp_out_vel} should point the same way as {fut_vel}"
+        );
+    }
+}
+
+#[test]
+fn get_extrema_velocities() {
+    for orbit in random_any_iter(65536) {
+        periapsis_vel_base_test(&orbit);
+        apoapsis_vel_base_test(&orbit);
+        asymp_vel_base_test(&orbit);
     }
 }
 
