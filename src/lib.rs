@@ -3195,12 +3195,229 @@ pub trait OrbitTrait {
     fn get_speed_at_altitude(&self, altitude: f64) -> f64 {
         // https://en.wikipedia.org/wiki/Vis-viva_equation
         // v^2 = GM (2/r - 1/a)
-        // v = sqrt(GM * (2/r - 1/a))
+        // => v = sqrt(GM * (2/r - 1/a))
+        //
+        // note:
+        // a = r_p / (1 - e)
+        // => 1 / a = (1 - e) / r_p
 
         let r = altitude;
-        let a = self.get_semi_major_axis();
+        let a_recip = (1.0 - self.get_eccentricity()) / self.get_periapsis();
 
-        ((2.0 / r - a.recip()) * self.get_gravitational_parameter()).sqrt()
+        ((2.0 / r - a_recip) * self.get_gravitational_parameter()).sqrt()
+    }
+
+    /// Gets the speed at the periapsis of the orbit.
+    ///
+    /// The speed is derived from the vis-viva equation, and so is
+    /// a lot faster than the velocity calculation.
+    ///
+    /// # Speed vs. Velocity
+    /// Speed is not to be confused with velocity.  
+    /// Speed tells you how fast something is moving,
+    /// while velocity tells you how fast *and in what direction* it's moving in.
+    ///
+    /// # Performance
+    /// This function is very performant and should not be the cause of any
+    /// performance issues.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// const PERIAPSIS: f64 = 100.0;
+    ///
+    /// let mut orbit = Orbit::default();
+    /// orbit.set_periapsis(PERIAPSIS);
+    /// orbit.set_eccentricity(0.5);
+    ///
+    /// let naive_getter = orbit.get_speed_at_altitude(PERIAPSIS);
+    /// let dedicated_getter = orbit.get_speed_at_periapsis();
+    ///
+    /// assert!((naive_getter - dedicated_getter).abs() < 1e-14);
+    /// ```
+    fn get_speed_at_periapsis(&self) -> f64 {
+        // https://en.wikipedia.org/wiki/Vis-viva_equation
+        // v^2 = GM (2/r_p - 1/a)
+        // => v = sqrt(GM * (2/r_p - 1/a))
+        //
+        // note:
+        // a = r_p / (1 - e)
+        // => 1 / a = (1 - e) / r_p
+        //
+        // => v = sqrt(
+        //      GM
+        //      * (2/r_p - (1 - e) / r_p)
+        //    )
+        // => v = sqrt(
+        //      GM
+        //      * ((2 - (1 - e)) / r_p)
+        //    )
+        //
+        // note:
+        // 2 - (1 - e) = e + 1
+        //
+        // => v = sqrt(
+        //      GM
+        //      * ((e + 1) / r_p)
+        //    )
+        (self.get_gravitational_parameter()
+            * ((self.get_eccentricity() + 1.0) / self.get_periapsis()))
+        .sqrt()
+    }
+
+    /// Gets the speed at the apoapsis of the orbit.
+    ///
+    /// The speed is derived from the vis-viva equation, and so is
+    /// a lot faster than the velocity calculation.
+    ///
+    /// # Speed vs. Velocity
+    /// Speed is not to be confused with velocity.  
+    /// Speed tells you how fast something is moving,
+    /// while velocity tells you how fast *and in what direction* it's moving in.
+    ///
+    /// # Open orbits (eccentricity >= 1)
+    /// This function does not handle open orbits specially, and will return
+    /// a non-physical value. You might want to use the getter for the speed
+    /// at infinity:
+    /// [`get_speed_at_infinity`][OrbitTrait::get_speed_at_infinity]
+    ///
+    /// # Performance
+    /// This function is very performant and should not be the cause of any
+    /// performance issues.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// const APOAPSIS: f64 = 200.0;
+    /// const PERIAPSIS: f64 = 100.0;
+    ///
+    /// let orbit = Orbit::new_flat_with_apoapsis(
+    ///     APOAPSIS,
+    ///     PERIAPSIS,
+    ///     0.0, // Argument of periapsis
+    ///     0.0, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter
+    /// );
+    ///
+    /// let naive_getter = orbit.get_speed_at_altitude(APOAPSIS);
+    /// let dedicated_getter = orbit.get_speed_at_apoapsis();
+    ///
+    /// assert!((naive_getter - dedicated_getter).abs() < 1e-14);
+    /// ```
+    fn get_speed_at_apoapsis(&self) -> f64 {
+        // https://en.wikipedia.org/wiki/Vis-viva_equation
+        // v^2 = GM (2/r_a - 1/a)
+        // => v = sqrt(GM * (2/r_a - 1/a))
+        //
+        // note: to simplify,
+        // we define `left` and `right`:
+        // left := 2 / r_a; right := 1 / a
+        //
+        // and also define `inner`:
+        // inner := left - right
+        //
+        // which means we can simplify v:
+        // => v = sqrt(GM * inner)
+        //
+        // note:
+        // a = r_p / (1 - e)
+        // => 1 / a = (1 - e) / r_p
+        //
+        // => right = (1 - e) / r_p
+        //
+        // note:
+        // r_a = a * (1 + e)
+        // = r_p / (1 - e) * (1 + e)
+        // = r_p * (1 + e) / (1 - e)
+        //
+        // => left = 2 / (r_p * (1 + e) / (1 - e))
+        // = (2 * (1 - e)) / (r_p * (1 + e))
+        //
+        // note: use the same denominator `(r_p * (1 + e))`
+        //
+        // recall right = (1 - e) / r_p.
+        // right = right * (1 + e)/(1 + e)
+        // = ((1 - e) * (1 + e)) / (r_p * (1 + e))
+        //
+        // recall inner := left - right.
+        // => inner = (2 * (1 - e)) / (r_p * (1 + e))
+        //  - ((1 - e) * (1 + e)) / (r_p * (1 + e))
+        //
+        // factor out 1 / (r_p * (1 + e)):
+        // => inner = (2 * (1 - e) - (1 - e) * (1 + e)) / (r_p * (1 + e))
+        //
+        // factor out (1 - e) in numerator:
+        // => inner = ((2 - (1 + e)) * (1 - e)) / (r_p * (1 + e))
+        // = ((2 - 1 - e) * (1 - e)) / (r_p * (1 + e))
+        // = ((1 - e) * (1 - e)) / (r_p * (1 + e))
+        // = (1 - e)^2 / (r_p * (1 + e))
+        //
+        // recall v = sqrt(GM * inner).
+        // => v = sqrt(GM * (1 - e)^2 / (r_p * (1 + e)))
+        //
+        // recall that for all x >= 0, sqrt(x^2) = x,
+        //   and that for all x < 0, sqrt(x^2) = -x.
+        //
+        // => we can factor out (1 - e)^2 outside the sqrt.
+        // => v = |1 - e| sqrt(GM / (r_p * (1 + e)))
+
+        (1.0 - self.get_eccentricity()).abs()
+            * (self.get_gravitational_parameter()
+                / (self.get_periapsis() * (1.0 + self.get_eccentricity())))
+            .sqrt()
+    }
+
+    /// Gets the hyperbolic excess speed (v_∞) of the trajectory.
+    ///
+    /// Under simplistic assumptions a body traveling along
+    /// [a hyperbolic] trajectory will coast towards infinity,
+    /// settling to __a final excess velocity__ relative to
+    /// the central body.
+    ///
+    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Hyperbolic_trajectory)
+    ///
+    /// In other words, as the time of a hyperbolic trajectory
+    /// approaches infinity, the speed approaches a certain
+    /// speed, called the hyperbolic excess speed.
+    ///
+    /// # Unchecked Operation
+    /// This function does not check that the orbit is open.  
+    /// This function will return NaN for closed orbits (e < 1).
+    ///
+    /// # Performance
+    /// This function is very performant and should not be the cause of any
+    /// performance issues.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// let orbit = Orbit::new_flat(
+    ///     1.0, // Eccentricity
+    ///     1.0, // Periapsis
+    ///     0.0, // Argument of periapsis
+    ///     0.0, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter
+    /// );
+    ///
+    /// assert_eq!(orbit.get_speed_at_infinity(), 0.0);
+    /// ```
+    #[doc(alias = "get_hyperbolic_excess_speed")]
+    #[doc(alias = "get_speed_at_asymptote")]
+    fn get_speed_at_infinity(&self) -> f64 {
+        // https://en.wikipedia.org/wiki/Hyperbolic_trajectory#Parameters_describing_a_hyperbolic_trajectory
+        // v_∞ = sqrt(-μ / a)
+        //
+        // recall a = r_p / (1 - e)
+        //
+        // => v_∞ = sqrt(-μ / (r_p / (1 - e)))
+        // => v_∞ = sqrt(-μ * (1 - e) / r_p)
+        // => v_∞ = sqrt(μ * (e - 1) / r_p)
+        (self.get_gravitational_parameter() * (self.get_eccentricity() - 1.0)
+            / self.get_periapsis())
+        .sqrt()
     }
 
     /// Gets the speed at a given time in the orbit.

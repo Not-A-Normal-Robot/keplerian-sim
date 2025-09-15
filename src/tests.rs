@@ -2759,6 +2759,50 @@ fn get_extrema_positions() {
     }
 }
 
+fn get_periapsis_speed_base_test(orbit: &impl OrbitTrait) {
+    let naive = orbit.get_speed_at_altitude(orbit.get_periapsis());
+    let dedicated = orbit.get_speed_at_periapsis();
+
+    assert_almost_eq(naive, dedicated, "Periapsis speed");
+}
+
+fn get_apoapsis_speed_base_test(orbit: &impl OrbitTrait) {
+    let naive = orbit.get_speed_at_altitude(orbit.get_apoapsis());
+    let dedicated = orbit.get_speed_at_apoapsis();
+
+    assert_almost_eq(naive, dedicated, "Apoapsis speed");
+}
+
+fn get_limit_speed_base_test(orbit: &impl OrbitTrait) {
+    let speed_at_inf = orbit.get_speed_at_infinity();
+
+    if orbit.is_closed() {
+        assert!(speed_at_inf.is_nan());
+        return;
+    }
+
+    let apoapsis_speed = orbit.get_speed_at_apoapsis();
+    let derived_speed_at_inf = apoapsis_speed * {
+        let e = orbit.get_eccentricity();
+        ((e + 1.0) / (e - 1.0)).sqrt()
+    };
+
+    if derived_speed_at_inf.is_nan() {
+        return;
+    }
+
+    assert_almost_eq(speed_at_inf, derived_speed_at_inf, "Speed at infinity");
+}
+
+#[test]
+fn get_extrema_speeds() {
+    for orbit in random_any_iter(262144) {
+        get_periapsis_speed_base_test(&orbit);
+        get_apoapsis_speed_base_test(&orbit);
+        get_limit_speed_base_test(&orbit);
+    }
+}
+
 mod monotone_cubic_solver {
     use crate::solve_monotone_cubic;
 
