@@ -3386,6 +3386,11 @@ pub trait OrbitTrait {
     /// This function does not check that the orbit is open.  
     /// This function will return NaN for closed orbits (e < 1).
     ///
+    /// # Speed vs. Velocity
+    /// Speed is not to be confused with velocity.  
+    /// Speed tells you how fast something is moving,
+    /// while velocity tells you how fast *and in what direction* it's moving in.
+    ///
     /// # Performance
     /// This function is very performant and should not be the cause of any
     /// performance issues.
