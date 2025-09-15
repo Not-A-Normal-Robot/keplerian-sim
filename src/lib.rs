@@ -1445,6 +1445,57 @@ pub trait OrbitTrait {
             * (self.get_semi_major_axis().powi(3) / self.get_gravitational_parameter()).sqrt()
     }
 
+    /// Gets the time when the orbit is in apoapsis, in seconds since epoch.
+    ///
+    /// This returns the time when mean anomaly equals pi.  
+    /// This means although it will represent a time of apoapsis,
+    /// it doesn't mean "next apoapsis" nor "previous apoapsis",
+    /// it just means "an apoapsis", at least for closed orbits
+    /// (e < 1).
+    ///
+    /// # Performance
+    /// This function is performant and is unlikely to be the cause
+    /// of any performance issues.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// const APOAPSIS: f64 = 2.0;
+    /// const PERIAPSIS: f64 = 1.0;
+    ///
+    /// let orbit = Orbit::new_flat_with_apoapsis(
+    ///     APOAPSIS,
+    ///     PERIAPSIS,
+    ///     2.9, // Argument of periapsis
+    ///     1.5, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter
+    /// );
+    ///
+    /// let time_of_ap = orbit.get_time_of_apoapsis();
+    ///
+    /// let alt_of_ap = orbit.get_altitude_at_time(time_of_ap);
+    ///
+    /// assert!(
+    ///     (alt_of_ap - APOAPSIS).abs() < 1e-15
+    /// );
+    /// ```
+    fn get_time_of_apoapsis(&self) -> f64 {
+        // We want to find M = 0
+        // Per `get_mean_anomaly_at_time`:
+        // M = t * sqrt(mu / |a^3|) + M_0
+        // => pi = t * sqrt(mu / |a^3|) + M_0
+        // => pi - M_0 = t * sqrt(mu / |a^3|)
+        // => t * sqrt(mu / |a^3|) = pi - M_0
+        // => t = (pi - M_0) / sqrt(mu / |a^3|)
+        //
+        // note: 1 / sqrt(mu / |a^3|) = sqrt(|a^3| / mu)
+        //
+        // => t = (pi - M_0) * sqrt(|a^3| / mu)
+        (PI - self.get_mean_anomaly_at_epoch())
+            * (self.get_semi_major_axis().powi(3) / self.get_gravitational_parameter()).sqrt()
+    }
+
     /// Gets the transformation matrix needed to tilt a 2D vector into the
     /// tilted orbital plane.
     ///
