@@ -41,6 +41,11 @@ https://doi.org/10.1007/bf01230852
 for their paper "A new method for solving the hyperbolic Kepler equation".  
 https://doi.org/10.1016/j.apm.2023.12.017
 
+# Matthew M. Peet
+for their lectures on "Spacecraft Dynamics and Control"
+https://control.asu.edu/Classes/MAE462/462Lecture03.pdf
+https://control.asu.edu/Classes/MAE462/462Lecture05.pdf
+
 ## Wikipedia and their editors
 https://en.wikipedia.org/wiki/Orbital_elements#Keplerian  
 ...and many more pages

@@ -902,12 +902,12 @@ pub trait OrbitTrait {
     /// This function is very performant and should not be the cause of any
     /// performance issues.
     fn get_semi_latus_rectum(&self) -> f64 {
-        let eccentricity = self.get_eccentricity();
-        if eccentricity == 1.0 {
-            2.0 * self.get_periapsis()
-        } else {
-            self.get_semi_major_axis() * (1.0 - eccentricity.powi(2))
-        }
+        // https://control.asu.edu/Classes/MAE462/462Lecture03.pdf
+        // Slide 20 (or 12?), "Periapse for all Orbits"
+        // r_p = p / (1 + e)
+        // ...where r_p = periapsis; p = semi-latus rectum; e = eccentricity.
+        // => r_p (1 + e) = p
+        self.get_periapsis() * (1.0 + self.get_eccentricity())
     }
 
     /// Gets the linear eccentricity of the orbit, in meters.
@@ -4816,20 +4816,12 @@ pub trait OrbitTrait {
         let sincos_angle = true_anomaly.sin_cos();
         let eccentricity = self.get_eccentricity();
 
-        // 1 minus e^2
-        let _1me2 = 1.0 - eccentricity.powi(2);
-
-        // inlined version of [self.get_semi_latus_rectum] with pre-known values
-        let semi_latus_rectum = if eccentricity == 1.0 {
-            2.0 * self.get_periapsis()
-        } else {
-            semi_major_axis * _1me2
-        };
+        let semi_latus_rectum = self.get_periapsis() * (1.0 + self.get_eccentricity());
 
         let altitude =
             self.get_altitude_at_true_anomaly_unchecked(semi_latus_rectum, sincos_angle.1);
 
-        let q_mult = _1me2.abs().sqrt();
+        let q_mult = (1.0 - eccentricity.powi(2)).abs().sqrt();
 
         // TODO: PARABOLIC SUPPORT: This function doesn't yet consider parabolic orbits.
         let trig_ecc_anom = if eccentricity < 1.0 {
@@ -4883,20 +4875,12 @@ pub trait OrbitTrait {
         let sincos_angle = true_anomaly.sin_cos();
         let eccentricity = self.get_eccentricity();
 
-        // 1 minus e^2
-        let _1me2 = 1.0 - eccentricity.powi(2);
-
-        // inlined version of [self.get_semi_latus_rectum] with pre-known values
-        let semi_latus_rectum = if eccentricity == 1.0 {
-            2.0 * self.get_periapsis()
-        } else {
-            semi_major_axis * _1me2
-        };
+        let semi_latus_rectum = self.get_periapsis() * (1.0 + self.get_eccentricity());
 
         let altitude =
             self.get_altitude_at_true_anomaly_unchecked(semi_latus_rectum, sincos_angle.1);
 
-        let q_mult = _1me2.abs().sqrt();
+        let q_mult = (1.0 - eccentricity.powi(2)).abs().sqrt();
 
         // TODO: PARABOLIC SUPPORT: This function doesn't yet consider parabolic orbits.
         let trig_ecc_anom = if eccentricity < 1.0 {
