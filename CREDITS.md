@@ -41,10 +41,18 @@ https://doi.org/10.1007/bf01230852
 for their paper "A new method for solving the hyperbolic Kepler equation".  
 https://doi.org/10.1016/j.apm.2023.12.017
 
-# Matthew M. Peet
+## Matthew M. Peet
 for their lectures on "Spacecraft Dynamics and Control"
 https://control.asu.edu/Classes/MAE462/462Lecture03.pdf
 https://control.asu.edu/Classes/MAE462/462Lecture05.pdf
+
+## Hiroshi Sugiura and Takemitsu Hasegawa 
+for their paper detailing about Schröder iterations:
+https://doi.org/10.1016/j.cam.2019.02.035
+
+## The University of Texas at Austin — Department of Mathematics
+for their page on directrices in conic sections:
+https://web.ma.utexas.edu/users/m408s/m408d/CurrentWeb/LM10-6-3.php
 
 ## Wikipedia and their editors
 https://en.wikipedia.org/wiki/Orbital_elements#Keplerian  
@@ -54,6 +62,7 @@ https://en.wikipedia.org/wiki/Orbital_elements#Keplerian
 https://space.stackexchange.com/users/42584/krafpy
 for their answer on Space Stack Exchange:
 https://space.stackexchange.com/a/54418
+of the question "How to calculate the velocity vector in the case of a hyperbolic orbit?"
 
 ## Bryan Weber
 for their website detailing orbital mechanics, https://orbital-mechanics.space/  
@@ -64,6 +73,13 @@ GitHub profile: https://github.com/bryanwweber
 https://space.stackexchange.com/users/27193/asri-306
 for their answer on Space Stack Exchange:
 https://space.stackexchange.com/a/38316
+of the question "How does one calculate the argument of periapsis of an orbit after an arbitrary maneuver?"
+
+## M.A.H.
+https://space.stackexchange.com/users/15841/m-a-h
+for their answer on Space Stack Exchange:
+https://space.stackexchange.com/a/27869
+of the question "What is hyperbolic eccentric anomaly F?"
 
 ## All GitHub contributors
 Thanks for your issues and PRs!
