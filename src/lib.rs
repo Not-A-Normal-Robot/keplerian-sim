@@ -4336,7 +4336,9 @@ pub trait OrbitTrait {
     ///
     /// # Parameters
     /// ## `altitude`
-    /// The altitude at that certain point in the orbit.
+    /// The altitude at that certain point in the orbit.  
+    /// The altitude is measured in meters, and measured from the
+    /// center of the parent body (origin).
     /// ## `sincos_angle`
     /// A tuple containing the sine and cosine (respectively) of the true anomaly
     /// of the point in the orbit.
@@ -4741,6 +4743,10 @@ pub trait OrbitTrait {
     /// Check for the range of angles for a hyperbolic orbit using
     /// [`get_true_anomaly_at_asymptote`][OrbitTrait::get_true_anomaly_at_asymptote].
     ///
+    /// # Altitude
+    /// The altitude is measured in meters, and measured from the
+    /// center of the parent body (origin).
+    ///
     /// # Performance
     /// This function is performant, however, if you already
     /// know the orbit's semi-latus rectum or the cosine of the true anomaly,
@@ -4779,6 +4785,10 @@ pub trait OrbitTrait {
     /// This function does not perform any checks on the validity
     /// of the `cos_true_anomaly` parameter. Invalid values result in
     /// possibly-nonsensical output values.
+    ///
+    /// # Altitude
+    /// The altitude is measured in meters, and measured from the
+    /// center of the parent body (origin).
     ///
     /// # Angle
     /// The angle is expressed in radians, and ranges from 0 to tau.  
@@ -4839,6 +4849,10 @@ pub trait OrbitTrait {
 
     /// Gets the altitude at a given eccentric anomaly in the orbit.
     ///
+    /// # Altitude
+    /// The altitude is measured in meters, and measured from the
+    /// center of the parent body (origin).
+    ///
     /// # Performance
     /// This function is not too performant as it uses a few trigonometric operations.
     /// It is recommended to cache this value if you can.
@@ -4873,6 +4887,10 @@ pub trait OrbitTrait {
     ///
     /// # Time
     /// The time is expressed in seconds.
+    ///
+    /// # Altitude
+    /// The altitude is measured in meters, and measured from the
+    /// center of the parent body (origin).
     ///
     /// # Performance
     /// This involves calculating the true anomaly at a given time, and so is not very performant.  
@@ -5124,7 +5142,9 @@ pub trait OrbitTrait {
     /// `sqrt(-GM * a)`
     ///
     /// ## `altitude`
-    /// The altitude at that point in the orbit, in meters.
+    /// The altitude at that point in the orbit.  
+    /// The altitude is measured in meters, and measured from the
+    /// center of the parent body (origin).
     ///
     /// ## `q_mult`
     /// This parameter is a multiplier for the second element in the velocity PQW vector.  
