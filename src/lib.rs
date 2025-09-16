@@ -1488,6 +1488,47 @@ pub trait OrbitTrait {
         (self.get_gravitational_parameter() * self.get_semi_latus_rectum()).sqrt()
     }
 
+    /// Gets the specific orbital energy `ε` of the orbit,
+    /// in joules per kilogram (J/kg, equiv. to m^2 ⋅ s^-2).
+    ///
+    /// For closed orbits (eccentricity < 0), ε < 0.  
+    /// When eccentricity equals 1 (parabolic), ε equals 0,
+    /// and when eccentricity exceeds 1 (hyperbolic), ε is positive.
+    ///
+    /// The specific orbital energy ε of two orbiting bodies is
+    /// the constant quotient of their mechanical energy
+    /// (the sum of their mutual potential energy, ε_p, and their
+    /// kinetic energy, ε_k) to their reduced mass.
+    ///
+    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Specific_orbital_energy)
+    ///
+    /// # Performance
+    /// This function is very performant and should not be the
+    /// cause of any performance issues.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// let elliptic = Orbit::new_flat(0.3, 1.0, 0.0, 0.0, 1.0);
+    /// let parabolic = Orbit::new_flat(1.0, 1.0, 0.0, 0.0, 1.0);
+    /// let hyperbolic = Orbit::new_flat(2.6, 1.0, 0.0, 0.0, 1.0);
+    ///
+    /// assert!(elliptic.get_specific_orbital_energy() < 0.0);
+    /// assert!(parabolic.get_specific_orbital_energy() == 0.0);
+    /// assert!(hyperbolic.get_specific_orbital_energy() > 0.0);
+    /// ```
+    fn get_specific_orbital_energy(&self) -> f64 {
+        // https://en.wikipedia.org/wiki/Specific_orbital_energy
+        // ε = -μ / (2a)
+        //
+        // note: a = r_p / (1 - e)
+        // => 1 / a = (1 - e) / r_p
+        //
+        // => ε = -μ (1 - e) / r_p
+        -self.get_gravitational_parameter() * (1.0 - self.get_eccentricity()) / self.get_periapsis()
+    }
+
     // TODO: PARABOLIC SUPPORT: This function returns NaN on parabolic
     /// Gets the time when the orbit is in periapsis, in seconds since epoch.
     ///

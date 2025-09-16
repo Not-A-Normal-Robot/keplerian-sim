@@ -2957,6 +2957,19 @@ fn get_extrema_velocities() {
     }
 }
 
+#[test]
+fn specific_energy() {
+    for orbit in random_any_iter(262144) {
+        if orbit.is_closed() {
+            assert!(orbit.get_specific_orbital_energy() < 0.0);
+        } else if orbit.is_parabolic() {
+            assert_eq!(orbit.get_specific_orbital_energy(), 0.0);
+        } else if orbit.is_hyperbolic() {
+            assert!(orbit.get_specific_orbital_energy() > 0.0);
+        }
+    }
+}
+
 mod monotone_cubic_solver {
     use crate::solve_monotone_cubic;
 
