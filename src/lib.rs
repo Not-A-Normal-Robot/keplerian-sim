@@ -47,15 +47,6 @@
 //! # }
 //! #
 //! ```
-//!
-//! ## Note on apside terminology
-//!
-//! This crate uses the term "periapsis" and "apoapsis" for the *distances*
-//! from the origin to the closest and furthest points of the orbit, respectively.
-//!
-//! This crate uses the term "perifocus" and "apofocus" for the points themselves.
-//!
-//! Learn more about apsides: <https://en.wikipedia.org/wiki/Apsis>
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
@@ -1027,7 +1018,7 @@ pub trait OrbitTrait {
         self.get_eccentricity().recip().neg().acos()
     }
 
-    /// Gets the position of the perifocus.
+    /// Gets the position of the orbit at periapsis.
     ///
     /// # Performance
     /// In the cached orbit struct ([`Orbit`]), this function is
@@ -1037,7 +1028,7 @@ pub trait OrbitTrait {
     /// is a lot slower and involves some trigonometric calculations.
     /// If you already know the P basis vector of the PQW coordinate system,
     /// you may use the unchecked version instead
-    /// ([`get_perifocus_position_unchecked`][OrbitTrait::get_perifocus_position_unchecked]),
+    /// ([`get_position_at_periapsis_unchecked`][OrbitTrait::get_position_at_periapsis_unchecked]),
     /// which is a lot faster and would skip repeated calculations.
     ///
     /// # Example
@@ -1054,16 +1045,17 @@ pub trait OrbitTrait {
     /// );
     ///
     /// assert_eq!(
-    ///     orbit.get_perifocus_position(),
+    ///     orbit.get_position_at_periapsis(),
     ///     DVec3::new(1.0, 0.0, 0.0)
     /// );
     /// ```
     #[inline]
-    fn get_perifocus_position(&self) -> DVec3 {
-        self.get_perifocus_position_unchecked(self.get_pqw_basis_vector_p())
+    fn get_position_at_periapsis(&self) -> DVec3 {
+        self.get_position_at_periapsis_unchecked(self.get_pqw_basis_vector_p())
     }
 
-    /// Gets the perifocus position based on a known P basis vector.
+    /// Gets the position of the orbit at periapsis
+    /// based on a known P basis vector.
     ///
     /// The P basis vector is one of the basis vector from the PQW
     /// coordinate system.
@@ -1111,19 +1103,19 @@ pub trait OrbitTrait {
     /// let p_vector = orbit.get_pqw_basis_vector_p();
     ///
     /// // Use p_vector here...
-    /// // Use it again for perifocus position!
+    /// // Use it again for periapsis position!
     ///
     /// assert_eq!(
-    ///     orbit.get_perifocus_position_unchecked(p_vector),
+    ///     orbit.get_position_at_periapsis_unchecked(p_vector),
     ///     DVec3::new(1.0, 0.0, 0.0)
     /// );
     /// ```
     #[inline]
-    fn get_perifocus_position_unchecked(&self, p_vector: DVec3) -> DVec3 {
+    fn get_position_at_periapsis_unchecked(&self, p_vector: DVec3) -> DVec3 {
         self.get_periapsis() * p_vector
     }
 
-    /// Gets the position of the apofocus.
+    /// Gets the position of the orbit at apoapsis.
     ///
     /// # Performance
     /// In the cached orbit struct ([`Orbit`]), this function is
@@ -1133,7 +1125,7 @@ pub trait OrbitTrait {
     /// is a lot slower and involves some trigonometric calculations.
     /// If you already know the P basis vector of the PQW coordinate system,
     /// you may use the unchecked version instead
-    /// ([`get_apofocus_position_unchecked`][OrbitTrait::get_apofocus_position_unchecked]),
+    /// ([`get_position_at_apoapsis_unchecked`][OrbitTrait::get_position_at_apoapsis_unchecked]),
     /// which is a lot faster and would skip repeated calculations.
     ///
     /// # Example
@@ -1150,16 +1142,17 @@ pub trait OrbitTrait {
     /// );
     ///
     /// assert_eq!(
-    ///     orbit.get_apofocus_position(),
+    ///     orbit.get_position_at_apoapsis(),
     ///     DVec3::new(-1.6666666666666665, 0.0, 0.0)
     /// );
     /// ```
     #[inline]
-    fn get_apofocus_position(&self) -> DVec3 {
-        self.get_apofocus_position_unchecked(self.get_pqw_basis_vector_p())
+    fn get_position_at_apoapsis(&self) -> DVec3 {
+        self.get_position_at_apoapsis_unchecked(self.get_pqw_basis_vector_p())
     }
 
-    /// Gets the apofocus position based on a known P basis vector.
+    /// Gets the position of the orbit at apoapsis
+    /// based on a known P basis vector.
     ///
     /// The P basis vector is one of the basis vector from the PQW
     /// coordinate system.
@@ -1207,15 +1200,15 @@ pub trait OrbitTrait {
     /// let p_vector = orbit.get_pqw_basis_vector_p();
     ///
     /// // Use p_vector here...
-    /// // Use it again for apofocus position!
+    /// // Use it again for apoapsis position!
     ///
     /// assert_eq!(
-    ///     orbit.get_apofocus_position_unchecked(p_vector),
+    ///     orbit.get_position_at_apoapsis_unchecked(p_vector),
     ///     DVec3::new(-1.6666666666666665, 0.0, 0.0)
     /// );
     /// ```
     #[inline]
-    fn get_apofocus_position_unchecked(&self, p_vector: DVec3) -> DVec3 {
+    fn get_position_at_apoapsis_unchecked(&self, p_vector: DVec3) -> DVec3 {
         -self.get_apoapsis() * p_vector
     }
 

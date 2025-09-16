@@ -2730,13 +2730,13 @@ fn individual_vs_combined_pqw_getters() {
     }
 }
 
-fn get_perifocus_position_base_test(orbit: &impl OrbitTrait) {
+fn get_periapsis_position_base_test(orbit: &impl OrbitTrait) {
     let from_f = orbit.get_position_at_true_anomaly(0.0);
-    let from_getter = orbit.get_perifocus_position();
-    assert_almost_eq_vec3(from_f, from_getter, "Perifocus positions");
+    let from_getter = orbit.get_position_at_periapsis();
+    assert_almost_eq_vec3(from_f, from_getter, "Periapsis positions");
 }
 
-fn get_apofocus_position_base_test(orbit: &(impl OrbitTrait + Debug)) {
+fn get_apoapsis_position_base_test(orbit: &(impl OrbitTrait + Debug)) {
     let from_f = orbit.get_position_at_true_anomaly(PI);
 
     if orbit.get_eccentricity() > 1.0 {
@@ -2746,16 +2746,16 @@ fn get_apofocus_position_base_test(orbit: &(impl OrbitTrait + Debug)) {
         return;
     }
 
-    let from_getter = orbit.get_apofocus_position();
+    let from_getter = orbit.get_position_at_apoapsis();
 
-    assert_almost_eq_vec3_rescale(from_f, from_getter, "Apofocus positions");
+    assert_almost_eq_vec3_rescale(from_f, from_getter, "Apoapsis positions");
 }
 
 #[test]
 fn get_extrema_positions() {
     for orbit in random_any_iter(262144) {
-        get_perifocus_position_base_test(&orbit);
-        get_apofocus_position_base_test(&orbit);
+        get_periapsis_position_base_test(&orbit);
+        get_apoapsis_position_base_test(&orbit);
     }
 }
 
