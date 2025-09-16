@@ -2730,6 +2730,45 @@ fn time_of_periapsis() {
     }
 }
 
+fn focal_parameter_base_test(orbit: &impl OrbitTrait) {
+    // Use Wikipedia's equations:
+    // https://en.wikipedia.org/wiki/Conic_section#Conic_parameters
+    let expected_focal_param = match orbit.get_eccentricity() {
+        e if e == 0.0 => f64::INFINITY,
+        e if e < 1.0 => {
+            let b = orbit.get_semi_minor_axis();
+            let a = orbit.get_semi_major_axis();
+            b.powi(2) / (a.powi(2) - b.powi(2)).sqrt()
+        }
+        e if e == 1.0 => orbit.get_periapsis() * 2.0,
+        e if e > 1.0 => {
+            let b = orbit.get_semi_minor_axis();
+            let a = orbit.get_semi_major_axis();
+            b.powi(2) / (a.powi(2) + b.powi(2)).sqrt()
+        }
+        _ => f64::NAN,
+    };
+
+    let result = orbit.get_focal_parameter();
+
+    if result.to_bits() == expected_focal_param.to_bits() {
+        return; // Success
+    }
+
+    if result == expected_focal_param {
+        return; // Success
+    }
+
+    assert_almost_eq_rescale(result, expected_focal_param, "Focal param");
+}
+
+#[test]
+fn focal_parameter() {
+    for orbit in random_any_iter(262144) {
+        focal_parameter_base_test(&orbit);
+    }
+}
+
 #[test]
 fn individual_vs_combined_pqw_getters() {
     fn all_individual_pqw(orbit: &impl OrbitTrait) -> (DVec3, DVec3, DVec3) {

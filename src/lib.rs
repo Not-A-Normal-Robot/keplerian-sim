@@ -1381,6 +1381,61 @@ pub trait OrbitTrait {
         (self.get_gravitational_parameter() / self.get_semi_major_axis().powi(3)).sqrt()
     }
 
+    /// Gets the focal parameter of the orbit, in meters.
+    ///
+    /// This returns infinity in circular orbits (e = 0).
+    ///
+    /// The focal parameter (p) is the distance from a focus
+    /// to the corresponding directrix.
+    ///
+    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Conic_section#Conic_parameters)
+    ///
+    /// # Performance
+    /// This function is very performant and should not be
+    /// the cause of any performance issues.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// let orbit = Orbit::new_flat(
+    ///     1.0, // Eccentricity
+    ///     3.0, // Periapsis
+    ///     2.9, // Argument of periapsis
+    ///     0.8, // Mean anomaly at epoch
+    ///     1.9, // Gravitational parameter
+    /// );
+    ///
+    /// // From Wikipedia's focal parameter equation for parabolas (e = 1)
+    /// // (a in this case is periapsis distance, not semi-major axis)
+    /// let expected_focal_parameter = 2.0 * orbit.get_periapsis();
+    ///
+    /// assert!(
+    ///     (orbit.get_focal_parameter() - expected_focal_parameter).abs() < f64::EPSILON
+    /// );
+    /// ```
+    fn get_focal_parameter(&self) -> f64 {
+        // https://web.ma.utexas.edu/users/m408s/m408d/CurrentWeb/LM10-6-3.php
+        //
+        // > Polar equations of conic sections: If the directrix is a distance d away,
+        // > then the polar form of a conic section with eccentricity e is
+        // >
+        // > r(θ) = ed / (1 - e cos (θ - θ_0))
+        // >
+        // > where the constant θ_0 depends on the direction of the directrix.
+        // >
+        // > If the directrix is the line x = d, then we have
+        // > r = ed / (1 + e cos θ)
+        //
+        // Using periapsis (r = r_p, θ = ν = 0):
+        // r_p = ed / (1 + e cos 0)
+        // r_p = ed / (1 + e), since cos 0 = 1
+        // 1 = ed / (r_p * (1 + e))
+        // 1/d = e / (r_p * (1 + e))
+        // d = r_p * (1 + e) / e
+        self.get_periapsis() * (1.0 + self.get_eccentricity()) / self.get_eccentricity()
+    }
+
     // TODO: PARABOLIC SUPPORT: This function returns NaN on parabolic
     /// Gets the time when the orbit is in periapsis, in seconds since epoch.
     ///
