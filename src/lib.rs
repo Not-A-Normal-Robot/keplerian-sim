@@ -1438,6 +1438,56 @@ pub trait OrbitTrait {
         self.get_periapsis() * (1.0 + self.get_eccentricity()) / self.get_eccentricity()
     }
 
+    /// Gets the specific angular momentum of the orbit, in
+    /// square meters per second (m^2/s).
+    ///
+    /// The specific relative angular momentum of a body is the
+    /// angular momentum of that body divided by its mass.
+    ///
+    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Specific_angular_momentum)
+    ///
+    /// # Performance
+    /// This function is performant and is unlikely to be the cause
+    /// of any performance issues.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// let orbit = Orbit::new_flat(
+    ///     1.2, // Eccentricity
+    ///     2.0, // Periapsis
+    ///     3.0, // Argument of periapsis
+    ///     4.8, // Mean anomaly at epoch
+    ///     5.0, // Gravitational parameter
+    /// );
+    ///
+    /// const EXPECTED_VALUE: f64 = 4.69041575982343;
+    ///
+    /// let momentum =
+    ///     orbit.get_specific_angular_momentum();
+    ///
+    /// assert!((momentum - EXPECTED_VALUE).abs() < f64::EPSILON);
+    /// ```
+    fn get_specific_angular_momentum(&self) -> f64 {
+        // https://faculty.fiu.edu/~vanhamme/ast3213/orbits.pdf
+        // Page 3, eq. 17: "h = sqrt(μa(1 - e^2))"
+        //
+        // to simplify:
+        // inner := a(1 - e^2)
+        // => h = sqrt(μ * inner)
+        //
+        // recall a = r_p / (1 - e)
+        //
+        // => inner = (r_p / (1 - e))(1 - e^2)
+        // => inner = (r_p / (1 - e))(1 - e)(1 + e)
+        // => inner = r_p (1 + e)
+        // => inner = semi-latus rectum `p`
+        // (see [OrbitTrait::get_semi_latus_rectum])
+        // => h = sqrt(μp)
+        (self.get_gravitational_parameter() * self.get_semi_latus_rectum()).sqrt()
+    }
+
     // TODO: PARABOLIC SUPPORT: This function returns NaN on parabolic
     /// Gets the time when the orbit is in periapsis, in seconds since epoch.
     ///
