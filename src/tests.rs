@@ -2692,23 +2692,41 @@ fn orbit_plane_an_dn() {
     }
 }
 
+fn time_of_periapsis_base_test(orbit: &(impl OrbitTrait + Debug)) {
+    if orbit.get_eccentricity() == 1.0 {
+        assert!(!orbit.get_time_of_periapsis().is_finite());
+        return;
+    }
+
+    let time = orbit.get_time_of_periapsis();
+
+    let mean = orbit.get_mean_anomaly_at_time(time);
+
+    assert_almost_eq(
+        mean,
+        0.0,
+        &format!("Mean anomaly at t={time} expected 0, found {mean}\n{orbit:?}"),
+    );
+}
+
 #[test]
-fn time_at_periapsis() {
+fn time_of_periapsis() {
+    let known_problematic = [Orbit::new(
+        86.94922983553334,
+        40745.65131311674,
+        0.0,
+        5.819968798514683,
+        -5.7223447207239175,
+        2.4398968458921217,
+        596078.3249426814,
+    )];
+
+    for orbit in known_problematic {
+        time_of_periapsis_base_test(&orbit);
+    }
+
     for orbit in random_any_iter(262144) {
-        if orbit.get_eccentricity() == 1.0 {
-            assert!(!orbit.get_time_of_periapsis().is_finite());
-            continue;
-        }
-
-        let time = orbit.get_time_of_periapsis();
-
-        let mean = orbit.get_mean_anomaly_at_time(time);
-
-        assert_almost_eq(
-            mean,
-            0.0,
-            &format!("Mean anomaly at t={time} expected 0, found {mean}\n{orbit:?}"),
-        );
+        time_of_periapsis_base_test(&orbit);
     }
 }
 

@@ -1435,7 +1435,7 @@ pub trait OrbitTrait {
         // => t = -M_0 * sqrt(|a^3| / mu)
 
         -self.get_mean_anomaly_at_epoch()
-            * (self.get_semi_major_axis().powi(3) / self.get_gravitational_parameter()).sqrt()
+            * (self.get_semi_major_axis().powi(3).abs() / self.get_gravitational_parameter()).sqrt()
     }
 
     /// Gets the time when the orbit is in apoapsis, in seconds since epoch.
