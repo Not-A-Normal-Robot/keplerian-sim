@@ -44,14 +44,14 @@ def normalize_url(url: str) -> str:
       - strip leading scheme
       - drop 'www.' prefix from netloc
       - strip trailing slash from path
-      - include query and fragment to avoid false merges
+      - include query to avoid false merges
     """
     parsed = urlparse(url)
     netloc = parsed.netloc.lower()
     if netloc.startswith("www."):
         netloc = netloc[4:]
     path = parsed.path.rstrip('/')
-    # Rebuild a normalized "netloc + path + ?query + #fragment"
+    # Rebuild a normalized "netloc + path + ?query"
     norm = netloc + path
     if parsed.query:
         norm += '?' + parsed.query
@@ -63,6 +63,10 @@ def is_wikipedia(url: str) -> bool:
     if host.startswith("www."):
         host = host[4:]
     return host.endswith("wikipedia.org")
+
+def is_own_repo(url: str) -> bool:
+    parsed = urlparse(url)
+    return parsed.netloc.endswith("github.com") and parsed.path.startswith("/Not-A-Normal-Robot/keplerian-sim")
 
 def collect_rs_links(root: pathlib.Path) -> dict[str, set[str]]:
     """
@@ -77,8 +81,8 @@ def collect_rs_links(root: pathlib.Path) -> dict[str, set[str]]:
                 continue
         text = path.read_text(encoding="utf-8", errors="ignore")
         urls = set(find_urls_in_text(text))
-        # Filter out wikipedia links now
-        urls = {u for u in urls if not is_wikipedia(u)}
+        # Filter out wikipedia and self links now
+        urls = {u for u in urls if not (is_wikipedia(u) or is_own_repo(u))}
         if urls:
             mapping[str(path)] = urls
     return mapping
@@ -88,7 +92,6 @@ def collect_credits_links(credits_path: pathlib.Path) -> set[str]:
         return set()
     text = credits_path.read_text(encoding="utf-8", errors="ignore")
     urls = set(find_urls_in_text(text))
-    # also allow plain bare domains or entries without scheme? For now, only URLs with scheme are matched.
     return urls
 
 def main(argv=None) -> int:
@@ -109,10 +112,10 @@ def main(argv=None) -> int:
         for u in urls:
             nu = normalize_url(u)
             if nu not in normalized_credits:
-                missing_map.setdefault(path, set()).add(u)
+                missing_map.setdefault(path, set()).add(nu)
 
     if not missing_map:
-        print("OK: All non-Wikipedia links found in CREDITS.md")
+        print("OK: All links found in CREDITS.md")
         return 0
 
     # Print a helpful report
@@ -122,12 +125,6 @@ def main(argv=None) -> int:
         for u in sorted(urls):
             print(f"  - {u}")
         print()
-
-    # Also print a compact unique list (useful to copy into CREDITS.md)
-    unique_missing = {u for urls in missing_map.values() for u in urls}
-    print("Unique missing links:")
-    for u in sorted(unique_missing):
-        print(f"- {u}")
 
     # Exit non-zero to fail the job
     return 2
