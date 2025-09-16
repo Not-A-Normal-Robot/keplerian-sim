@@ -1529,6 +1529,57 @@ pub trait OrbitTrait {
         -self.get_gravitational_parameter() * (1.0 - self.get_eccentricity()) / self.get_periapsis()
     }
 
+    /// Gets the area swept out by the orbit in square meters
+    /// per second (m^2/s).
+    ///
+    /// # Performance
+    /// This function is very performant and should not
+    /// be the cause of any performance issues.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// let orbit = Orbit::new_flat(
+    ///     2.9, // Eccentricity
+    ///     4.9, // Periapsis
+    ///     0.2, // Argument of periapsis
+    ///     0.9, // Mean anomaly at epoch
+    ///     9.8, // Gravitational parameter
+    /// );
+    ///
+    /// const EXPECTED_RATE: f64 = 6.842477621446782;
+    ///
+    /// assert!(
+    ///     (orbit.get_area_sweep_rate() - EXPECTED_RATE).abs() < f64::EPSILON
+    /// );
+    /// ```
+    fn get_area_sweep_rate(&self) -> f64 {
+        // We can measure the instantaneous area sweep rate
+        // at periapsis.
+        // As the delta-time gets smaller and smaller,
+        // a triangle approximation gets more and more accurate.
+        // (This is basically a derivative in calculus)
+        // That approximation triangle has a length equal to
+        // the speed at periapsis, and a height equal to the
+        // radius/altitude at periapsis.
+        // This means the triangle has an area of (1/2 * base * height)
+        // = 1/2 * speed_at_periapsis * periapsis
+        //
+        // This would be the area sweep rate at the periapsis
+        // of the orbit. We can then utilize Kepler's 2nd law:
+        //
+        //     A line segment joining a planet and the Sun
+        //     sweeps out equal areas during equal intervals of time.
+        //
+        // (from https://en.wikipedia.org/wiki/Kepler%27s_laws_of_planetary_motion)
+        //
+        // This means this actually is a constant throughout
+        // the orbit, so the equation below is valid.
+
+        0.5 * self.get_speed_at_periapsis() * self.get_periapsis()
+    }
+
     // TODO: PARABOLIC SUPPORT: This function returns NaN on parabolic
     /// Gets the time when the orbit is in periapsis, in seconds since epoch.
     ///
