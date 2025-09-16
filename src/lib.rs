@@ -903,7 +903,9 @@ pub trait OrbitTrait {
     /// performance issues.
     fn get_semi_latus_rectum(&self) -> f64 {
         // https://control.asu.edu/Classes/MAE462/462Lecture03.pdf
-        // Slide 20 (or 12?), "Periapse for all Orbits"
+        // Lecture on Spacecraft Dynamics and Control
+        // by Matthew M. Peet
+        // Slide 20 (or 12?), section titled "Periapse for all Orbits"
         // r_p = p / (1 + e)
         // ...where r_p = periapsis; p = semi-latus rectum; e = eccentricity.
         // => r_p (1 + e) = p
