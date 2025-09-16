@@ -893,7 +893,7 @@ pub trait OrbitTrait {
         self.get_semi_major_axis() * (1.0 - self.get_eccentricity().powi(2)).abs().sqrt()
     }
 
-    /// Gets the semi-latus rectum of the orbit.
+    /// Gets the semi-latus rectum of the orbit, in meters.
     ///
     /// Learn more: <https://en.wikipedia.org/wiki/Ellipse#Semi-latus_rectum>  
     /// <https://en.wikipedia.org/wiki/Conic_section#Conic_parameters>
@@ -972,18 +972,18 @@ pub trait OrbitTrait {
     ///
     /// // True anomaly asymptote is only defined for open orbits,
     /// // i.e., eccentricity ≥ 1
-    /// assert!(closed.get_hyperbolic_true_anomaly_asymptote().is_nan());
+    /// assert!(closed.get_true_anomaly_at_asymptote().is_nan());
     ///
     /// let parabolic = Orbit::new_flat(1.0, 1.0, 0.0, 0.0, 1.0);
     /// assert_eq!(
-    ///     parabolic.get_hyperbolic_true_anomaly_asymptote(),
+    ///     parabolic.get_true_anomaly_at_asymptote(),
     ///     std::f64::consts::PI
     /// );
     ///
     /// let hyperbolic = Orbit::new_flat(2.0, 1.0, 0.0, 0.0, 1.0);
     /// let asymptote = 2.0943951023931957;
     /// assert_eq!(
-    ///     hyperbolic.get_hyperbolic_true_anomaly_asymptote(),
+    ///     hyperbolic.get_true_anomaly_at_asymptote(),
     ///     asymptote
     /// );
     ///
@@ -1012,7 +1012,7 @@ pub trait OrbitTrait {
     /// ```
     #[doc(alias = "get_theta_infinity")]
     #[doc(alias = "get_hyperbolic_true_anomaly_range")]
-    fn get_hyperbolic_true_anomaly_asymptote(&self) -> f64 {
+    fn get_true_anomaly_at_asymptote(&self) -> f64 {
         // https://en.wikipedia.org/wiki/Hyperbolic_trajectory#Parameters_describing_a_hyperbolic_trajectory
         // 2f_∞ = 2cos^-1(-1/e)
         // ⇒ f_∞ = acos(-1/e)
@@ -2041,7 +2041,7 @@ pub trait OrbitTrait {
     ///
     /// It is the caller's job to check for itself whether this true anomaly is
     /// within the valid range. This can be done using the
-    /// [`get_hyperbolic_true_anomaly_asymptote`][OrbitTrait::get_hyperbolic_true_anomaly_asymptote]
+    /// [`get_true_anomaly_at_asymptote`][OrbitTrait::get_true_anomaly_at_asymptote]
     /// function.
     ///
     /// This out-of-range issue does not appear in closed (elliptic) orbits.
@@ -2123,7 +2123,7 @@ pub trait OrbitTrait {
     ///
     /// It is the caller's job to check for itself whether this true anomaly is
     /// within the valid range. This can be done using the
-    /// [`get_hyperbolic_true_anomaly_asymptote`][OrbitTrait::get_hyperbolic_true_anomaly_asymptote]
+    /// [`get_true_anomaly_at_asymptote`][OrbitTrait::get_true_anomaly_at_asymptote]
     /// function.
     ///
     /// This out-of-range issue does not appear in closed (elliptic) orbits.
@@ -2234,7 +2234,7 @@ pub trait OrbitTrait {
     ///
     /// It is the caller's job to check for itself whether this true anomaly is
     /// within the valid range. This can be done using the
-    /// [`get_hyperbolic_true_anomaly_asymptote`][OrbitTrait::get_hyperbolic_true_anomaly_asymptote]
+    /// [`get_true_anomaly_at_asymptote`][OrbitTrait::get_true_anomaly_at_asymptote]
     /// function.
     ///
     /// This out-of-range issue does not appear in closed (elliptic) orbits.
@@ -2456,7 +2456,7 @@ pub trait OrbitTrait {
     ///
     /// It is the caller's job to check for itself whether this true anomaly is
     /// within the valid range. This can be done using the
-    /// [`get_hyperbolic_true_anomaly_asymptote`][OrbitTrait::get_hyperbolic_true_anomaly_asymptote]
+    /// [`get_true_anomaly_at_asymptote`][OrbitTrait::get_true_anomaly_at_asymptote]
     /// function.
     ///
     /// This out-of-range issue does not appear in closed (elliptic) orbits.
@@ -3987,7 +3987,7 @@ pub trait OrbitTrait {
     /// Speed tells you how fast something is moving,
     /// while velocity tells you how fast *and in what direction* it's moving in.
     fn get_pqw_velocity_at_incoming_asymptote(&self) -> DVec2 {
-        let asymptote_true_anom = -self.get_hyperbolic_true_anomaly_asymptote();
+        let asymptote_true_anom = -self.get_true_anomaly_at_asymptote();
         let (sin_true, cos_true) = asymptote_true_anom.sin_cos();
         -self.get_speed_at_infinity() * DVec2::new(cos_true, sin_true)
     }
@@ -4039,7 +4039,7 @@ pub trait OrbitTrait {
     /// while velocity tells you how fast *and in what direction* it's moving in.
     #[doc(alias = "get_hyperbolic_excess_pqw_velocity")]
     fn get_pqw_velocity_at_outgoing_asymptote(&self) -> DVec2 {
-        let asymptote_true_anom = self.get_hyperbolic_true_anomaly_asymptote();
+        let asymptote_true_anom = self.get_true_anomaly_at_asymptote();
         let (sin_true, cos_true) = asymptote_true_anom.sin_cos();
         self.get_speed_at_infinity() * DVec2::new(cos_true, sin_true)
     }
@@ -4102,8 +4102,7 @@ pub trait OrbitTrait {
     ///
     /// # Unchecked Operation
     /// This function does not check the validity of the
-    /// inputs passed to this function, and it also doesn't check
-    /// that the orbit is elliptic.  
+    /// inputs passed to this function.  
     /// It is your responsibility to make sure the inputs passed in are valid.  
     /// Failing to do so may result in nonsensical outputs.
     ///
@@ -4481,7 +4480,7 @@ pub trait OrbitTrait {
     /// Or, if you already have the eccentric anomaly, use
     /// [`get_velocity_at_eccentric_anomaly`][OrbitTrait::get_velocity_at_eccentric_anomaly]
     /// instead.
-    /// These functions do not require numerical methods and therefore are a lot faster.
+    /// These functions do less work and therefore are a lot faster.
     ///
     /// If you want to get both the position and velocity vectors, you can
     /// use the
@@ -4740,7 +4739,7 @@ pub trait OrbitTrait {
     /// Note that some angles, even within 0 to tau, are impossible for
     /// hyperbolic orbits and may result in invalid values.
     /// Check for the range of angles for a hyperbolic orbit using
-    /// [`get_hyperbolic_true_anomaly_asymptote`][OrbitTrait::get_hyperbolic_true_anomaly_asymptote].
+    /// [`get_true_anomaly_at_asymptote`][OrbitTrait::get_true_anomaly_at_asymptote].
     ///
     /// # Performance
     /// This function is performant, however, if you already
@@ -4788,7 +4787,7 @@ pub trait OrbitTrait {
     /// Note that some angles, even within 0 to tau, are impossible for
     /// hyperbolic orbits and may result in invalid values.
     /// Check for the range of angles for a hyperbolic orbit using
-    /// [`get_hyperbolic_true_anomaly_asymptote`][OrbitTrait::get_hyperbolic_true_anomaly_asymptote].
+    /// [`get_true_anomaly_at_asymptote`][OrbitTrait::get_true_anomaly_at_asymptote].
     ///
     /// # Performance
     /// This function, by itself, is performant and is unlikely

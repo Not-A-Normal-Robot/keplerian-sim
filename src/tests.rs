@@ -2291,7 +2291,7 @@ fn test_alt_to_true_anom_base(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
     let max_f = if orbit.get_eccentricity() < 1.0 {
         TAU
     } else {
-        orbit.get_hyperbolic_true_anomaly_asymptote()
+        orbit.get_true_anomaly_at_asymptote()
     };
 
     let min_f = -max_f;
@@ -2527,7 +2527,7 @@ fn z_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
     let f_range = if orbit.get_eccentricity() < 1.0 {
         -TAU..=TAU
     } else {
-        let f_max = orbit.get_hyperbolic_true_anomaly_asymptote();
+        let f_max = orbit.get_true_anomaly_at_asymptote();
         (-f_max + 1e-14)..=(f_max - 1e-14)
     };
 
