@@ -54,6 +54,11 @@ https://doi.org/10.1016/j.cam.2019.02.035
 for their page on directrices in conic sections:
 https://web.ma.utexas.edu/users/m408s/m408d/CurrentWeb/LM10-6-3.php
 
+## Walter Van Hamme
+for their lecture notes describing the relationship between `r`
+and `h`, along with `h` and Keplerian elements:
+https://faculty.fiu.edu/~vanhamme/ast3213/orbits.pdf
+
 ## Wikipedia and their editors
 https://en.wikipedia.org/wiki/Orbital_elements#Keplerian  
 ...and many more pages
@@ -69,6 +74,9 @@ for their website detailing orbital mechanics, https://orbital-mechanics.space/
 Their repo: https://github.com/bryanwweber/orbital-mechanics-notes  
 GitHub profile: https://github.com/bryanwweber
 
+This page is especially useful:
+https://orbital-mechanics.space/classical-orbital-elements/orbital-elements-and-the-state-vector.html
+
 ## ASRI_306
 https://space.stackexchange.com/users/27193/asri-306
 for their answer on Space Stack Exchange:
@@ -80,6 +88,7 @@ https://space.stackexchange.com/users/15841/m-a-h
 for their answer on Space Stack Exchange:
 https://space.stackexchange.com/a/27869
 of the question "What is hyperbolic eccentric anomaly F?"
+https://space.stackexchange.com/questions/27602/what-is-hyperbolic-eccentric-anomaly-f
 
 ## All GitHub contributors
 Thanks for your issues and PRs!
