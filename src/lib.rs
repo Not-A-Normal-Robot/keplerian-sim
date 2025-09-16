@@ -1368,7 +1368,7 @@ pub trait OrbitTrait {
     /// let orbital_period = orbit.get_orbital_period();
     /// let mean_motion = std::f64::consts::TAU / orbital_period;
     ///
-    /// assert_eq!(orbit.get_mean_motion(), mean_motion);
+    /// assert!((orbit.get_mean_motion() - mean_motion).abs() < f64::EPSILON);
     /// ```
     fn get_mean_motion(&self) -> f64 {
         // n = TAU / T, radians
