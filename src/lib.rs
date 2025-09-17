@@ -3188,6 +3188,112 @@ pub trait OrbitTrait {
         self.get_true_anomaly_at_mean_anomaly(self.get_mean_anomaly_at_time(time))
     }
 
+    /// Gets the true anomaly where a certain altitude is reached.
+    ///
+    /// Returns NaN if the orbit is circular or there are no solutions.
+    ///
+    /// # Altitude
+    /// The altitude is measured in meters, and measured from the
+    /// center of the parent body (origin).
+    ///
+    /// The altitude given to this function should be between
+    /// the periapsis (minimum) and the apoapsis (maximum).  
+    /// Anything out of range will return NaN.
+    ///
+    /// In the case of hyperbolic orbits, there is no maximum,
+    /// but the altitude should be positive and more than the periapsis.  
+    /// Although there technically is a mathematical solution for "negative altitudes"
+    /// between negative infinity and the apoapsis (which in this case is negative),
+    /// they may not be very useful in most scenarios.
+    ///
+    /// # Domain
+    /// This function returns a float between 0 and π, unless if
+    /// it returns NaN.  
+    /// Do note that, although this is the principal solution,
+    /// other solutions exist, and may be desired. There exists an
+    /// alternate solution when you negate the principal solution,
+    /// and the solutions repeat every 2π.
+    ///
+    /// ## Example
+    /// If there is a principal solution at `1`, that means there
+    /// is an alternate solution at `-1`, and there are also
+    /// solutions `2π + 1`, `2π - 1`, `4π + 1`, `4π - 1`, etc.
+    ///
+    /// # Performance
+    /// This function is moderately performant and is unlikely to be
+    /// the culprit of any performance issues.
+    ///
+    /// However, if you already computed the semi-latus rectum or the
+    /// reciprocal of the eccentricity, you may use the unchecked version
+    /// of this function for a small performance boost:  
+    /// [`get_true_anomaly_at_altitude_unchecked`][OrbitTrait::get_true_anomaly_at_altitude_unchecked]
+    #[doc(alias = "get_angle_at_altitude")]
+    fn get_true_anomaly_at_altitude(&self, altitude: f64) -> f64 {
+        self.get_true_anomaly_at_altitude_unchecked(
+            self.get_semi_latus_rectum(),
+            altitude,
+            self.get_eccentricity().recip(),
+        )
+    }
+
+    /// Gets the true anomaly where a certain altitude is reached.
+    ///
+    /// Returns NaN if the orbit is circular or there are no solutions.
+    ///
+    /// # Altitude
+    /// The altitude is measured in meters, and measured from the
+    /// center of the parent body (origin).
+    ///
+    /// The altitude given to this function should be between
+    /// the periapsis (minimum) and the apoapsis (maximum).  
+    /// Anything out of range will return NaN.
+    ///
+    /// In the case of hyperbolic orbits, there is no maximum,
+    /// but the altitude should be positive and more than the periapsis.  
+    /// Although there technically is a mathematical solution for "negative altitudes"
+    /// between negative infinity and the apoapsis (which in this case is negative),
+    /// they may not be very useful in most scenarios.
+    ///
+    /// # Unchecked Operation
+    /// This function does not check the validity of the inputted
+    /// values. Nonsensical/invalid inputs may result in
+    /// nonsensical/invalid outputs.
+    ///
+    /// # Domain
+    /// This function returns a float between 0 and π, unless if
+    /// it returns NaN.  
+    /// Do note that, although this is the principal solution,
+    /// other solutions exist, and may be desired. There exists an
+    /// alternate solution when you negate the principal solution,
+    /// and the solutions repeat every 2π.
+    ///
+    /// ## Example
+    /// If there is a principal solution at `1`, that means there
+    /// is an alternate solution at `-1`, and there are also
+    /// solutions `2π + 1`, `2π - 1`, `4π + 1`, `4π - 1`, etc.
+    ///
+    /// # Performance
+    /// This function is moderately performant and is unlikely to be
+    /// the culprit of any performance issues.
+    #[doc(alias = "get_angle_at_altitude_unchecked")]
+    fn get_true_anomaly_at_altitude_unchecked(
+        &self,
+        semi_latus_rectum: f64,
+        altitude: f64,
+        eccentricity_recip: f64,
+    ) -> f64 {
+        // r = p / (1 + e cos ν), r > 0, p > 0.
+        // 1 / r = (1 + e cos ν) / p
+        // 1 / r = 1 / p + (e cos ν / p)
+        // 1 / r - 1 / p = e cos ν / p
+        // e cos ν / p = 1 / r - 1 / p
+        // e cos ν = p (1 / r - 1 / p)
+        // e cos ν = p / r - 1
+        // cos ν = (p / r - 1) / e
+        // ν = acos((p / r - 1) / e)
+        ((semi_latus_rectum / altitude - 1.0) * eccentricity_recip).acos()
+    }
+
     /// Gets the mean anomaly at a given time in the orbit.
     ///
     /// The mean anomaly is the fraction of an elliptical orbit's period
@@ -5287,112 +5393,6 @@ pub trait OrbitTrait {
     /// matrix needed to transform 2D vector.
     fn transform_pqw_vector(&self, position: DVec2) -> DVec3 {
         self.get_transformation_matrix().dot_vec(position)
-    }
-
-    /// Gets the true anomaly where a certain altitude is reached.
-    ///
-    /// Returns NaN if the orbit is circular or there are no solutions.
-    ///
-    /// # Altitude
-    /// The altitude is measured in meters, and measured from the
-    /// center of the parent body (origin).
-    ///
-    /// The altitude given to this function should be between
-    /// the periapsis (minimum) and the apoapsis (maximum).  
-    /// Anything out of range will return NaN.
-    ///
-    /// In the case of hyperbolic orbits, there is no maximum,
-    /// but the altitude should be positive and more than the periapsis.  
-    /// Although there technically is a mathematical solution for "negative altitudes"
-    /// between negative infinity and the apoapsis (which in this case is negative),
-    /// they may not be very useful in most scenarios.
-    ///
-    /// # Domain
-    /// This function returns a float between 0 and π, unless if
-    /// it returns NaN.  
-    /// Do note that, although this is the principal solution,
-    /// other solutions exist, and may be desired. There exists an
-    /// alternate solution when you negate the principal solution,
-    /// and the solutions repeat every 2π.
-    ///
-    /// ## Example
-    /// If there is a principal solution at `1`, that means there
-    /// is an alternate solution at `-1`, and there are also
-    /// solutions `2π + 1`, `2π - 1`, `4π + 1`, `4π - 1`, etc.
-    ///
-    /// # Performance
-    /// This function is moderately performant and is unlikely to be
-    /// the culprit of any performance issues.
-    ///
-    /// However, if you already computed the semi-latus rectum or the
-    /// reciprocal of the eccentricity, you may use the unchecked version
-    /// of this function for a small performance boost:  
-    /// [`get_true_anomaly_at_altitude_unchecked`][OrbitTrait::get_true_anomaly_at_altitude_unchecked]
-    #[doc(alias = "get_angle_at_altitude")]
-    fn get_true_anomaly_at_altitude(&self, altitude: f64) -> f64 {
-        self.get_true_anomaly_at_altitude_unchecked(
-            self.get_semi_latus_rectum(),
-            altitude,
-            self.get_eccentricity().recip(),
-        )
-    }
-
-    /// Gets the true anomaly where a certain altitude is reached.
-    ///
-    /// Returns NaN if the orbit is circular or there are no solutions.
-    ///
-    /// # Altitude
-    /// The altitude is measured in meters, and measured from the
-    /// center of the parent body (origin).
-    ///
-    /// The altitude given to this function should be between
-    /// the periapsis (minimum) and the apoapsis (maximum).  
-    /// Anything out of range will return NaN.
-    ///
-    /// In the case of hyperbolic orbits, there is no maximum,
-    /// but the altitude should be positive and more than the periapsis.  
-    /// Although there technically is a mathematical solution for "negative altitudes"
-    /// between negative infinity and the apoapsis (which in this case is negative),
-    /// they may not be very useful in most scenarios.
-    ///
-    /// # Unchecked Operation
-    /// This function does not check the validity of the inputted
-    /// values. Nonsensical/invalid inputs may result in
-    /// nonsensical/invalid outputs.
-    ///
-    /// # Domain
-    /// This function returns a float between 0 and π, unless if
-    /// it returns NaN.  
-    /// Do note that, although this is the principal solution,
-    /// other solutions exist, and may be desired. There exists an
-    /// alternate solution when you negate the principal solution,
-    /// and the solutions repeat every 2π.
-    ///
-    /// ## Example
-    /// If there is a principal solution at `1`, that means there
-    /// is an alternate solution at `-1`, and there are also
-    /// solutions `2π + 1`, `2π - 1`, `4π + 1`, `4π - 1`, etc.
-    ///
-    /// # Performance
-    /// This function is moderately performant and is unlikely to be
-    /// the culprit of any performance issues.
-    #[doc(alias = "get_angle_at_altitude_unchecked")]
-    fn get_true_anomaly_at_altitude_unchecked(
-        &self,
-        semi_latus_rectum: f64,
-        altitude: f64,
-        eccentricity_recip: f64,
-    ) -> f64 {
-        // r = p / (1 + e cos ν), r > 0, p > 0.
-        // 1 / r = (1 + e cos ν) / p
-        // 1 / r = 1 / p + (e cos ν / p)
-        // 1 / r - 1 / p = e cos ν / p
-        // e cos ν / p = 1 / r - 1 / p
-        // e cos ν = p (1 / r - 1 / p)
-        // e cos ν = p / r - 1
-        // cos ν = (p / r - 1) / e
-        // ν = acos((p / r - 1) / e)
-        ((semi_latus_rectum / altitude - 1.0) * eccentricity_recip).acos()
     }
 
     /// Gets the eccentricity of the orbit.
