@@ -1673,7 +1673,7 @@ pub trait OrbitTrait {
     /// );
     /// ```
     fn get_time_of_apoapsis(&self) -> f64 {
-        // We want to find M = 0
+        // We want to find M = pi
         // Per `get_mean_anomaly_at_time`:
         // M = t * sqrt(mu / |a^3|) + M_0
         // => pi = t * sqrt(mu / |a^3|) + M_0
@@ -5374,6 +5374,93 @@ pub trait OrbitTrait {
             position: matrix.dot_vec(pqw_position),
             velocity: matrix.dot_vec(pqw_velocity),
         }
+    }
+
+    /// Gets the time of the orbit at a certain mean anomaly.
+    ///
+    /// # Time
+    /// The time is measured in seconds.
+    ///
+    /// # Performance
+    /// This function is performant and is unlikely to be the
+    /// source of any performance issues.
+    ///
+    /// # Example
+    /// ```
+    /// use keplerian_sim::{Orbit, OrbitTrait};
+    ///
+    /// let orbit = Orbit::new_flat(
+    ///     2.1, // Eccentricity
+    ///     5.0, // Periapsis
+    ///     2.9, // Argument of periapsis
+    ///     1.0, // Mean anomaly at epoch
+    ///     1.0, // Gravitational parameter
+    /// );
+    ///
+    /// const TIME: f64 = 2.0;
+    ///
+    /// let mean_anomaly = orbit.get_mean_anomaly_at_time(TIME);
+    /// let time_result = orbit.get_time_at_mean_anomaly(mean_anomaly);
+    ///
+    /// const TOLERANCE: f64 = 1e-15;
+    ///
+    /// assert!(
+    ///     (time_result - TIME).abs() < TOLERANCE
+    /// );
+    /// ```
+    fn get_time_at_mean_anomaly(&self, mean_anomaly: f64) -> f64 {
+        // Per `get_mean_anomaly_at_time`:
+        // M = t * sqrt(mu / |a^3|) + M_0
+        // => M = t * sqrt(mu / |a^3|) + M_0
+        // => M - M_0 = t * sqrt(mu / |a^3|)
+        // => t * sqrt(mu / |a^3|) = M - M_0
+        // => t = (M - M_0) / sqrt(mu / |a^3|)
+        //
+        // note: 1 / sqrt(mu / |a^3|) = sqrt(|a^3| / mu)
+        //
+        // => t = (M - M_0) * sqrt(|a^3| / mu)
+
+        (mean_anomaly - self.get_mean_anomaly_at_epoch())
+            * (self.get_semi_major_axis().powi(3).abs() / self.get_gravitational_parameter()).sqrt()
+    }
+
+    /// Gets the time of the orbit at a certain eccentric anomaly.
+    ///
+    /// # Time
+    /// The time is measured in seconds.
+    ///
+    /// # Performance
+    /// This function is not too performant as it performs some trigonometry.  
+    /// Alternatively, if you already have the mean anomaly, you can instead use that
+    /// along with [`get_time_at_mean_anomaly`][OrbitTrait::get_time_at_mean_anomaly].
+    /// Or if you know `sin(eccentric_anomaly)` or `sinh(eccentric_anomaly)`
+    /// beforehand, you may use
+    /// [`get_mean_anomaly_at_elliptic_eccentric_anomaly`][OrbitTrait::get_mean_anomaly_at_elliptic_eccentric_anomaly]
+    /// and
+    /// [`get_mean_anomaly_at_hyperbolic_eccentric_anomaly`][OrbitTrait::get_mean_anomaly_at_hyperbolic_eccentric_anomaly]
+    /// instead, for closed and hyperbolic orbits respectively.
+    ///
+    /// Those functions do not do trigonometry and are therefore a lot faster.
+    fn get_time_at_eccentric_anomaly(&self, eccentric_anomaly: f64) -> f64 {
+        self.get_time_at_mean_anomaly(self.get_mean_anomaly_at_eccentric_anomaly(eccentric_anomaly))
+    }
+
+    /// Gets the time of the orbit at a certain true anomaly.
+    ///
+    /// # Time
+    /// The time is measured in seconds.
+    ///
+    /// # Performance
+    /// This function is not too performant as it performs some trigonometry.
+    /// Alternatively, if you already have the mean anomaly, you can instead use that
+    /// along with [`get_time_at_mean_anomaly`][OrbitTrait::get_time_at_mean_anomaly].  
+    /// Or if you already have the eccentric anomaly, you can instead use that
+    /// along with [`get_time_at_eccentric_anomaly`][OrbitTrait::get_time_at_eccentric_anomaly].
+    ///
+    /// Those functions are faster as they do less trigonometry (and in the case of
+    /// the first one: no trig whatsoever).
+    fn get_time_at_true_anomaly(&self, true_anomaly: f64) -> f64 {
+        self.get_time_at_eccentric_anomaly(self.get_eccentric_anomaly_at_true_anomaly(true_anomaly))
     }
 
     /// Transforms a position from the perifocal coordinate (PQW) system into
