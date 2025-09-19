@@ -33,6 +33,7 @@ jobs:
       run: |
         rustup install ${{ steps.msrv.outputs.msrv }}
         rustup override set ${{ steps.msrv.outputs.msrv }}
+        rustup component add rustfmt
     
     - name: Cache
       uses: actions/cache@v4
