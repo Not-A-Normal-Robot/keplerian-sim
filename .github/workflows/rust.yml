@@ -33,7 +33,15 @@ jobs:
       run: |
         rustup install ${{ steps.msrv.outputs.msrv }}
         rustup override set ${{ steps.msrv.outputs.msrv }}
-        rustup component add rustfmt
+    
+    - name: Cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Check all targets with MSRV
       run: cargo check --all-targets && cargo check --release --all-targets
