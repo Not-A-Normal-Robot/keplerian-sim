@@ -55,6 +55,7 @@ pub(crate) trait F64Math: Sized {
     trait_decl!(
         abs,
         signum,
+        copysign: 2,
         sin,
         cos,
         tan,
@@ -79,6 +80,7 @@ pub(crate) trait F64Math: Sized {
 impl F64Math for f64 {
     trait_impl!(
         abs/fabs,
+        copysign: 2,
         sin,
         cos,
         tan,
