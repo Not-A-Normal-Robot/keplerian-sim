@@ -50,11 +50,13 @@
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 mod cached_orbit;
 mod compact_orbit;
+mod math;
 
-use std::f64::consts::{PI, TAU};
+use core::f64::consts::{PI, TAU};
 
 pub use cached_orbit::Orbit;
 pub use compact_orbit::CompactOrbit;

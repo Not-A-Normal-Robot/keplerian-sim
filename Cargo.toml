@@ -4,9 +4,22 @@ description = "A Keplerian orbit library"
 license = "GPL-3.0-or-later"
 version = "0.6.1"
 edition = "2021"
-keywords = ["kepler", "orbit", "simulation", "patchedconics", "kerbalspaceprogram"]
+keywords = [
+    "kepler",
+    "orbit",
+    "simulation",
+    "patchedconics",
+    "kerbalspaceprogram",
+]
 categories = ["aerospace::simulation", "simulation", "science"]
-include = ["/src", "README.md", "LICENSE", "Cargo.toml", "Cargo.lock", "CREDITS.md"]
+include = [
+    "/src",
+    "README.md",
+    "LICENSE",
+    "Cargo.toml",
+    "Cargo.lock",
+    "CREDITS.md",
+]
 repository = "https://github.com/Not-A-Normal-Robot/keplerian-sim"
 # When changing MSRV below, don't forget to change the README!
 rust-version = "1.81.0"
@@ -15,10 +28,16 @@ rust-version = "1.81.0"
 glam = { version = "0.30.1", features = ["serde"] }
 serde = { version = "1.0.219", optional = true, features = ["derive"] }
 mint = { version = "0.5.9", optional = true }
+libm = { version = "0.2.15", optional = true }
 
 [features]
+# default = ["std"]
+default = [] # DEBUG
+std = []
+libm = ["dep:libm"]
 serde = ["dep:serde"]
 mint = ["dep:mint"]
+mint-serde = ["mint", "serde", "mint/serde"]
 
 [build-dependencies]
 libm = "0.2.13"
