@@ -18,10 +18,10 @@ macro_rules! trait_decl {
     };
 }
 
-macro_rules! libm_or_std {
+macro_rules! trait_impl {
     ( $( $fname:ident $( / $lname:ident )? $( : $arity:tt )? $( -> $ret:tt )? ),* $(,)? ) => {
         $(
-            libm_or_std!(@make fn $fname $( / $lname )? $( : $arity )? $( -> $ret )? );
+            trait_impl!(@make fn $fname $( / $lname )? $( : $arity )? $( -> $ret )? );
         )*
     };
 
@@ -75,7 +75,7 @@ pub trait F64Math: Sized {
 }
 
 impl F64Math for f64 {
-    libm_or_std!(
+    trait_impl!(
         sin,
         cos,
         tan,
