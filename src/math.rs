@@ -105,12 +105,10 @@ impl F64Math for f64 {
             self * self
         } else if i == 3 {
             self * self * self
+        } else if cfg!(debug_assertions) {
+            panic!("powi only supports up to 3 in no_std environments");
         } else {
-            if cfg!(debug_assertions) {
-                panic!("powi only supports up to 3 in no_std environments");
-            } else {
-                0.0
-            }
+            0.0
         }
     }
 
