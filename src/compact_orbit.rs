@@ -3,7 +3,7 @@ use glam::DVec3;
 use serde::{Deserialize, Serialize};
 
 use crate::{ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait};
-use std::f64::consts::{PI, TAU};
+use core::f64::consts::{PI, TAU};
 
 /// A minimal struct representing a Keplerian orbit.
 ///

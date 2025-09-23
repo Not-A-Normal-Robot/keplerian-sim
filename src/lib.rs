@@ -57,6 +57,7 @@ mod compact_orbit;
 mod math;
 
 use core::f64::consts::{PI, TAU};
+use math::*;
 
 pub use cached_orbit::Orbit;
 pub use compact_orbit::CompactOrbit;
@@ -1018,7 +1019,7 @@ pub trait OrbitTrait {
         // https://en.wikipedia.org/wiki/Hyperbolic_trajectory#Parameters_describing_a_hyperbolic_trajectory
         // 2f_∞ = 2cos^-1(-1/e)
         // ⇒ f_∞ = acos(-1/e)
-        use std::ops::Neg;
+        use core::ops::Neg;
         self.get_eccentricity().recip().neg().acos()
     }
 
