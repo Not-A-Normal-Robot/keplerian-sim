@@ -53,6 +53,8 @@ macro_rules! trait_impl {
 #[allow(dead_code)]
 pub(crate) trait F64Math: Sized {
     trait_decl!(
+        abs,
+        signum,
         sin,
         cos,
         tan,
@@ -76,6 +78,8 @@ pub(crate) trait F64Math: Sized {
 
 impl F64Math for f64 {
     trait_impl!(
+        abs,
+        signum,
         sin,
         cos,
         tan,
