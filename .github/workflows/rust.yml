@@ -63,6 +63,7 @@ jobs:
         cargo check --features serde
         cargo check --no-default-features --features libm,mint,serde
         cargo check --no-default-features --features libm,serde
+        cargo check --no-default-features --features libm,mint-serde
       
     - name: Switch to stable and run Clippy
       if: always()
@@ -70,12 +71,17 @@ jobs:
         rustup override unset
         rustup component add clippy rustfmt
         cargo clippy --verbose -- -D warnings
+        cargo clippy --verbose --no-default-features --features libm -- -D warnings
+        cargo clippy --verbose --no-default-features --features libm,mint-serde,fast-math -- -D warnings
+        cargo clippy --verbose --features mint-serde,fast-math -- -D warnings
 
     - name: Check cargo docs
       if: always()
       run: |
         export RUSTDOCFLAGS="-D warnings"
         cargo doc --no-deps --document-private-items --verbose
+        cargo doc --no-deps --document-private-items --verbose --no-default-features --features libm
+        cargo doc --no-deps --document-private-items --verbose --no-default-features --features libm,mint-serde,fast-math
 
     - name: Check formatting
       if: always()
