@@ -51,7 +51,7 @@ macro_rules! trait_impl {
 }
 
 #[allow(dead_code)]
-pub trait F64Math: Sized {
+pub(crate) trait F64Math: Sized {
     trait_decl!(
         sin,
         cos,
@@ -110,6 +110,7 @@ impl F64Math for f64 {
     }
 
     fn rem_euclid(self, rhs: f64) -> Self {
+        // Copied from source of core::f64::math::rem_euclid
         let r = self % rhs;
         if r < 0.0 {
             r + rhs.abs()
