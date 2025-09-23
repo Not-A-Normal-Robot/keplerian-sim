@@ -50,11 +50,21 @@
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(not(any(feature = "std", feature = "libm")))]
+compile_error!("Either std or libm must be used for math operations");
+
+#[cfg(feature = "libm")]
+mod math;
+#[cfg(feature = "libm")]
+#[allow(unused_imports)]
+use math::F64Math;
 
 mod cached_orbit;
 mod compact_orbit;
 
-use std::f64::consts::{PI, TAU};
+use core::f64::consts::{PI, TAU};
 
 pub use cached_orbit::Orbit;
 pub use compact_orbit::CompactOrbit;
@@ -1016,7 +1026,7 @@ pub trait OrbitTrait {
         // https://en.wikipedia.org/wiki/Hyperbolic_trajectory#Parameters_describing_a_hyperbolic_trajectory
         // 2f_∞ = 2cos^-1(-1/e)
         // ⇒ f_∞ = acos(-1/e)
-        use std::ops::Neg;
+        use core::ops::Neg;
         self.get_eccentricity().recip().neg().acos()
     }
 

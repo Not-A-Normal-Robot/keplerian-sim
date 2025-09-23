@@ -1,6 +1,11 @@
 #![cfg(test)]
 
 extern crate std;
+use std::{
+    eprintln, format, println,
+    string::{String, ToString},
+    vec::Vec,
+};
 
 use glam::{DVec2, DVec3};
 
@@ -3010,6 +3015,7 @@ mod monotone_cubic_solver {
 }
 
 mod sinh_approx {
+    use super::*;
     use crate::generated_sinh_approximator::sinh_approx_lt5;
     use std::hint::black_box;
     use std::time::Instant;
