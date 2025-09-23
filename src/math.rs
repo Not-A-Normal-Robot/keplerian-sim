@@ -78,8 +78,7 @@ pub(crate) trait F64Math: Sized {
 
 impl F64Math for f64 {
     trait_impl!(
-        abs,
-        signum,
+        abs/fabs,
         sin,
         cos,
         tan,
@@ -121,5 +120,9 @@ impl F64Math for f64 {
         } else {
             r
         }
+    }
+
+    fn signum(self) -> Self {
+        libm::copysign(1.0, self)
     }
 }
