@@ -48,10 +48,21 @@ jobs:
       run: cargo check --all-targets && cargo check --release --all-targets
       
     - name: Run tests with MSRV
-      run: cargo test --verbose --no-fail-fast
+      run: |
+        cargo test --verbose --no-fail-fast
+        cargo test --verbose --no-fail-fast --features fast-math
+        cargo test --verbose --no-fail-fast --no-default-features --features libm,fast-math
+        cargo test --verbose --no-fail-fast --no-default-features --features libm
     
     - name: Run tests for mint feature
       run: cargo test mint --features mint
+    
+    - name: Check compile for mint and serde combinations
+      run: |
+        cargo check --features mint,serde
+        cargo check --features serde
+        cargo check --no-default-features mint,serde
+        cargo check --no-default-features serde
       
     - name: Switch to stable and run Clippy
       if: always()
