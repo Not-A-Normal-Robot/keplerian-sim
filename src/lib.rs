@@ -52,12 +52,19 @@
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(not(any(feature = "std", feature = "libm")))]
+compile_error!("Either std or libm must be used for math operations");
+
+#[cfg(feature = "libm")]
+mod math;
+#[cfg(feature = "libm")]
+#[allow(unused_imports)]
+use math::F64Math;
+
 mod cached_orbit;
 mod compact_orbit;
-mod math;
 
 use core::f64::consts::{PI, TAU};
-use math::*;
 
 pub use cached_orbit::Orbit;
 pub use compact_orbit::CompactOrbit;

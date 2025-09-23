@@ -2,6 +2,9 @@ use glam::DVec3;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "libm")]
+#[allow(unused_imports)]
+use crate::math::F64Math;
 use crate::{ApoapsisSetterError, CompactOrbit, Matrix3x2, OrbitTrait};
 
 use core::f64::consts::{PI, TAU};

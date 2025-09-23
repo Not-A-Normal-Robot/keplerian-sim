@@ -1,8 +1,22 @@
-#[cfg(not(any(feature = "std", feature = "libm")))]
-compile_error!("Either std or libm must be used for math operations");
+macro_rules! trait_decl {
+    ( $( $fname:ident $( / $_lname:ident )? $( : $arity:tt )? $( -> $ret:tt )? ),* $(,)? ) => {
+        $(
+            trait_decl!(@make fn $fname $( : $arity )? $( -> $ret )? );
+        )*
+    };
 
-#[cfg(feature = "std")]
-extern crate std;
+    (@make fn $fname:ident) => {
+        fn $fname(self) -> Self;
+    };
+
+    (@make fn $fname:ident : 2) => {
+        fn $fname(self, y: Self) -> Self;
+    };
+
+    (@make fn $fname:ident -> 2) => {
+        fn $fname(self) -> (Self, Self);
+    };
+}
 
 macro_rules! libm_or_std {
     ( $( $fname:ident $( / $lname:ident )? $( : $arity:tt )? $( -> $ret:tt )? ),* $(,)? ) => {
@@ -12,53 +26,95 @@ macro_rules! libm_or_std {
     };
 
     (@make fn $fname:ident) => {
-        pub fn $fname(x: f64) -> f64 {
-            #[cfg(feature = "std")]
-            { x.$fname() }
-            #[cfg(feature = "libm")]
-            { libm::$fname(x) }
+        fn $fname(self) -> Self {
+            libm::$fname(self)
         }
     };
 
     (@make fn $fname:ident : 2) => {
-        pub fn $fname(x: f64, y: f64) -> f64 {
-            #[cfg(feature = "std")]
-            { x.$fname(y) }
-            #[cfg(feature = "libm")]
-            { libm::$fname(x, y) }
+        fn $fname(self, y: Self) -> Self {
+            libm::$fname(self, y)
         }
     };
 
     (@make fn $fname:ident / $lname:ident) => {
-        pub fn $fname(x: f64) -> f64 {
-            #[cfg(feature = "std")]
-            { x.$fname() }
-            #[cfg(feature = "libm")]
-            { libm::$lname(x) }
+        fn $fname(self) -> Self {
+            libm::$lname(self)
         }
     };
 
     (@make fn $fname:ident / $lname:ident -> 2) => {
-        pub fn $fname(x: f64) -> (f64, f64) {
-            #[cfg(feature = "std")]
-            { x.$fname() }
-            #[cfg(feature = "libm")]
-            { libm::$lname(x) }
+        fn $fname(self) -> (Self, Self) {
+            libm::$lname(self)
         }
     };
 }
 
-libm_or_std!(
-    sin,
-    cos,
-    tan,
-    sinh,
-    cosh,
-    tanh,
-    sqrt,
-    cbrt,
-    exp,
-    ln/log,
-    atan2: 2,
-    sin_cos/sincos -> 2,
-);
+#[allow(dead_code)]
+pub trait F64Math: Sized {
+    trait_decl!(
+        sin,
+        cos,
+        tan,
+        sinh,
+        cosh,
+        tanh,
+        asin,
+        acos,
+        atan,
+        atanh,
+        sqrt,
+        cbrt,
+        exp,
+        ln/log,
+        atan2: 2,
+        sin_cos/sincos -> 2,
+        rem_euclid: 2,
+    );
+    fn powi(self, i: i32) -> Self;
+}
+
+impl F64Math for f64 {
+    libm_or_std!(
+        sin,
+        cos,
+        tan,
+        sinh,
+        cosh,
+        tanh,
+        asin,
+        acos,
+        atan,
+        atanh,
+        sqrt,
+        cbrt,
+        exp,
+        ln/log,
+        atan2: 2,
+        sin_cos/sincos -> 2,
+    );
+
+    #[inline(always)]
+    fn powi(self, i: i32) -> Self {
+        if i == 2 {
+            self * self
+        } else if i == 3 {
+            self * self * self
+        } else {
+            if cfg!(debug_assertions) {
+                panic!("powi only supports up to 3 in no_std environments");
+            } else {
+                0.0
+            }
+        }
+    }
+
+    fn rem_euclid(self, rhs: f64) -> Self {
+        let r = self % rhs;
+        if r < 0.0 {
+            r + rhs.abs()
+        } else {
+            r
+        }
+    }
+}

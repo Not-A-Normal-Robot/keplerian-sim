@@ -29,14 +29,14 @@ glam = { version = "0.30.1", features = [
     "serde",
     "nostd-libm",
 ], default-features = false }
-serde = { version = "1.0.219", optional = true, features = ["derive"] }
-mint = { version = "0.5.9", optional = true }
+serde = { version = "1.0.219", optional = true, features = [
+    "derive",
+], default-features = false }
+mint = { version = "0.5.9", optional = true, default-features = false }
 libm = { version = "0.2.15", optional = true }
 
 [features]
-# default = ["std"]
-# DEBUG
-default = ["libm"]
+default = ["std"]
 std = []
 libm = ["dep:libm"]
 serde = ["dep:serde"]

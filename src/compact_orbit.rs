@@ -2,7 +2,11 @@ use glam::DVec3;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "libm")]
+#[allow(unused_imports)]
+use crate::math::F64Math;
 use crate::{ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait};
+
 use core::f64::consts::{PI, TAU};
 
 /// A minimal struct representing a Keplerian orbit.
