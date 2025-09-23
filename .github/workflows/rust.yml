@@ -61,8 +61,8 @@ jobs:
       run: |
         cargo check --features mint,serde
         cargo check --features serde
-        cargo check --no-default-features --features mint,serde
-        cargo check --no-default-features --features serde
+        cargo check --no-default-features --features libm,mint,serde
+        cargo check --no-default-features --features libm,serde
       
     - name: Switch to stable and run Clippy
       if: always()
