@@ -4,8 +4,13 @@
 
 A Rust library for simulating Keplerian orbits.
 
-**[Documentation](https://docs.rs/keplerian-sim/)**  
-**[Crate](https://crates.io/crates/keplerian-sim)**
+<p style="font-size: 1.5em">
+
+[Check out the demo!](https://not-a-normal-robot.github.io/keplerian-sim-demo/)
+</p>
+
+- [Documentation](https://docs.rs/keplerian-sim/)
+- [Crate](https://crates.io/crates/keplerian-sim)
 
 ## External Dependencies
 You'll need Cargo and Rust to run the example binary. You can get it [at rustup.rs](https://rustup.rs/).  
