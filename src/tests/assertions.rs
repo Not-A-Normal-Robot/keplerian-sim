@@ -2,7 +2,7 @@ use core::f64::consts::{PI, TAU};
 
 use glam::{DVec2, DVec3};
 
-use crate::{CompactOrbit, OrbitTrait};
+use crate::{CompactOrbit, OrbitTrait, StateVectors};
 extern crate std;
 use std::format;
 
@@ -214,8 +214,47 @@ pub(super) fn assert_eq_orbit(a: &impl OrbitTrait, b: &impl OrbitTrait, what: &s
         }
     }
 
-    let a = to_compact(a);
-    let b = to_compact(b);
+    fn to_bits(sv: StateVectors) -> [u64; 6] {
+        [
+            sv.position.x.to_bits(),
+            sv.position.y.to_bits(),
+            sv.position.z.to_bits(),
+            sv.velocity.x.to_bits(),
+            sv.velocity.y.to_bits(),
+            sv.velocity.z.to_bits(),
+        ]
+    }
 
-    assert_eq!(a, b, "assertion failed: orbits are not equal: {what}");
+    let compact_a = to_compact(a);
+    let compact_b = to_compact(b);
+
+    assert_eq!(
+        compact_a, compact_b,
+        "assertion failed: orbit elements are not equal: {what}"
+    );
+
+    const EQUALITY_ITERS: usize = 15;
+
+    for i in 0..EQUALITY_ITERS {
+        let true_anomaly = if a.is_closed() {
+            TAU * i as f64 / EQUALITY_ITERS as f64
+        } else {
+            let max = a.get_true_anomaly_at_asymptote();
+            let min = -max;
+            let range_width = max - min;
+            let progress = i as f64 / EQUALITY_ITERS as f64;
+            range_width * progress + min
+        };
+
+        let sv_a = a.get_state_vectors_at_true_anomaly(true_anomaly);
+        let sv_b = b.get_state_vectors_at_true_anomaly(true_anomaly);
+
+        assert_eq!(
+            to_bits(sv_a),
+            to_bits(sv_b),
+            "assertion failed: orbit state vectors not equal at f = {true_anomaly}\n\
+            sv_a: {sv_a:?}\n\
+            sv_b: {sv_b:?}"
+        )
+    }
 }
