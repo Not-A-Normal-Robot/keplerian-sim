@@ -1,8 +1,9 @@
 use core::f64::consts::{PI, TAU};
 
 use glam::{DVec2, DVec3};
+use std::string::ToString;
 
-use crate::OrbitTrait;
+use crate::{CompactOrbit, OrbitTrait};
 
 const ALMOST_EQ_TOLERANCE: f64 = 1e-6;
 pub(super) fn assert_almost_eq(a: f64, b: f64, what: &str) {
@@ -189,4 +190,31 @@ pub(super) fn assert_orbit_positions_2d(orbit: &impl OrbitTrait, tests: &[(&str,
         let pos = orbit.get_pqw_position_at_true_anomaly(*angle);
         assert_almost_eq_vec2(pos, *expected, what);
     }
+}
+
+pub(super) fn assert_eq_orbit(a: &impl OrbitTrait, b: &impl OrbitTrait, what: &str) {
+    fn to_compact(orbit: &impl OrbitTrait) -> CompactOrbit {
+        let eccentricity = orbit.get_eccentricity();
+        let periapsis = orbit.get_periapsis();
+        let inclination = orbit.get_inclination();
+        let arg_pe = orbit.get_arg_pe();
+        let long_asc_node = orbit.get_long_asc_node();
+        let mean_anomaly = orbit.get_mean_anomaly_at_epoch();
+        let mu = orbit.get_gravitational_parameter();
+
+        CompactOrbit {
+            eccentricity,
+            periapsis,
+            inclination,
+            arg_pe,
+            long_asc_node,
+            mean_anomaly,
+            mu,
+        }
+    }
+
+    let a = to_compact(a);
+    let b = to_compact(b);
+
+    assert_eq!(a, b, "assertion failed: orbits are not equal: {what}");
 }

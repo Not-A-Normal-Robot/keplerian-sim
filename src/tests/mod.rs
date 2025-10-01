@@ -5,7 +5,7 @@ use std::{eprintln, format, println, string::String, vec::Vec};
 
 use glam::{DVec2, DVec3};
 
-use crate::{CompactOrbit, Matrix3x2, Orbit, OrbitTrait, StateVectors};
+use crate::{CompactOrbit, Matrix3x2, MuSetterMode, Orbit, OrbitTrait, StateVectors};
 use std::{
     f64::consts::{PI, TAU},
     fmt::Debug,
@@ -2520,6 +2520,72 @@ fn specific_energy() {
         } else if orbit.is_hyperbolic() {
             assert!(orbit.get_specific_orbital_energy() > 0.0);
         }
+    }
+}
+
+#[derive(Clone, Copy)]
+enum OrbitMutation {
+    Eccentricity(f64),
+    Periapsis(f64),
+    Inclination(f64),
+    ArgPe(f64),
+    LongAscNode(f64),
+    MeanAnomaly(f64),
+    Mu(f64),
+}
+
+impl OrbitMutation {
+    fn new_random() -> Self {
+        let val = random_mult();
+        match rand::random_range(0..7) {
+            0 => Self::Eccentricity(val),
+            1 => Self::Periapsis(val),
+            2 => Self::Inclination(val),
+            3 => Self::ArgPe(val),
+            4 => Self::LongAscNode(val),
+            5 => Self::MeanAnomaly(val),
+            _ => Self::Mu(val),
+        }
+    }
+
+    fn mutate(self, orbit: &mut impl OrbitTrait) {
+        match self {
+            OrbitMutation::Eccentricity(e) => orbit.set_eccentricity(e),
+            OrbitMutation::Periapsis(rp) => orbit.set_periapsis(rp),
+            OrbitMutation::Inclination(i) => orbit.set_inclination(i),
+            OrbitMutation::ArgPe(arg_pe) => orbit.set_arg_pe(arg_pe),
+            OrbitMutation::LongAscNode(long_asc_node) => orbit.set_long_asc_node(long_asc_node),
+            OrbitMutation::MeanAnomaly(m0) => orbit.set_mean_anomaly_at_epoch(m0),
+            OrbitMutation::Mu(mu) => {
+                orbit.set_gravitational_parameter(mu, MuSetterMode::KeepElements)
+            }
+        }
+    }
+}
+
+fn cache_coherency_base_test(compact_orbit: &mut CompactOrbit) {
+    const CACHE_COHERENCY_ITERS: usize = 128;
+    // let mut compact_orbit: CompactOrbit = cached_orbit.clone().into();
+    let mut cached_orbit: Orbit = compact_orbit.clone().into();
+
+    for _ in 0..CACHE_COHERENCY_ITERS {
+        let mutation = OrbitMutation::new_random();
+
+        mutation.mutate(&mut cached_orbit);
+        mutation.mutate(compact_orbit);
+
+        assert_eq_orbit(
+            &cached_orbit,
+            compact_orbit,
+            "cached vs compact post-mutation",
+        );
+    }
+}
+
+#[test]
+fn cache_coherency() {
+    for mut orbit in random_any_iter(16384) {
+        cache_coherency_base_test(&mut orbit);
     }
 }
 
