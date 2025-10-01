@@ -1,7 +1,6 @@
 use core::f64::consts::{PI, TAU};
 
 use glam::{DVec2, DVec3};
-use std::string::ToString;
 
 use crate::{CompactOrbit, OrbitTrait};
 
@@ -174,8 +173,8 @@ pub(super) fn assert_almost_eq_vec3_rescale(a: DVec3, b: DVec3, what: &str) {
 
 pub(super) fn assert_almost_eq_vec2(a: DVec2, b: DVec2, what: &str) {
     let desc = format!("{a:?} vs {b:?}; {what}");
-    assert_almost_eq(a.x, b.x, &("X coord of ".to_string() + &desc));
-    assert_almost_eq(a.y, b.y, &("Y coord of ".to_string() + &desc));
+    assert_almost_eq(a.x, b.x, &format!("X coord of {desc}"));
+    assert_almost_eq(a.y, b.y, &format!("Y coord of {desc}"));
 }
 
 pub(super) fn assert_orbit_positions_3d(orbit: &impl OrbitTrait, tests: &[(&str, f64, DVec3)]) {
