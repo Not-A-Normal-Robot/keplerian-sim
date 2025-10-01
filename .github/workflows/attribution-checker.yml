@@ -12,16 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.x'
 
-      - name: Install dependencies (none required)
-        run: python -m pip install --upgrade pip
-
       - name: Run link check
-        run: |
-          python3 .github/scripts/attribution-checker.py
+        run: python3 .github/scripts/attribution-checker.py
