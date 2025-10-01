@@ -3,7 +3,8 @@ use core::f64::consts::{PI, TAU};
 use glam::{DVec2, DVec3};
 
 use crate::{CompactOrbit, OrbitTrait};
-use std::string::ToString;
+extern crate std;
+use std::format;
 
 const ALMOST_EQ_TOLERANCE: f64 = 1e-6;
 pub(super) fn assert_almost_eq(a: f64, b: f64, what: &str) {
