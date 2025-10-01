@@ -63,6 +63,8 @@ use math::F64Math;
 
 mod cached_orbit;
 mod compact_orbit;
+/// Re-exports for dependencies.
+pub mod reexports;
 
 use core::f64::consts::{PI, TAU};
 
