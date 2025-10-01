@@ -3,6 +3,7 @@ use core::f64::consts::TAU;
 use glam::{DVec2, DVec3};
 
 use crate::{tests::ORBIT_POLL_ANGLES, OrbitTrait, StateVectors};
+extern crate std;
 
 pub fn poll_orbit(orbit: &impl OrbitTrait) -> Vec<DVec3> {
     let mut vec: Vec<DVec3> = Vec::with_capacity(ORBIT_POLL_ANGLES);
