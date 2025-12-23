@@ -55,25 +55,26 @@
 #[cfg(not(any(feature = "std", feature = "libm")))]
 compile_error!("Either std or libm must be used for math operations");
 
+use core::f64::consts::{PI, TAU};
+
+use glam::{DVec2, DVec3};
+
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 #[cfg(feature = "libm")]
 mod math;
 #[cfg(feature = "libm")]
 #[allow(unused_imports)]
 use math::F64Math;
 
-mod cached_orbit;
-mod compact_orbit;
+mod dim2;
+mod dim3;
 /// Re-exports for dependencies.
 pub mod reexports;
 
-use core::f64::consts::{PI, TAU};
-
-pub use cached_orbit::Orbit;
-pub use compact_orbit::CompactOrbit;
-use glam::{DVec2, DVec3};
-
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
+pub use dim3::cached_orbit::Orbit;
+pub use dim3::compact_orbit::CompactOrbit;
 
 /// A constant used to get the initial seed for the eccentric anomaly.
 ///
