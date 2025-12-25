@@ -5,7 +5,10 @@ use std::{eprintln, format, println, string::String, vec::Vec};
 
 use glam::{DVec2, DVec3};
 
-use crate::{CompactOrbit, Matrix3x2, MuSetterMode, Orbit, OrbitTrait, StateVectors};
+use crate::{
+    CompactOrbit, CompactOrbit2D, Matrix3x2, MuSetterMode, Orbit, Orbit2D, OrbitTrait,
+    OrbitTrait2D, StateVectors,
+};
 use std::{
     f64::consts::{PI, TAU},
     fmt::Debug,
@@ -235,6 +238,374 @@ fn parabolic() {
         point_at_asymptote.z.is_nan(),
         "Z at asymptote should be undefined"
     );
+}
+
+fn orbit2d_conversion_base_test(orbit: Orbit2D, what: &str) {
+    let compact_orbit = CompactOrbit2D::from(orbit.clone());
+    let reexpanded_orbit = Orbit2D::from(compact_orbit.clone());
+
+    let compact_message = format!("Original / Compact ({what})");
+    let reexpanded_message = format!("Compact / Reexpanded ({what})");
+
+    {
+        let original_transforms = poll_transform2d(&orbit);
+        let compact_transforms = poll_transform2d(&compact_orbit);
+        let reexpanded_transforms = poll_transform2d(&reexpanded_orbit);
+
+        let compact_message = format!("{compact_message} (transform)");
+        let reexpanded_message = format!("{reexpanded_message} (transform)");
+
+        for i in 0..original_transforms.len() {
+            assert_eq_vec2(
+                original_transforms[i],
+                compact_transforms[i],
+                &compact_message,
+            );
+            assert_eq_vec2(
+                original_transforms[i],
+                reexpanded_transforms[i],
+                &reexpanded_message,
+            );
+        }
+    }
+    {
+        let original_ecc = poll_eccentric_anomaly2d(&orbit);
+        let compact_ecc = poll_eccentric_anomaly2d(&compact_orbit);
+        let reexpanded_ecc = poll_eccentric_anomaly2d(&reexpanded_orbit);
+
+        for i in 0..original_ecc.len() {
+            assert_eq!(
+                original_ecc[i].to_bits(),
+                compact_ecc[i].to_bits(),
+                "{compact_message} (eccentric anomaly)"
+            );
+            assert_eq!(
+                original_ecc[i].to_bits(),
+                reexpanded_ecc[i].to_bits(),
+                "{reexpanded_message} (eccentric anomaly)"
+            );
+        }
+    }
+    {
+        let original_true = {
+            let mut vec: Vec<f64> = Vec::with_capacity(ORBIT_POLL_ANGLES);
+
+            for i in 0..ORBIT_POLL_ANGLES {
+                let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
+                let true_anomaly = orbit.get_true_anomaly_at_mean_anomaly(angle);
+                vec.push(true_anomaly);
+            }
+
+            vec
+        };
+        let compact_true = {
+            let mut vec: Vec<f64> = Vec::with_capacity(ORBIT_POLL_ANGLES);
+
+            for i in 0..ORBIT_POLL_ANGLES {
+                let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
+                let true_anomaly = compact_orbit.get_true_anomaly_at_mean_anomaly(angle);
+                vec.push(true_anomaly);
+            }
+
+            vec
+        };
+        let reexpanded_true = {
+            let mut vec: Vec<f64> = Vec::with_capacity(ORBIT_POLL_ANGLES);
+
+            for i in 0..ORBIT_POLL_ANGLES {
+                let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
+                vec.push(reexpanded_orbit.get_true_anomaly_at_mean_anomaly(angle));
+            }
+
+            vec
+        };
+
+        for i in 0..original_true.len() {
+            assert_eq!(
+                original_true[i].to_bits(),
+                compact_true[i].to_bits(),
+                "{compact_message} (true anomaly) (i={i})"
+            );
+            assert_eq!(
+                original_true[i].to_bits(),
+                reexpanded_true[i].to_bits(),
+                "{reexpanded_message} (true anomaly) (i={i})"
+            );
+        }
+    }
+    {
+        let original_eccentricity = orbit.get_eccentricity();
+        let compact_eccentricity = compact_orbit.eccentricity;
+        let reexpanded_eccentricity = reexpanded_orbit.get_eccentricity();
+
+        assert_eq!(
+            original_eccentricity, compact_eccentricity,
+            "{compact_message} (eccentricity)"
+        );
+        assert_eq!(
+            original_eccentricity, reexpanded_eccentricity,
+            "{reexpanded_message} (eccentricity)"
+        );
+    }
+    {
+        let original_positions = poll_orbit2d(&orbit);
+        let compact_positions = poll_orbit2d(&compact_orbit);
+        let reexpanded_positions = poll_orbit2d(&reexpanded_orbit);
+
+        let compact_message = format!("{compact_message} (position)");
+        let reexpanded_message = format!("{reexpanded_message} (position)");
+
+        for i in 0..original_positions.len() {
+            assert_eq_vec2(
+                original_positions[i],
+                compact_positions[i],
+                &compact_message,
+            );
+            assert_eq_vec2(
+                original_positions[i],
+                reexpanded_positions[i],
+                &reexpanded_message,
+            );
+        }
+    }
+    {
+        let original_altitudes = {
+            let mut vec: Vec<f64> = Vec::with_capacity(ORBIT_POLL_ANGLES);
+
+            for i in 0..ORBIT_POLL_ANGLES {
+                let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
+                let altitude = orbit.get_altitude_at_true_anomaly(angle);
+                vec.push(altitude);
+            }
+
+            vec
+        };
+        let compact_altitudes = {
+            let mut vec: Vec<f64> = Vec::with_capacity(ORBIT_POLL_ANGLES);
+
+            for i in 0..ORBIT_POLL_ANGLES {
+                let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
+                let altitude = compact_orbit.get_altitude_at_true_anomaly(angle);
+                vec.push(altitude);
+            }
+
+            vec
+        };
+        let reexpanded_altitudes = {
+            let mut vec: Vec<f64> = Vec::with_capacity(ORBIT_POLL_ANGLES);
+
+            for i in 0..ORBIT_POLL_ANGLES {
+                let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
+                let altitude = reexpanded_orbit.get_altitude_at_true_anomaly(angle);
+                vec.push(altitude);
+            }
+
+            vec
+        };
+
+        let compact_message = format!("{compact_message} (altitude)");
+        let reexpanded_message = format!("{reexpanded_message} (altitude)");
+
+        for i in 0..original_altitudes.len() {
+            assert_eq!(
+                original_altitudes[i].to_bits(),
+                compact_altitudes[i].to_bits(),
+                "{compact_message}"
+            );
+            assert_eq!(
+                original_altitudes[i].to_bits(),
+                reexpanded_altitudes[i].to_bits(),
+                "{reexpanded_message}"
+            );
+        }
+    }
+    {
+        let original_slr = orbit.get_semi_latus_rectum();
+        let compact_slr = compact_orbit.get_semi_latus_rectum();
+        let reexpanded_slr = reexpanded_orbit.get_semi_latus_rectum();
+
+        let compact_message = format!("{compact_message} (semi-latus rectum)");
+        let reexpanded_message = format!("{reexpanded_message} (semi-latus rectum)");
+
+        assert_eq!(
+            original_slr.to_bits(),
+            compact_slr.to_bits(),
+            "{compact_message}"
+        );
+        assert_eq!(
+            original_slr.to_bits(),
+            reexpanded_slr.to_bits(),
+            "{reexpanded_message}"
+        );
+    }
+    {
+        let original_apoapsis = orbit.get_apoapsis();
+        let compact_apoapsis = compact_orbit.get_apoapsis();
+        let reexpanded_apoapsis = reexpanded_orbit.get_apoapsis();
+
+        let compact_message = format!("{compact_message} (apoapsis getter)");
+        let reexpanded_message = format!("{reexpanded_message} (apoapsis getter)");
+
+        assert_eq!(
+            original_apoapsis.to_bits(),
+            compact_apoapsis.to_bits(),
+            "{compact_message}"
+        );
+        assert_eq!(
+            original_apoapsis.to_bits(),
+            reexpanded_apoapsis.to_bits(),
+            "{reexpanded_message}"
+        );
+    }
+    {
+        for i in 0..31 {
+            let true_anomaly = i as f64 * 0.1;
+
+            let original_ecc_anom = orbit.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
+            let compact_ecc_anom =
+                compact_orbit.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
+            let reexpanded_ecc_anom =
+                reexpanded_orbit.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
+
+            let compact_message = format!("{compact_message} (true anom -> ecc anom)");
+            let reexpanded_message = format!("{reexpanded_message} (true anom -> ecc anom)");
+
+            assert_eq!(
+                original_ecc_anom.to_bits(),
+                compact_ecc_anom.to_bits(),
+                "{compact_message}"
+            );
+            assert_eq!(
+                original_ecc_anom.to_bits(),
+                reexpanded_ecc_anom.to_bits(),
+                "{reexpanded_message}"
+            );
+        }
+    }
+    {
+        let original_speeds = poll_speed2d(&orbit);
+        let compact_speeds = poll_speed2d(&compact_orbit);
+        let reexpanded_speeds = poll_speed2d(&reexpanded_orbit);
+
+        let compact_message = format!("{compact_message} (speed)");
+        let reexpanded_message = format!("{reexpanded_message} (speed)");
+
+        assert_eq!(
+            original_speeds
+                .iter()
+                .map(|x| x.to_bits())
+                .collect::<Vec<_>>(),
+            compact_speeds
+                .iter()
+                .map(|x| x.to_bits())
+                .collect::<Vec<_>>(),
+            "{compact_message}",
+        );
+        assert_eq!(
+            original_speeds
+                .iter()
+                .map(|x| x.to_bits())
+                .collect::<Vec<_>>(),
+            reexpanded_speeds
+                .iter()
+                .map(|x| x.to_bits())
+                .collect::<Vec<_>>(),
+            "{reexpanded_message}",
+        );
+    }
+    {
+        let original_vels = poll_vel2d(&orbit);
+        let compact_vels = poll_vel2d(&compact_orbit);
+        let reexpanded_vels = poll_vel2d(&reexpanded_orbit);
+
+        let compact_message = format!("{compact_message} (velocity)");
+        let reexpanded_message = format!("{reexpanded_message} (velocity)");
+
+        assert_eq!(
+            original_vels
+                .iter()
+                .map(|DVec2 { x, y }| (x.to_bits(), y.to_bits()))
+                .collect::<Vec<_>>(),
+            compact_vels
+                .iter()
+                .map(|DVec2 { x, y }| (x.to_bits(), y.to_bits()))
+                .collect::<Vec<_>>(),
+            "{compact_message}",
+        );
+        assert_eq!(
+            original_vels
+                .iter()
+                .map(|DVec2 { x, y }| (x.to_bits(), y.to_bits()))
+                .collect::<Vec<_>>(),
+            reexpanded_vels
+                .iter()
+                .map(|DVec2 { x, y }| (x.to_bits(), y.to_bits()))
+                .collect::<Vec<_>>(),
+            "{reexpanded_message}",
+        );
+    }
+    {
+        let original_svs = poll_sv2d(&orbit);
+        let compact_svs = poll_sv2d(&compact_orbit);
+        let reexpanded_svs = poll_sv2d(&reexpanded_orbit);
+
+        let compact_message = format!("{compact_message} (velocity)");
+        let reexpanded_message = format!("{reexpanded_message} (velocity)");
+
+        assert_eq!(
+            original_svs
+                .iter()
+                .map(|s| (
+                    s.position.x.to_bits(),
+                    s.position.y.to_bits(),
+                    s.velocity.x.to_bits(),
+                    s.velocity.y.to_bits(),
+                ))
+                .collect::<Vec<_>>(),
+            compact_svs
+                .iter()
+                .map(|s| (
+                    s.position.x.to_bits(),
+                    s.position.y.to_bits(),
+                    s.velocity.x.to_bits(),
+                    s.velocity.y.to_bits(),
+                ))
+                .collect::<Vec<_>>(),
+            "{compact_message}",
+        );
+        assert_eq!(
+            original_svs
+                .iter()
+                .map(|s| (
+                    s.position.x.to_bits(),
+                    s.position.y.to_bits(),
+                    s.velocity.x.to_bits(),
+                    s.velocity.y.to_bits(),
+                ))
+                .collect::<Vec<_>>(),
+            reexpanded_svs
+                .iter()
+                .map(|s| (
+                    s.position.x.to_bits(),
+                    s.position.y.to_bits(),
+                    s.velocity.x.to_bits(),
+                    s.velocity.y.to_bits(),
+                ))
+                .collect::<Vec<_>>(),
+            "{reexpanded_message}",
+        );
+    }
+    {
+        let original_pqw = orbit.get_pqw_basis_vectors();
+        let compact_pqw = compact_orbit.get_pqw_basis_vectors();
+        let reexpanded_pqw = reexpanded_orbit.get_pqw_basis_vectors();
+
+        let compact_message = format!("{compact_message} (PQW basis vectors)");
+        let reexpanded_message = format!("{reexpanded_message} (PQW basis vectors)");
+
+        assert_eq!(original_pqw, compact_pqw, "{compact_message}");
+        assert_eq!(compact_pqw, reexpanded_pqw, "{reexpanded_message}");
+    }
 }
 
 fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
@@ -747,6 +1118,158 @@ fn naive_speed_correlation_base_test(orbit: &impl OrbitTrait, what: &str) {
     }
 }
 
+fn orbit_dim_parity_base_test(orbit2: &Orbit2D) {
+    let orbit3 = Orbit::new(
+        orbit2.get_eccentricity(),
+        orbit2.get_periapsis(),
+        0.0,
+        orbit2.get_arg_pe(),
+        0.0,
+        orbit2.get_mean_anomaly_at_epoch(),
+        orbit2.get_gravitational_parameter(),
+    );
+
+    {
+        let tf2 = poll_transform2d(orbit2);
+        let tf3 = poll_transform(&orbit3);
+
+        for i in 0..tf2.len() {
+            let dim2 = tf2[i];
+            let dim3 = tf3[i];
+
+            assert_eq!(dim2.extend(0.0), dim3);
+        }
+    }
+    {
+        let ecc2 = poll_eccentric_anomaly2d(orbit2);
+        let ecc3 = poll_eccentric_anomaly(&orbit3);
+        assert_eq!(ecc2, ecc3);
+    }
+    {
+        let true2 = {
+            let mut vec: Vec<f64> = Vec::with_capacity(ORBIT_POLL_ANGLES);
+
+            for i in 0..ORBIT_POLL_ANGLES {
+                let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
+                let true_anomaly = orbit2.get_true_anomaly_at_mean_anomaly(angle);
+                vec.push(true_anomaly);
+            }
+
+            vec
+        };
+        let true3 = {
+            let mut vec: Vec<f64> = Vec::with_capacity(ORBIT_POLL_ANGLES);
+
+            for i in 0..ORBIT_POLL_ANGLES {
+                let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
+                let true_anomaly = orbit3.get_true_anomaly_at_mean_anomaly(angle);
+                vec.push(true_anomaly);
+            }
+
+            vec
+        };
+        assert_eq!(true2, true3);
+    }
+    {
+        let pos2 = poll_orbit2d(orbit2);
+        let pos3 = poll_orbit(&orbit3);
+
+        for i in 0..pos2.len() {
+            assert_eq!(pos2[i].extend(0.0), pos3[i])
+        }
+    }
+    {
+        let alt2 = {
+            let mut vec: Vec<f64> = Vec::with_capacity(ORBIT_POLL_ANGLES);
+
+            for i in 0..ORBIT_POLL_ANGLES {
+                let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
+                let altitude = orbit2.get_altitude_at_true_anomaly(angle);
+                vec.push(altitude);
+            }
+
+            vec
+        };
+        let alt3 = {
+            let mut vec: Vec<f64> = Vec::with_capacity(ORBIT_POLL_ANGLES);
+
+            for i in 0..ORBIT_POLL_ANGLES {
+                let angle = (i as f64) * 2.0 * PI / (ORBIT_POLL_ANGLES as f64);
+                let altitude = orbit3.get_altitude_at_true_anomaly(angle);
+                vec.push(altitude);
+            }
+
+            vec
+        };
+
+        assert_eq!(alt2, alt3);
+    }
+    {
+        let slr2 = orbit2.get_semi_latus_rectum();
+        let slr3 = orbit3.get_semi_latus_rectum();
+
+        assert_eq!(slr2.to_bits(), slr3.to_bits());
+    }
+    {
+        let apoapsis2 = orbit2.get_apoapsis();
+        let apoapsis3 = orbit3.get_apoapsis();
+
+        assert_eq!(apoapsis2.to_bits(), apoapsis3.to_bits());
+    }
+    {
+        for i in 0..31 {
+            let true_anomaly = i as f64 * 0.1;
+
+            let ecc2 = orbit2.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
+            let ecc3 = orbit3.get_eccentric_anomaly_at_true_anomaly(true_anomaly);
+
+            assert_eq!(ecc2.to_bits(), ecc3.to_bits());
+        }
+    }
+    {
+        let speed2 = poll_speed2d(orbit2);
+        let speed3 = poll_speed(&orbit3);
+
+        assert_eq!(speed2, speed3);
+    }
+    {
+        let vel2 = poll_vel2d(orbit2);
+        let vel3 = poll_vel(&orbit3);
+
+        for i in 0..vel2.len() {
+            assert_eq!(vel2[i].extend(0.0), vel3[i]);
+        }
+    }
+    {
+        let sv2 = poll_sv2d(orbit2);
+        let sv3 = poll_sv(&orbit3);
+
+        for i in 0..sv2.len() {
+            let sv2_element = sv2[i];
+            let sv2_extended = StateVectors {
+                position: sv2_element.position.extend(0.0),
+                velocity: sv2_element.velocity.extend(0.0),
+            };
+
+            assert_eq!(sv2_extended, sv3[i]);
+        }
+    }
+    {
+        let pqw2 = orbit2.get_pqw_basis_vectors();
+        let pqw3 = orbit3.get_pqw_basis_vectors();
+
+        assert_eq!(pqw2.0.extend(0.0), pqw3.0);
+        assert_eq!(pqw2.1.extend(0.0), pqw3.1);
+    }
+}
+
+#[test]
+fn orbit_dim_parity_test() {
+    for orbit in random_any_2d_iter(1000) {
+        orbit_dim_parity_base_test(&orbit.into());
+    }
+}
+
 mod mu_setter {
     use super::*;
 
@@ -1021,6 +1544,14 @@ mod mu_setter {
         for orbit in orbits {
             base_test(&orbit);
         }
+    }
+}
+
+#[test]
+fn orbit2d_conversions() {
+    for orbit in random_any_2d_iter(1000) {
+        let message = format!("Random orbit {orbit:?}");
+        orbit2d_conversion_base_test(orbit.into(), &message);
     }
 }
 
