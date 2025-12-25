@@ -255,7 +255,7 @@ pub trait OrbitTrait2D {
     ///
     /// assert_eq!(
     ///     orbit.get_position_at_periapsis(),
-    ///     DVec2::new(1.0, 0.0, 0.0)
+    ///     DVec2::new(1.0, 0.0)
     /// );
     /// ```
     #[inline]
@@ -352,7 +352,7 @@ pub trait OrbitTrait2D {
     ///
     /// assert_eq!(
     ///     orbit.get_position_at_apoapsis(),
-    ///     DVec2::new(-1.6666666666666665, 0.0, 0.0)
+    ///     DVec2::new(-1.6666666666666665, 0.0)
     /// );
     /// ```
     #[inline]
@@ -413,7 +413,7 @@ pub trait OrbitTrait2D {
     ///
     /// assert_eq!(
     ///     orbit.get_position_at_apoapsis_unchecked(p_vector),
-    ///     DVec2::new(-1.6666666666666665, 0.0, 0.0)
+    ///     DVec2::new(-1.6666666666666665, 0.0)
     /// );
     /// ```
     #[inline]
@@ -811,7 +811,7 @@ pub trait OrbitTrait2D {
     ///
     /// const PERIAPSIS: f64 = 1.0;
     ///
-    /// let orbit = Orbit2D::new_flat(
+    /// let orbit = Orbit2D::new(
     ///     0.3, // Eccentricity
     ///     PERIAPSIS,
     ///     2.9, // Argument of periapsis
@@ -863,7 +863,7 @@ pub trait OrbitTrait2D {
     /// const APOAPSIS: f64 = 2.0;
     /// const PERIAPSIS: f64 = 1.0;
     ///
-    /// let orbit = Orbit2D::new_flat_with_apoapsis(
+    /// let orbit = Orbit2D::with_apoapsis(
     ///     APOAPSIS,
     ///     PERIAPSIS,
     ///     2.9, // Argument of periapsis
@@ -1993,7 +1993,7 @@ pub trait OrbitTrait2D {
     ///
     /// let pos = orbit.get_position_at_true_anomaly(0.0);
     ///
-    /// assert_eq!(pos, DVec2::new(100.0, 0.0, 0.0));
+    /// assert_eq!(pos, DVec2::new(100.0, 0.0));
     /// ```
     #[doc(alias = "get_position_at_angle")]
     fn get_position_at_true_anomaly(&self, angle: f64) -> DVec2 {
@@ -2204,7 +2204,7 @@ pub trait OrbitTrait2D {
     /// const APOAPSIS: f64 = 200.0;
     /// const PERIAPSIS: f64 = 100.0;
     ///
-    /// let orbit = Orbit2D::new_with_apoapsis(
+    /// let orbit = Orbit2D::with_apoapsis(
     ///     APOAPSIS,
     ///     PERIAPSIS,
     ///     0.0, // Argument of periapsis
@@ -3899,7 +3899,7 @@ pub trait OrbitTrait2D {
     /// ```
     /// use keplerian_sim::{Orbit2D, OrbitTrait2D};
     ///
-    /// let orbit = Orbit2D::new_flat(
+    /// let orbit = Orbit2D::new(
     ///     2.1, // Eccentricity
     ///     5.0, // Periapsis
     ///     2.9, // Argument of periapsis

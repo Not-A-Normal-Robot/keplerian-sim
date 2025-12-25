@@ -844,6 +844,8 @@ impl Default for Orbit {
     /// Creates a unit orbit.
     ///
     /// The unit orbit is a perfect circle of radius 1 and no "tilt".
+    ///
+    /// It also uses a gravitational parameter of 1.
     fn default() -> Self {
         Self::new_flat_circular(1.0, 0.0, 1.0)
     }

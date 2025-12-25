@@ -19,7 +19,7 @@ use crate::{ApoapsisSetterError, CompactOrbit2D, MuSetterMode2D, OrbitTrait2D};
 /// ```
 /// use keplerian_sim::{Orbit2D, OrbitTrait2D};
 ///
-/// let orbit = Orbit::new(
+/// let orbit = Orbit2D::new(
 ///     // Initialize using eccentricity, periapsis,
 ///     // argument of periapsis, mean anomaly at epoch,
 ///     // and gravitational parameter
@@ -38,9 +38,9 @@ use crate::{ApoapsisSetterError, CompactOrbit2D, MuSetterMode2D, OrbitTrait2D};
 ///
 ///     // Gravitational parameter of the parent body
 ///     1.0,
-/// )
+/// );
 ///
-/// let orbit = Orbit::with_apoapsis(
+/// let orbit = Orbit2D::with_apoapsis(
 ///     // Initialize using apoapsis in place of eccentricity
 ///     
 ///     // Apoapsis
@@ -119,8 +119,8 @@ pub struct Orbit2D {
 
 // -------- MEMO --------
 // When updating this struct, please review the following methods:
-// `Orbit::get_cached_calculations()`
-// `<Orbit as OrbitTrait>::set_*()`
+// `Orbit2D::get_cached_calculations()`
+// `<Orbit2D as OrbitTrait2D>::set_*()`
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 struct OrbitCachedCalculations {
@@ -145,7 +145,7 @@ impl Orbit2D {
     /// # Example
     ///
     /// ```
-    /// use keplerian_sim::{Orbit2D, OrbitTrait};
+    /// use keplerian_sim::{Orbit2D, OrbitTrait2D};
     ///
     /// let eccentricity = 0.2;
     /// let periapsis = 2.8;
@@ -185,7 +185,7 @@ impl Orbit2D {
     /// Because of this, it's not recommended to initialize
     /// parabolic or hyperbolic 'orbits' with this function.  
     /// If you're looking to initialize a parabolic or hyperbolic
-    /// trajectory, consider using the [`Orbit::new`] function instead.
+    /// trajectory, consider using the [`Orbit2D::new`] function instead.
     ///
     /// # Parameters
     /// - `apoapsis`: The apoapsis of the orbit, in meters.
@@ -219,7 +219,6 @@ impl Orbit2D {
     /// assert_eq!(orbit.get_arg_pe(), argument_of_periapsis);
     /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), mean_anomaly_at_epoch);
     /// assert_eq!(orbit.get_gravitational_parameter(), gravitational_parameter);
-    /// # }
     /// ```
     pub fn with_apoapsis(
         apoapsis: f64,
@@ -232,7 +231,7 @@ impl Orbit2D {
         Self::new(eccentricity, periapsis, arg_pe, mean_anomaly, mu)
     }
 
-    /// Creates a new circular `Orbit` instance with the given parameters.
+    /// Creates a new circular `Orbit2D` instance with the given parameters.
     ///
     /// # Parameters
     /// - `radius`: The radius of the orbit, in meters.
@@ -248,7 +247,7 @@ impl Orbit2D {
     /// let mean_anomaly_at_epoch = 1.5;
     /// let gravitational_parameter = 5.0;
     ///
-    /// let orbit = Orbit::new_circular(
+    /// let orbit = Orbit2D::new_circular(
     ///     radius,
     ///     mean_anomaly_at_epoch,
     ///     gravitational_parameter,
@@ -259,7 +258,6 @@ impl Orbit2D {
     /// assert_eq!(orbit.get_arg_pe(), 0.0);
     /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), mean_anomaly_at_epoch);
     /// assert_eq!(orbit.get_gravitational_parameter(), gravitational_parameter);
-    /// # }
     /// ```
     pub fn new_circular(radius: f64, mean_anomaly: f64, mu: f64) -> Self {
         let matrix = DMat2::IDENTITY;
@@ -472,7 +470,10 @@ impl From<CompactOrbit2D> for Orbit2D {
 impl Default for Orbit2D {
     /// Creates a unit orbit.
     ///
-    /// The unit orbit is a perfect circle of radius 1.
+    /// The unit orbit is a perfect circle of radius 1 and
+    /// zero mean anomaly at epoch.
+    ///
+    /// It also uses a gravitational parameter of 1.
     fn default() -> Self {
         Self::new_circular(1.0, 0.0, 1.0)
     }

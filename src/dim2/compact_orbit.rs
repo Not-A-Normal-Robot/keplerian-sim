@@ -43,7 +43,7 @@ use crate::{ApoapsisSetterError, MuSetterMode2D, Orbit2D, OrbitTrait2D};
 ///     1.0,
 /// );
 ///
-/// let orbit = CompactOrbit::with_apoapsis(
+/// let orbit = CompactOrbit2D::with_apoapsis(
 ///     // Initialize using apoapsis in place of eccentricity
 ///
 ///     // Apoapsis
@@ -432,5 +432,17 @@ impl From<Orbit2D> for CompactOrbit2D {
             mean_anomaly: cached.get_mean_anomaly_at_epoch(),
             mu: cached.get_gravitational_parameter(),
         }
+    }
+}
+
+impl Default for CompactOrbit2D {
+    /// Creates a unit orbit.
+    ///
+    /// The unit orbit is a perfect circle of radius 1 and
+    /// zero mean anomaly at epoch.
+    ///
+    /// It also uses a gravitational parameter of 1.
+    fn default() -> Self {
+        Self::new_circular(1.0, 0.0, 1.0)
     }
 }

@@ -724,17 +724,6 @@ impl OrbitTrait for CompactOrbit {
     }
 }
 
-impl Default for CompactOrbit {
-    /// Creates a unit orbit.
-    ///
-    /// The unit orbit is a perfect circle of radius 1 and no "tilt".
-    ///
-    /// It also uses a gravitational parameter of 1.
-    fn default() -> Self {
-        Self::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
-    }
-}
-
 impl From<Orbit> for CompactOrbit {
     fn from(cached: Orbit) -> Self {
         Self {
@@ -746,5 +735,16 @@ impl From<Orbit> for CompactOrbit {
             mean_anomaly: cached.get_mean_anomaly_at_epoch(),
             mu: cached.get_gravitational_parameter(),
         }
+    }
+}
+
+impl Default for CompactOrbit {
+    /// Creates a unit orbit.
+    ///
+    /// The unit orbit is a perfect circle of radius 1 and no "tilt".
+    ///
+    /// It also uses a gravitational parameter of 1.
+    fn default() -> Self {
+        Self::new_flat_circular(1.0, 0.0, 1.0)
     }
 }
