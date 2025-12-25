@@ -3,8 +3,8 @@ pub mod compact_orbit;
 
 use std::f64::consts::{PI, TAU};
 
-use cached_orbit::Orbit;
-use compact_orbit::CompactOrbit;
+pub use cached_orbit::Orbit;
+pub use compact_orbit::CompactOrbit;
 use glam::{DVec2, DVec3};
 
 use crate::{

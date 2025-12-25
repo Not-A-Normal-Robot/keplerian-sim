@@ -71,13 +71,8 @@ mod dim3;
 /// Re-exports for dependencies.
 pub mod reexports;
 
-pub use dim2::{
-    cached_orbit::Orbit2D, compact_orbit::CompactOrbit2D, MuSetterMode2D, OrbitTrait2D,
-    StateVectors2D,
-};
-pub use dim3::{
-    cached_orbit::Orbit, compact_orbit::CompactOrbit, MuSetterMode, OrbitTrait, StateVectors,
-};
+pub use dim2::{CompactOrbit2D, MuSetterMode2D, Orbit2D, OrbitTrait2D, StateVectors2D};
+pub use dim3::{CompactOrbit, MuSetterMode, Orbit, OrbitTrait, StateVectors};
 
 /// A constant used to get the initial seed for the eccentric anomaly.
 ///

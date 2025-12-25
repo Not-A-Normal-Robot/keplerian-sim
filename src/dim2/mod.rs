@@ -10,8 +10,8 @@ use crate::{
 pub mod cached_orbit;
 pub mod compact_orbit;
 
-use cached_orbit::Orbit2D;
-use compact_orbit::CompactOrbit2D;
+pub use cached_orbit::Orbit2D;
+pub use compact_orbit::CompactOrbit2D;
 
 /// A trait that defines the methods that a 2D-constrained Keplerian
 /// orbit must implement.
@@ -1134,37 +1134,6 @@ pub trait OrbitTrait2D {
     /// ```
     fn get_eccentricity_vector_unchecked(&self, p_vector: DVec2) -> DVec2 {
         self.get_eccentricity() * p_vector
-    }
-
-    /// Gets the longitude of periapsis of this orbit.
-    ///
-    /// The longitude of the periapsis, also called longitude of the pericenter,
-    /// of an orbiting body is the longitude (measured from the point of the
-    /// vernal equinox) at which the periapsis (closest approach to the
-    /// central body) would occur if the body's orbit inclination were zero.  
-    /// It is usually denoted ϖ.
-    ///
-    /// \- [Wikipedia](https://en.wikipedia.org/wiki/Longitude_of_periapsis)
-    ///
-    /// # Performance
-    /// This function is very performant and should not be the cause
-    /// of any performance problems.
-    fn get_longitude_of_periapsis(&self) -> f64 {
-        self.get_arg_pe() + self.get_long_asc_node()
-    }
-
-    /// Gets the true longitude at a true anomaly in the orbit.
-    ///
-    /// True longitude is the ecliptic longitude at which an
-    /// orbiting body could actually be found if its inclination were zero.
-    ///
-    /// \- [Wikipedia](https://en.wikipedia.org/wiki/True_longitude)
-    ///
-    /// # Performance
-    /// This function is very performant and should not be the cause
-    /// of any performance problems.
-    fn get_true_longitude_at_true_anomaly(&self, true_anomaly: f64) -> f64 {
-        true_anomaly + self.get_longitude_of_periapsis()
     }
 
     // TODO: POST-PARABOLIC SUPPORT: Add note about parabolic eccentric anomaly (?), remove parabolic support sections
@@ -4149,26 +4118,6 @@ pub trait OrbitTrait2D {
     /// Wikipedia: <https://en.wikipedia.org/wiki/Apsis>
     fn set_periapsis(&mut self, periapsis: f64);
 
-    /// Gets the inclination of the orbit in radians.
-    ///
-    /// The inclination of an orbit is the angle between the plane of the
-    /// orbit and the reference plane.
-    ///
-    /// In simple terms, it tells you how "tilted" the orbit is.
-    ///
-    /// Wikipedia: <https://en.wikipedia.org/wiki/Orbital_inclination>
-    fn get_inclination(&self) -> f64;
-
-    /// Sets the inclination of the orbit in radians.
-    ///
-    /// The inclination of an orbit is the angle between the plane of the
-    /// orbit and the reference plane.
-    ///
-    /// In simple terms, it tells you how "tilted" the orbit is.
-    ///
-    /// Wikipedia: <https://en.wikipedia.org/wiki/Orbital_inclination>
-    fn set_inclination(&mut self, inclination: f64);
-
     /// Gets the argument of periapsis of the orbit in radians.
     ///
     /// Wikipedia:  
@@ -4194,32 +4143,6 @@ pub trait OrbitTrait2D {
     /// the orbit "tilts".
     #[doc(alias = "set_argument_of_periapsis")]
     fn set_arg_pe(&mut self, arg_pe: f64);
-
-    /// Gets the longitude of ascending node of the orbit in radians.
-    ///
-    /// Wikipedia:  
-    /// The longitude of ascending node is the angle from a specified
-    /// reference direction, called the origin of longitude, to the direction
-    /// of the ascending node, as measured in a specified reference plane.  
-    /// <https://en.wikipedia.org/wiki/Longitude_of_the_ascending_node>
-    ///
-    /// In simple terms, it tells you how, and in which direction,
-    /// the orbit "tilts".
-    #[doc(alias = "get_longitude_of_ascending_node")]
-    fn get_long_asc_node(&self) -> f64;
-
-    /// Sets the longitude of ascending node of the orbit in radians.
-    ///
-    /// Wikipedia:  
-    /// The longitude of ascending node is the angle from a specified
-    /// reference direction, called the origin of longitude, to the direction
-    /// of the ascending node, as measured in a specified reference plane.  
-    /// <https://en.wikipedia.org/wiki/Longitude_of_the_ascending_node>
-    ///
-    /// In simple terms, it tells you how, and in which direction,
-    /// the orbit "tilts".
-    #[doc(alias = "set_longitude_of_ascending_node")]
-    fn set_long_asc_node(&mut self, long_asc_node: f64);
 
     /// Gets the mean anomaly of the orbit at a certain epoch.
     ///
@@ -4422,9 +4345,7 @@ pub trait OrbitTrait2D {
     /// let mut orbit = Orbit2D::new(
     ///     0.0, // Eccentricity
     ///     1.0, // Periapsis
-    ///     0.0, // Inclination
     ///     0.0, // Argument of Periapsis
-    ///     0.0, // Longitude of Ascending Node
     ///     0.0, // Mean anomaly at epoch
     ///     1.0, // Gravitational parameter (mu = GM)
     /// );
@@ -4433,9 +4354,7 @@ pub trait OrbitTrait2D {
     ///
     /// assert_eq!(orbit.get_eccentricity(), 0.0);
     /// assert_eq!(orbit.get_periapsis(), 1.0);
-    /// assert_eq!(orbit.get_inclination(), 0.0);
     /// assert_eq!(orbit.get_arg_pe(), 0.0);
-    /// assert_eq!(orbit.get_long_asc_node(), 0.0);
     /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), 0.0);
     /// assert_eq!(orbit.get_gravitational_parameter(), 3.0);
     /// ```
@@ -4478,6 +4397,26 @@ pub struct StateVectors2D {
     pub velocity: DVec2,
 }
 
+impl StateVectors2D {
+    #[must_use]
+    pub fn to_compact_orbit(self, mu: f64, time: f64) -> CompactOrbit2D {
+        todo!();
+    }
+
+    #[must_use]
+    pub fn to_cached_orbit(self, mu: f64, time: f64) -> Orbit2D {
+        todo!();
+    }
+
+    #[must_use]
+    pub fn to_custom_orbit<O>(self, mu: f64, time: f64) -> O
+    where
+        O: From<CompactOrbit2D> + OrbitTrait2D,
+    {
+        self.to_compact_orbit(mu, time).into()
+    }
+}
+
 /// A mode to describe how the gravitational parameter setter should behave.
 ///
 /// This is used to describe how the setter should behave when setting the
@@ -4515,9 +4454,7 @@ pub enum MuSetterMode2D {
     /// let mut orbit = Orbit2D::new(
     ///     0.0, // Eccentricity
     ///     1.0, // Periapsis
-    ///     0.0, // Inclination
     ///     0.0, // Argument of Periapsis
-    ///     0.0, // Longitude of Ascending Node
     ///     0.0, // Mean anomaly at epoch
     ///     1.0, // Gravitational parameter (mu = GM)
     /// );
@@ -4552,9 +4489,7 @@ pub enum MuSetterMode2D {
     /// let mut orbit = Orbit2D::new(
     ///     0.0, // Eccentricity
     ///     1.0, // Periapsis
-    ///     0.0, // Inclination
     ///     0.0, // Argument of Periapsis
-    ///     0.0, // Longitude of Ascending Node
     ///     0.0, // Mean anomaly at epoch
     ///     1.0, // Gravitational parameter (mu = GM)
     /// );
@@ -4566,9 +4501,7 @@ pub enum MuSetterMode2D {
     ///
     /// assert_eq!(orbit.get_eccentricity(), 0.0);
     /// assert_eq!(orbit.get_periapsis(), 1.0);
-    /// assert_eq!(orbit.get_inclination(), 0.0);
     /// assert_eq!(orbit.get_arg_pe(), 0.0);
-    /// assert_eq!(orbit.get_long_asc_node(), 0.0);
     /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), -0.2928203230275509);
     /// assert_eq!(orbit.get_gravitational_parameter(), 3.0);
     /// ```
@@ -4603,9 +4536,7 @@ pub enum MuSetterMode2D {
     /// let mut orbit = Orbit2D::new(
     ///     0.0, // Eccentricity
     ///     1.0, // Periapsis
-    ///     0.0, // Inclination
     ///     0.0, // Argument of Periapsis
-    ///     0.0, // Longitude of Ascending Node
     ///     0.0, // Mean anomaly at epoch
     ///     1.0, // Gravitational parameter (mu = GM)
     /// );
@@ -4673,9 +4604,7 @@ pub enum MuSetterMode2D {
     /// let old_orbit = Orbit2D::new(
     ///     0.0, // Eccentricity
     ///     1.0, // Periapsis
-    ///     0.0, // Inclination
     ///     0.0, // Argument of Periapsis
-    ///     0.0, // Longitude of Ascending Node
     ///     0.0, // Mean anomaly at epoch
     ///     1.0, // Gravitational parameter (mu = GM)
     /// );

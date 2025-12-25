@@ -22,7 +22,7 @@ use core::f64::consts::{PI, TAU};
 /// let orbit = CompactOrbit::new(
 ///     // Initialize using eccentricity, periapsis, inclination,
 ///     // argument of periapsis, longitude of ascending node,
-///     // and mean anomaly at epoch
+///     // mean anomaly at epoch, and gravitational parameter
 ///
 ///     // Eccentricity
 ///     0.0,
@@ -145,9 +145,9 @@ pub struct CompactOrbit {
     pub mu: f64,
 }
 
-// Initialization and cache management
+// Initialization
 impl CompactOrbit {
-    /// Creates a new `CompactOrbit` instance with the given parameters.
+    /// Creates a new [`CompactOrbit`] instance with the given parameters.
     ///
     /// Note: This function uses eccentricity instead of apoapsis.  
     /// If you want to provide an apoapsis instead, consider using the
@@ -214,7 +214,7 @@ impl CompactOrbit {
         }
     }
 
-    /// Creates a new `CompactOrbit` instance with the given parameters.
+    /// Creates a new [`CompactOrbit`] instance with the given parameters.
     ///
     /// Note: This function uses apoapsis instead of eccentricity.  
     /// Because of this, it's not recommended to create
@@ -287,7 +287,7 @@ impl CompactOrbit {
         )
     }
 
-    /// Creates a new circular `CompactOrbit` instance with the given parameters.
+    /// Creates a new circular [`CompactOrbit`] instance with the given parameters.
     ///
     /// # Parameters
     /// - `radius`: The radius of the orbit, in meters.
@@ -514,20 +514,6 @@ impl CompactOrbit {
 }
 
 impl OrbitTrait for CompactOrbit {
-    fn get_semi_major_axis(&self) -> f64 {
-        self.periapsis / (1.0 - self.eccentricity)
-    }
-
-    fn get_semi_minor_axis(&self) -> f64 {
-        let semi_major_axis = self.get_semi_major_axis();
-        let eccentricity_squared = self.eccentricity * self.eccentricity;
-        semi_major_axis * (1.0 - eccentricity_squared).abs().sqrt()
-    }
-
-    fn get_linear_eccentricity(&self) -> f64 {
-        self.get_semi_major_axis() - self.periapsis
-    }
-
     fn set_apoapsis(&mut self, apoapsis: f64) -> Result<(), ApoapsisSetterError> {
         if apoapsis < 0.0 {
             Err(ApoapsisSetterError::ApoapsisNegative)
