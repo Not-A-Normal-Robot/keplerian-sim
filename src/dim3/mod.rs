@@ -5147,7 +5147,7 @@ pub struct StateVectors {
 
 impl StateVectors {
     /// Create a new [`CompactOrbit`] struct from the state
-    /// vectors and a given mu value.
+    /// vectors and the given mu and time values.
     ///
     /// # Mu
     /// Mu is also known as the gravitational parameter, and
