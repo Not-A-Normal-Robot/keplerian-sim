@@ -70,6 +70,7 @@ mod dim2;
 mod dim3;
 /// Re-exports for dependencies.
 pub mod reexports;
+mod solvers;
 
 pub use dim2::{CompactOrbit2D, MuSetterMode2D, Orbit2D, OrbitTrait2D, StateVectors2D};
 pub use dim3::{CompactOrbit, MuSetterMode, Orbit, OrbitTrait, StateVectors};
