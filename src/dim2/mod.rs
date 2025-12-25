@@ -2,10 +2,7 @@ use std::f64::consts::{PI, TAU};
 
 use glam::{DMat2, DVec2};
 
-use crate::{
-    keplers_equation, keplers_equation_derivative, keplers_equation_second_derivative, sinhcosh,
-    solve_monotone_cubic, solvers, ApoapsisSetterError, B, NUMERIC_MAX_ITERS, N_F64, N_U32,
-};
+use crate::{sinhcosh, solvers, ApoapsisSetterError};
 
 pub mod cached_orbit;
 pub mod compact_orbit;
@@ -4310,11 +4307,137 @@ impl StateVectors2D {
         CompactOrbit2D::new(eccentricity, periapsis, arg_pe, mean_anomaly_at_epoch, mu)
     }
 
+    /// Create a new [`Orbit2D`] struct from the state
+    /// vectors and a given mu value.
+    ///
+    /// # Mu
+    /// Mu is also known as the gravitational parameter, and
+    /// is equal to `GM`, where `G` is the gravitational constant,
+    /// and `M` is the mass of the parent body.  
+    /// It can be described as how strongly the parent body pulls on
+    /// the orbiting body.
+    ///
+    /// Learn more about the gravitational parameter:
+    /// <https://en.wikipedia.org/wiki/Standard_gravitational_parameter>
+    ///
+    /// # Time
+    /// The time passed into the function is measured in seconds.
+    ///
+    /// # Performance
+    /// This function is not too performant as it uses several trigonometric operations.  
+    ///
+    /// For single conversions, this is slower than
+    /// [the compact orbit converter][Self::to_compact_orbit], as there are some extra
+    /// values that will be calculated and cached.  
+    /// However, if you're going to use this same orbit for many calculations, this should
+    /// be better off in the long run as the caching performance benefits should outgrow
+    /// the small initialization cost.
+    ///
+    /// # Reference Frame
+    /// This function expects a state vector where the position's origin (0.0, 0.0, 0.0)
+    /// is the center of the parent body.
+    ///
+    /// # Parabolic Support
+    /// This function does not yet support parabolic trajectories.
+    /// Non-finite values may be returned for such cases.
+    ///
+    /// # Constraints
+    /// The position must not be at the origin, and the velocity must not be at zero.  
+    /// If this constraint is breached, you may get invalid values such as infinities
+    /// or NaNs.
+    ///
+    /// # Examples
+    /// Simple use-case:
+    /// ```
+    /// use keplerian_sim::{Orbit2D, OrbitTrait2D};
+    ///
+    /// let orbit = Orbit2D::default();
+    /// let mu = orbit.get_gravitational_parameter();
+    /// let time = 0.0;
+    ///
+    /// let sv = orbit.get_state_vectors_at_time(time);
+    ///
+    /// let new_orbit = sv.to_cached_orbit(mu, time);
+    ///
+    /// assert_eq!(orbit.get_eccentricity(), new_orbit.get_eccentricity());
+    /// assert_eq!(orbit.get_periapsis(), new_orbit.get_periapsis());
+    /// ```
+    /// To simulate an instantaneous 0.1 m/s prograde burn at periapsis:
+    /// ```
+    /// use keplerian_sim::{Orbit2D, OrbitTrait2D, StateVectors2D};
+    /// use glam::DVec2;
+    ///
+    /// let orbit = Orbit2D::default();
+    /// let mu = orbit.get_gravitational_parameter();
+    /// let time = 0.0;
+    ///
+    /// let sv = orbit.get_state_vectors_at_time(time);
+    /// assert_eq!(
+    ///     sv,
+    ///     StateVectors2D {
+    ///         position: DVec2::new(1.0, 0.0),
+    ///         velocity: DVec2::new(0.0, 1.0),
+    ///     }
+    /// );
+    ///
+    /// let new_sv = StateVectors2D {
+    ///     velocity: sv.velocity + DVec2::new(0.0, 0.1),
+    ///     ..sv
+    /// };
+    ///
+    /// let new_orbit = new_sv.to_cached_orbit(mu, time);
+    ///
+    /// assert_eq!(
+    ///     new_orbit,
+    ///     Orbit2D::new(
+    ///         0.2100000000000002, // eccentricity
+    ///         1.0, // periapsis
+    ///         0.0, // argument of periapsis
+    ///         0.0, // mean anomaly
+    ///         1.0, // gravitational parameter
+    ///     )
+    /// )
+    /// ```
     #[must_use]
     pub fn to_cached_orbit(self, mu: f64, time: f64) -> Orbit2D {
         self.to_compact_orbit(mu, time).into()
     }
 
+    /// Create a new custom orbit struct from the state vectors
+    /// and a given mu value.
+    ///
+    /// # Mu
+    /// Mu is also known as the gravitational parameter, and
+    /// is equal to `GM`, where `G` is the gravitational constant,
+    /// and `M` is the mass of the parent body.  
+    /// It can be described as how strongly the parent body pulls on
+    /// the orbiting body.
+    ///
+    /// Learn more about the gravitational parameter:
+    /// <https://en.wikipedia.org/wiki/Standard_gravitational_parameter>
+    ///
+    /// # Time
+    /// The time passed into the function is measured in seconds.
+    ///
+    /// # Performance
+    /// This function is not too performant as it uses several trigonometric operations.
+    ///
+    /// The performance also depends on how fast the specified orbit type can convert
+    /// between the [`CompactOrbit`] form into itself, and so we cannot guarantee any
+    /// performance behaviors.
+    ///
+    /// # Reference Frame
+    /// This function expects a state vector where the position's origin (0.0, 0.0, 0.0)
+    /// is the center of the parent body.
+    ///
+    /// # Parabolic Support
+    /// This function does not yet support parabolic trajectories.
+    /// Non-finite values may be returned for such cases.
+    ///
+    /// # Constraints
+    /// The position must not be at the origin, and the velocity must not be at zero.  
+    /// If this constraint is breached, you may get invalid values such as infinities
+    /// or NaNs.
     #[must_use]
     pub fn to_custom_orbit<O>(self, mu: f64, time: f64) -> O
     where

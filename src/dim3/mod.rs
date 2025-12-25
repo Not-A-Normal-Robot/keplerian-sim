@@ -7,11 +7,7 @@ pub use cached_orbit::Orbit;
 pub use compact_orbit::CompactOrbit;
 use glam::{DVec2, DVec3};
 
-use crate::{
-    keplers_equation, keplers_equation_derivative, keplers_equation_second_derivative, sinhcosh,
-    solve_monotone_cubic, solvers, ApoapsisSetterError, Matrix3x2, B, NUMERIC_MAX_ITERS, N_F64,
-    N_U32,
-};
+use crate::{sinhcosh, solvers, ApoapsisSetterError, Matrix3x2};
 
 /// A trait that defines the methods that a Keplerian orbit must implement.
 ///
