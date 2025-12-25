@@ -1,3 +1,4 @@
+use core::f64::consts::{PI, TAU};
 use glam::DVec3;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -6,8 +7,6 @@ use serde::{Deserialize, Serialize};
 #[allow(unused_imports)]
 use crate::math::F64Math;
 use crate::{ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait};
-
-use core::f64::consts::{PI, TAU};
 
 /// A minimal struct representing a Keplerian orbit.
 ///
@@ -71,7 +70,7 @@ use core::f64::consts::{PI, TAU};
 ///     1.0,
 /// );
 /// ```
-/// See [Orbit::new] and [Orbit::with_apoapsis] for more information.
+/// See [CompactOrbit::new] and [CompactOrbit::with_apoapsis] for more information.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CompactOrbit {

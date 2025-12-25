@@ -1,8 +1,12 @@
-use std::f64::consts::{PI, TAU};
-
+use core::f64::consts::{PI, TAU};
 use glam::{DMat2, DVec2};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
-use crate::{ApoapsisSetterError, MuSetterMode2D, OrbitTrait2D};
+#[cfg(feature = "libm")]
+#[allow(unused_imports)]
+use crate::math::F64Math;
+use crate::{ApoapsisSetterError, MuSetterMode2D, Orbit2D, OrbitTrait2D};
 
 /// A minimal struct representing a 2D Keplerian orbit.
 ///
@@ -58,6 +62,7 @@ use crate::{ApoapsisSetterError, MuSetterMode2D, OrbitTrait2D};
 ///     1.0,
 /// );
 /// ```
+/// See [CompactOrbit2D::new] and [CompactOrbit2D::with_apoapsis] for more information.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CompactOrbit2D {
@@ -414,6 +419,18 @@ impl OrbitTrait2D for CompactOrbit2D {
                 let new = state_vectors.to_compact_orbit(new_mu, time);
                 *self = new;
             }
+        }
+    }
+}
+
+impl From<Orbit2D> for CompactOrbit2D {
+    fn from(cached: Orbit2D) -> Self {
+        Self {
+            eccentricity: cached.get_eccentricity(),
+            periapsis: cached.get_periapsis(),
+            arg_pe: cached.get_arg_pe(),
+            mean_anomaly: cached.get_mean_anomaly_at_epoch(),
+            mu: cached.get_gravitational_parameter(),
         }
     }
 }

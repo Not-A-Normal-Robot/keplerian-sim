@@ -1,3 +1,4 @@
+use core::f64::consts::{PI, TAU};
 use glam::DVec3;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -7,13 +8,11 @@ use serde::{Deserialize, Serialize};
 use crate::math::F64Math;
 use crate::{ApoapsisSetterError, CompactOrbit, Matrix3x2, OrbitTrait};
 
-use core::f64::consts::{PI, TAU};
-
 /// A struct representing a Keplerian orbit with some cached values.
 ///
 /// This struct consumes significantly more memory because of the cache.  
 /// However, this will speed up orbital calculations.  
-/// If memory efficiency is your goal, you may consider using the `CompactOrbit` struct instead.  
+/// If memory efficiency is your goal, you may consider using the [`CompactOrbit`] struct instead.  
 ///
 /// # Example
 /// ```
@@ -22,7 +21,7 @@ use core::f64::consts::{PI, TAU};
 /// let orbit = Orbit::new(
 ///     // Initialize using eccentricity, periapsis, inclination,
 ///     // argument of periapsis, longitude of ascending node,
-///     // and mean anomaly at epoch
+///     // mean anomaly at epoch, and gravitational parameter
 ///
 ///     // Eccentricity
 ///     0.0,
@@ -79,24 +78,71 @@ pub struct Orbit {
     /// e < 1: ellipse  
     /// e = 1: parabola  
     /// e > 1: hyperbola  
+    ///
+    /// See more: <https://en.wikipedia.org/wiki/Orbital_eccentricity>
     eccentricity: f64,
 
     /// The periapsis of the orbit, in meters.
+    ///
+    /// The periapsis of an orbit is the distance at the closest point
+    /// to the parent body.
+    ///
+    /// More simply, this is the "minimum altitude" of an orbit.
     periapsis: f64,
 
     /// The inclination of the orbit, in radians.
+    /// The inclination of an orbit is the angle between the plane of the
+    /// orbit and the reference plane.
+    ///
+    /// In simple terms, it tells you how "tilted" the orbit is.
     inclination: f64,
 
     /// The argument of periapsis of the orbit, in radians.
+    ///
+    /// Wikipedia:  
+    /// The argument of periapsis is the angle from the body's
+    /// ascending node to its periapsis, measured in the direction of
+    /// motion.  
+    /// <https://en.wikipedia.org/wiki/Argument_of_periapsis>
+    ///
+    /// In simple terms, it tells you how, and in which direction,
+    /// the orbit "tilts".
     arg_pe: f64,
 
     /// The longitude of ascending node of the orbit, in radians.
+    ///
+    /// Wikipedia:  
+    /// The longitude of ascending node is the angle from a specified
+    /// reference direction, called the origin of longitude, to the direction
+    /// of the ascending node, as measured in a specified reference plane.  
+    /// <https://en.wikipedia.org/wiki/Longitude_of_the_ascending_node>
+    ///
+    /// In simple terms, it tells you how, and in which direction,
+    /// the orbit "tilts".
     long_asc_node: f64,
 
     /// The mean anomaly at orbit epoch, in radians.
+    ///
+    /// For elliptic orbits, it's measured in radians and so are bounded
+    /// between 0 and tau; anything out of range will get wrapped around.  
+    /// For hyperbolic orbits, it's unbounded.
+    ///
+    /// Wikipedia:  
+    /// The mean anomaly at epoch, `M_0`, is defined as the instantaneous mean
+    /// anomaly at a given epoch, `t_0`.  
+    /// <https://en.wikipedia.org/wiki/Mean_anomaly#Mean_anomaly_at_epoch>
+    ///
+    /// In simple terms, this modifies the "offset" of the orbit progression.
     mean_anomaly: f64,
+
     /// The gravitational parameter of the parent body.
+    ///
+    /// This is a constant value that represents the mass of the parent body
+    /// multiplied by the gravitational constant.
+    ///
+    /// In other words, mu = GM.
     mu: f64,
+
     cache: OrbitCachedCalculations,
 }
 
@@ -107,10 +153,10 @@ pub struct Orbit {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 struct OrbitCachedCalculations {
-    /// The transformation matrix to tilt the 2D planar orbit into 3D space.
+    /// The transformation matrix to transform from the 2D PQW space into 3D space.
     transformation_matrix: Matrix3x2,
 }
-// Initialization and cache management
+
 impl Orbit {
     /// Creates a new orbit with the given parameters.
     ///
@@ -126,6 +172,7 @@ impl Orbit {
     /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
     /// - `mean_anomaly`: The mean anomaly of the orbit at epoch, in radians.
     /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
+    ///
     /// # Example
     ///
     /// ```
@@ -167,9 +214,9 @@ impl Orbit {
         long_asc_node: f64,
         mean_anomaly: f64,
         mu: f64,
-    ) -> Orbit {
+    ) -> Self {
         let cache = Self::get_cached_calculations(inclination, arg_pe, long_asc_node);
-        Orbit {
+        Self {
             eccentricity,
             periapsis,
             inclination,
@@ -240,7 +287,7 @@ impl Orbit {
         long_asc_node: f64,
         mean_anomaly: f64,
         mu: f64,
-    ) -> Orbit {
+    ) -> Self {
         let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
         Self::new(
             eccentricity,
@@ -605,7 +652,6 @@ impl Orbit {
     }
 }
 
-// The actual orbit position calculations
 impl OrbitTrait for Orbit {
     fn set_apoapsis(&mut self, apoapsis: f64) -> Result<(), ApoapsisSetterError> {
         if apoapsis < 0.0 {
@@ -702,22 +748,27 @@ impl OrbitTrait for Orbit {
     fn set_eccentricity(&mut self, value: f64) {
         self.eccentricity = value;
     }
+
     #[inline]
     fn set_periapsis(&mut self, value: f64) {
         self.periapsis = value;
     }
+
     fn set_inclination(&mut self, value: f64) {
         self.inclination = value;
         self.update_cache();
     }
+
     fn set_arg_pe(&mut self, value: f64) {
         self.arg_pe = value;
         self.update_cache();
     }
+
     fn set_long_asc_node(&mut self, value: f64) {
         self.long_asc_node = value;
         self.update_cache();
     }
+
     #[inline]
     fn set_mean_anomaly_at_epoch(&mut self, value: f64) {
         self.mean_anomaly = value;
@@ -793,7 +844,7 @@ impl Default for Orbit {
     /// Creates a unit orbit.
     ///
     /// The unit orbit is a perfect circle of radius 1 and no "tilt".
-    fn default() -> Orbit {
-        Self::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
+    fn default() -> Self {
+        Self::new_flat_circular(1.0, 0.0, 1.0)
     }
 }
