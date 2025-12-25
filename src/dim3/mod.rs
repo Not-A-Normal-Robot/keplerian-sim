@@ -1120,7 +1120,7 @@ pub trait OrbitTrait {
     /// );
     /// ```
     fn get_eccentricity_vector(&self) -> DVec3 {
-        self.get_eccentricity_vector_unchecked(self.get_pqw_basis_vectors().0)
+        self.get_eccentricity_vector_unchecked(self.get_pqw_basis_vector_p())
     }
 
     /// Gets the eccentricity vector of this orbit.
@@ -1840,7 +1840,7 @@ pub trait OrbitTrait {
     ///
     /// # Parabolic Support
     /// This function doesn't yet support parabolic trajectories. It may return `NaN`s
-    /// or nonsensical values.
+    /// or nonsensical values in this case.
     ///
     /// # Performance
     /// The method to get the eccentric anomaly from the mean anomaly
@@ -1853,7 +1853,7 @@ pub trait OrbitTrait {
     /// — [Wikipedia](https://en.wikipedia.org/wiki/Eccentric_anomaly)
     fn get_eccentric_anomaly_at_mean_anomaly(&self, mean_anomaly: f64) -> f64 {
         // TODO: PARABOLIC SUPPORT: This function doesn't consider parabolic support yet.
-        if self.get_eccentricity() < 1.0 {
+        if self.is_closed() {
             self.get_elliptic_eccentric_anomaly(mean_anomaly)
         } else {
             self.get_hyperbolic_eccentric_anomaly(mean_anomaly)
