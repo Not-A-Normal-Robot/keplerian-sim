@@ -1,3 +1,4 @@
+use core::f64::consts::{PI, TAU};
 use glam::DVec3;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -5,24 +6,22 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "libm")]
 #[allow(unused_imports)]
 use crate::math::F64Math;
-use crate::{ApoapsisSetterError, CompactOrbit, Matrix3x2, OrbitTrait};
+use crate::{ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait};
 
-use core::f64::consts::{PI, TAU};
-
-/// A struct representing a Keplerian orbit with some cached values.
+/// A minimal struct representing a Keplerian orbit.
 ///
-/// This struct consumes significantly more memory because of the cache.  
-/// However, this will speed up orbital calculations.  
-/// If memory efficiency is your goal, you may consider using the `CompactOrbit` struct instead.  
+/// This struct minimizes memory footprint by not caching variables.  
+/// Because of this, calculations can be slower than caching those variables.  
+/// For this reason, you might consider using the `Orbit` struct instead.
 ///
 /// # Example
 /// ```
-/// use keplerian_sim::{Orbit, OrbitTrait};
+/// use keplerian_sim::{CompactOrbit, OrbitTrait};
 ///
-/// let orbit = Orbit::new(
+/// let orbit = CompactOrbit::new(
 ///     // Initialize using eccentricity, periapsis, inclination,
 ///     // argument of periapsis, longitude of ascending node,
-///     // and mean anomaly at epoch
+///     // mean anomaly at epoch, and gravitational parameter
 ///
 ///     // Eccentricity
 ///     0.0,
@@ -46,7 +45,7 @@ use core::f64::consts::{PI, TAU};
 ///     1.0,
 /// );
 ///
-/// let orbit = Orbit::with_apoapsis(
+/// let orbit = CompactOrbit::with_apoapsis(
 ///     // Initialize using apoapsis in place of eccentricity
 ///     
 ///     // Apoapsis
@@ -71,52 +70,87 @@ use core::f64::consts::{PI, TAU};
 ///     1.0,
 /// );
 /// ```
-/// See [Orbit::new] and [Orbit::with_apoapsis] for more information.
+/// See [CompactOrbit::new] and [CompactOrbit::with_apoapsis] for more information.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Orbit {
+pub struct CompactOrbit {
     /// The eccentricity of the orbit.  
     /// e < 1: ellipse  
     /// e = 1: parabola  
     /// e > 1: hyperbola  
-    eccentricity: f64,
+    ///
+    /// See more: <https://en.wikipedia.org/wiki/Orbital_eccentricity>
+    pub eccentricity: f64,
 
     /// The periapsis of the orbit, in meters.
-    periapsis: f64,
+    ///
+    /// The periapsis of an orbit is the distance at the closest point
+    /// to the parent body.
+    ///
+    /// More simply, this is the "minimum altitude" of an orbit.
+    pub periapsis: f64,
 
     /// The inclination of the orbit, in radians.
-    inclination: f64,
+    /// The inclination of an orbit is the angle between the plane of the
+    /// orbit and the reference plane.
+    ///
+    /// In simple terms, it tells you how "tilted" the orbit is.
+    pub inclination: f64,
 
     /// The argument of periapsis of the orbit, in radians.
-    arg_pe: f64,
+    ///
+    /// Wikipedia:  
+    /// The argument of periapsis is the angle from the body's
+    /// ascending node to its periapsis, measured in the direction of
+    /// motion.  
+    /// <https://en.wikipedia.org/wiki/Argument_of_periapsis>
+    ///
+    /// In simple terms, it tells you how, and in which direction,
+    /// the orbit "tilts".
+    pub arg_pe: f64,
 
     /// The longitude of ascending node of the orbit, in radians.
-    long_asc_node: f64,
+    ///
+    /// Wikipedia:  
+    /// The longitude of ascending node is the angle from a specified
+    /// reference direction, called the origin of longitude, to the direction
+    /// of the ascending node, as measured in a specified reference plane.  
+    /// <https://en.wikipedia.org/wiki/Longitude_of_the_ascending_node>
+    ///
+    /// In simple terms, it tells you how, and in which direction,
+    /// the orbit "tilts".
+    pub long_asc_node: f64,
 
     /// The mean anomaly at orbit epoch, in radians.
-    mean_anomaly: f64,
+    ///
+    /// For elliptic orbits, it's measured in radians and so are bounded
+    /// between 0 and tau; anything out of range will get wrapped around.  
+    /// For hyperbolic orbits, it's unbounded.
+    ///
+    /// Wikipedia:  
+    /// The mean anomaly at epoch, `M_0`, is defined as the instantaneous mean
+    /// anomaly at a given epoch, `t_0`.  
+    /// <https://en.wikipedia.org/wiki/Mean_anomaly#Mean_anomaly_at_epoch>
+    ///
+    /// In simple terms, this modifies the "offset" of the orbit progression.
+    pub mean_anomaly: f64,
+
     /// The gravitational parameter of the parent body.
-    mu: f64,
-    cache: OrbitCachedCalculations,
+    ///
+    /// This is a constant value that represents the mass of the parent body
+    /// multiplied by the gravitational constant.
+    ///
+    /// In other words, mu = GM.
+    pub mu: f64,
 }
 
-// -------- MEMO --------
-// When updating this struct, please review the following methods:
-// `Orbit::get_cached_calculations()`
-// `<Orbit as OrbitTrait>::set_*()`
-#[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-struct OrbitCachedCalculations {
-    /// The transformation matrix to tilt the 2D planar orbit into 3D space.
-    transformation_matrix: Matrix3x2,
-}
-// Initialization and cache management
-impl Orbit {
-    /// Creates a new orbit with the given parameters.
+// Initialization
+impl CompactOrbit {
+    /// Creates a new [`CompactOrbit`] instance with the given parameters.
     ///
     /// Note: This function uses eccentricity instead of apoapsis.  
     /// If you want to provide an apoapsis instead, consider using the
-    /// [`Orbit::with_apoapsis`] function instead.
+    /// [`CompactOrbit::with_apoapsis`] function instead.
     ///
     /// # Parameters
     /// - `eccentricity`: The eccentricity of the orbit.
@@ -126,10 +160,10 @@ impl Orbit {
     /// - `long_asc_node`: The longitude of ascending node of the orbit, in radians.
     /// - `mean_anomaly`: The mean anomaly of the orbit at epoch, in radians.
     /// - `mu`: The gravitational parameter of the parent body, in m^3 s^-2.
-    /// # Example
     ///
+    /// # Example
     /// ```
-    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait};
     ///
     /// # fn main() {
     /// let eccentricity = 0.2;
@@ -140,7 +174,7 @@ impl Orbit {
     /// let mean_anomaly_at_epoch = 2.9;
     /// let gravitational_parameter = 9.2;
     ///
-    /// let orbit = Orbit::new(
+    /// let orbit = CompactOrbit::new(
     ///     eccentricity,
     ///     periapsis,
     ///     inclination,
@@ -150,13 +184,13 @@ impl Orbit {
     ///     gravitational_parameter
     /// );
     ///
-    /// assert_eq!(orbit.get_eccentricity(), eccentricity);
-    /// assert_eq!(orbit.get_periapsis(), periapsis);
-    /// assert_eq!(orbit.get_inclination(), inclination);
-    /// assert_eq!(orbit.get_arg_pe(), argument_of_periapsis);
-    /// assert_eq!(orbit.get_long_asc_node(), longitude_of_ascending_node);
-    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), mean_anomaly_at_epoch);
-    /// assert_eq!(orbit.get_gravitational_parameter(), gravitational_parameter);
+    /// assert_eq!(orbit.eccentricity, eccentricity);
+    /// assert_eq!(orbit.periapsis, periapsis);
+    /// assert_eq!(orbit.inclination, inclination);
+    /// assert_eq!(orbit.arg_pe, argument_of_periapsis);
+    /// assert_eq!(orbit.long_asc_node, longitude_of_ascending_node);
+    /// assert_eq!(orbit.mean_anomaly, mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.mu, gravitational_parameter);
     /// # }
     /// ```
     pub fn new(
@@ -167,9 +201,8 @@ impl Orbit {
         long_asc_node: f64,
         mean_anomaly: f64,
         mu: f64,
-    ) -> Orbit {
-        let cache = Self::get_cached_calculations(inclination, arg_pe, long_asc_node);
-        Orbit {
+    ) -> Self {
+        Self {
             eccentricity,
             periapsis,
             inclination,
@@ -177,20 +210,20 @@ impl Orbit {
             long_asc_node,
             mean_anomaly,
             mu,
-            cache,
         }
     }
 
-    /// Creates a new orbit with the given parameters.
+    /// Creates a new [`CompactOrbit`] instance with the given parameters.
     ///
     /// Note: This function uses apoapsis instead of eccentricity.  
-    /// Because of this, it's not recommended to initialize
-    /// parabolic or hyperbolic 'orbits' with this function.  
+    /// Because of this, it's not recommended to create
+    /// parabolic or hyperbolic trajectories with this function.  
     /// If you're looking to initialize a parabolic or hyperbolic
-    /// trajectory, consider using the [`Orbit::new`] function instead.
+    /// trajectory, consider using the [`CompactOrbit::new`] function instead.
     ///
     /// # Parameters
     /// - `apoapsis`: The apoapsis of the orbit, in meters.
+    ///   Must be more than the periapsis.
     /// - `periapsis`: The periapsis of the orbit, in meters.
     /// - `inclination`: The inclination of the orbit, in radians.
     /// - `arg_pe`: The argument of periapsis of the orbit, in radians.
@@ -200,7 +233,7 @@ impl Orbit {
     ///
     /// # Example
     /// ```
-    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait};
     ///
     /// # fn main() {
     /// let apoapsis = 4.1;
@@ -211,7 +244,7 @@ impl Orbit {
     /// let mean_anomaly_at_epoch = 2.9;
     /// let gravitational_parameter = 9.2;
     ///
-    /// let orbit = Orbit::with_apoapsis(
+    /// let orbit = CompactOrbit::with_apoapsis(
     ///     apoapsis,
     ///     periapsis,
     ///     inclination,
@@ -223,13 +256,13 @@ impl Orbit {
     ///
     /// let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
     ///
-    /// assert_eq!(orbit.get_eccentricity(), eccentricity);
-    /// assert_eq!(orbit.get_periapsis(), periapsis);
-    /// assert_eq!(orbit.get_inclination(), inclination);
-    /// assert_eq!(orbit.get_arg_pe(), argument_of_periapsis);
-    /// assert_eq!(orbit.get_long_asc_node(), longitude_of_ascending_node);
-    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), mean_anomaly_at_epoch);
-    /// assert_eq!(orbit.get_gravitational_parameter(), gravitational_parameter);
+    /// assert_eq!(orbit.eccentricity, eccentricity);
+    /// assert_eq!(orbit.periapsis, periapsis);
+    /// assert_eq!(orbit.inclination, inclination);
+    /// assert_eq!(orbit.arg_pe, argument_of_periapsis);
+    /// assert_eq!(orbit.long_asc_node, longitude_of_ascending_node);
+    /// assert_eq!(orbit.mean_anomaly, mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.mu, gravitational_parameter);
     /// # }
     /// ```
     pub fn with_apoapsis(
@@ -240,7 +273,7 @@ impl Orbit {
         long_asc_node: f64,
         mean_anomaly: f64,
         mu: f64,
-    ) -> Orbit {
+    ) -> Self {
         let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
         Self::new(
             eccentricity,
@@ -253,7 +286,7 @@ impl Orbit {
         )
     }
 
-    /// Creates a new circular `Orbit` instance with the given parameters.
+    /// Creates a new circular [`CompactOrbit`] instance with the given parameters.
     ///
     /// # Parameters
     /// - `radius`: The radius of the orbit, in meters.
@@ -265,7 +298,7 @@ impl Orbit {
     ///
     /// # Example
     /// ```
-    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait};
     ///
     /// # fn main() {
     /// let radius = 4.2;
@@ -274,7 +307,7 @@ impl Orbit {
     /// let mean_anomaly_at_epoch = 1.5;
     /// let gravitational_parameter = 5.0;
     ///
-    /// let orbit = Orbit::new_circular(
+    /// let orbit = CompactOrbit::new_circular(
     ///     radius,
     ///     inclination,
     ///     longitude_of_ascending_node,
@@ -282,13 +315,13 @@ impl Orbit {
     ///     gravitational_parameter,
     /// );
     ///
-    /// assert_eq!(orbit.get_eccentricity(), 0.0);
-    /// assert_eq!(orbit.get_periapsis(), radius);
-    /// assert_eq!(orbit.get_inclination(), inclination);
-    /// assert_eq!(orbit.get_arg_pe(), 0.0);
-    /// assert_eq!(orbit.get_long_asc_node(), longitude_of_ascending_node);
-    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), mean_anomaly_at_epoch);
-    /// assert_eq!(orbit.get_gravitational_parameter(), gravitational_parameter);
+    /// assert_eq!(orbit.eccentricity, 0.0);
+    /// assert_eq!(orbit.periapsis, radius);
+    /// assert_eq!(orbit.inclination, inclination);
+    /// assert_eq!(orbit.arg_pe, 0.0);
+    /// assert_eq!(orbit.long_asc_node, longitude_of_ascending_node);
+    /// assert_eq!(orbit.mean_anomaly, mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.mu, gravitational_parameter);
     /// # }
     /// ```
     pub fn new_circular(
@@ -298,31 +331,6 @@ impl Orbit {
         mean_anomaly: f64,
         mu: f64,
     ) -> Self {
-        let matrix = {
-            let mut matrix = Matrix3x2::default();
-
-            let (sin_inc, cos_inc) = inclination.sin_cos();
-            let (sin_lan, cos_lan) = long_asc_node.sin_cos();
-
-            // Based on:
-            // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
-            matrix.e11 = cos_lan;
-            matrix.e12 = -(cos_inc * sin_lan);
-
-            matrix.e21 = sin_lan;
-            matrix.e22 = cos_inc * cos_lan;
-
-            matrix.e31 = 0.0;
-            matrix.e32 = sin_inc;
-
-            matrix
-        };
-
-        debug_assert_eq!(
-            matrix,
-            Self::get_transformation_matrix(inclination, 0.0, long_asc_node)
-        );
-
         Self {
             eccentricity: 0.0,
             periapsis: radius,
@@ -331,18 +339,15 @@ impl Orbit {
             long_asc_node,
             mean_anomaly,
             mu,
-            cache: OrbitCachedCalculations {
-                transformation_matrix: matrix,
-            },
         }
     }
 
-    /// Creates a new `Orbit` instance parallel to
+    /// Creates a new `CompactOrbit` instance parallel to
     /// the XY plane with the given parameters.
     ///
     /// Note: This function uses eccentricity instead of apoapsis.  
     /// If you want to provide an apoapsis instead, consider using the
-    /// [`Orbit::new_flat_with_apoapsis`] function instead.
+    /// [`CompactOrbit::new_flat_with_apoapsis`] function instead.
     ///
     /// # Parameters
     /// - `eccentricity`: The eccentricity of the orbit.
@@ -353,7 +358,7 @@ impl Orbit {
     ///
     /// # Example
     /// ```
-    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait};
     ///
     /// # fn main() {
     /// let eccentricity = 2.0;
@@ -362,7 +367,7 @@ impl Orbit {
     /// let mean_anomaly_at_epoch = 9.8;
     /// let gravitational_parameter = 5.0;
     ///
-    /// let orbit = Orbit::new_flat(
+    /// let orbit = CompactOrbit::new_flat(
     ///     eccentricity,
     ///     periapsis,
     ///     argument_of_periapsis,
@@ -370,13 +375,13 @@ impl Orbit {
     ///     gravitational_parameter,
     /// );
     ///
-    /// assert_eq!(orbit.get_eccentricity(), eccentricity);
-    /// assert_eq!(orbit.get_periapsis(), periapsis);
-    /// assert_eq!(orbit.get_inclination(), 0.0);
-    /// assert_eq!(orbit.get_arg_pe(), argument_of_periapsis);
-    /// assert_eq!(orbit.get_long_asc_node(), 0.0);
-    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), mean_anomaly_at_epoch);
-    /// assert_eq!(orbit.get_gravitational_parameter(), gravitational_parameter);
+    /// assert_eq!(orbit.eccentricity, eccentricity);
+    /// assert_eq!(orbit.periapsis, periapsis);
+    /// assert_eq!(orbit.inclination, 0.0);
+    /// assert_eq!(orbit.arg_pe, argument_of_periapsis);
+    /// assert_eq!(orbit.long_asc_node, 0.0);
+    /// assert_eq!(orbit.mean_anomaly, mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.mu, gravitational_parameter);
     /// # }
     /// ```
     pub fn new_flat(
@@ -386,26 +391,6 @@ impl Orbit {
         mean_anomaly: f64,
         mu: f64,
     ) -> Self {
-        let matrix = {
-            let mut matrix = Matrix3x2::default();
-
-            let (sin_arg_pe, cos_arg_pe) = arg_pe.sin_cos();
-
-            // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
-            matrix.e11 = cos_arg_pe;
-            matrix.e12 = -sin_arg_pe;
-
-            matrix.e21 = sin_arg_pe;
-            matrix.e22 = cos_arg_pe;
-
-            matrix.e31 = 0.0;
-            matrix.e32 = 0.0;
-
-            matrix
-        };
-
-        debug_assert_eq!(matrix, Self::get_transformation_matrix(0.0, arg_pe, 0.0));
-
         Self {
             eccentricity,
             periapsis,
@@ -414,20 +399,17 @@ impl Orbit {
             long_asc_node: 0.0,
             mean_anomaly,
             mu,
-            cache: OrbitCachedCalculations {
-                transformation_matrix: matrix,
-            },
         }
     }
 
-    /// Creates a new `Orbit` instance parallel to
+    /// Creates a new `CompactOrbit` instance parallel to
     /// the XY plane with the given parameters.
     ///
     /// Note: This function uses apoapsis instead of eccentricity.  
     /// Because of this, it's not recommended to create
     /// parabolic or hyperbolic trajectories with this function.  
     /// If you're looking to initialize a parabolic or hyperbolic
-    /// trajectory, consider using the [`Orbit::new_flat`] function instead.
+    /// trajectory, consider using the [`CompactOrbit::new_flat`] function instead.
     ///
     /// # Parameters
     /// - `apoapsis`: The apoapsis of the orbit, in meters.
@@ -438,7 +420,7 @@ impl Orbit {
     ///
     /// # Example
     /// ```
-    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait};
     ///
     /// # fn main() {
     /// let apoapsis = 10.1;
@@ -447,7 +429,7 @@ impl Orbit {
     /// let mean_anomaly_at_epoch = 9.8;
     /// let gravitational_parameter = 5.0;
     ///
-    /// let orbit = Orbit::new_flat_with_apoapsis(
+    /// let orbit = CompactOrbit::new_flat_with_apoapsis(
     ///     apoapsis,
     ///     periapsis,
     ///     argument_of_periapsis,
@@ -457,13 +439,13 @@ impl Orbit {
     ///
     /// let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
     ///
-    /// assert_eq!(orbit.get_eccentricity(), eccentricity);
-    /// assert_eq!(orbit.get_periapsis(), periapsis);
-    /// assert_eq!(orbit.get_inclination(), 0.0);
-    /// assert_eq!(orbit.get_arg_pe(), argument_of_periapsis);
-    /// assert_eq!(orbit.get_long_asc_node(), 0.0);
-    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), mean_anomaly_at_epoch);
-    /// assert_eq!(orbit.get_gravitational_parameter(), gravitational_parameter);
+    /// assert_eq!(orbit.eccentricity, eccentricity);
+    /// assert_eq!(orbit.periapsis, periapsis);
+    /// assert_eq!(orbit.inclination, 0.0);
+    /// assert_eq!(orbit.arg_pe, argument_of_periapsis);
+    /// assert_eq!(orbit.long_asc_node, 0.0);
+    /// assert_eq!(orbit.mean_anomaly, mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.mu, gravitational_parameter);
     /// # }
     /// ```
     pub fn new_flat_with_apoapsis(
@@ -473,28 +455,7 @@ impl Orbit {
         mean_anomaly: f64,
         mu: f64,
     ) -> Self {
-        let matrix = {
-            let mut matrix = Matrix3x2::default();
-
-            let (sin_arg_pe, cos_arg_pe) = arg_pe.sin_cos();
-
-            // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
-            matrix.e11 = cos_arg_pe;
-            matrix.e12 = -sin_arg_pe;
-
-            matrix.e21 = sin_arg_pe;
-            matrix.e22 = cos_arg_pe;
-
-            matrix.e31 = 0.0;
-            matrix.e32 = 0.0;
-
-            matrix
-        };
-
-        debug_assert_eq!(matrix, Self::get_transformation_matrix(0.0, arg_pe, 0.0));
-
         let eccentricity = (apoapsis - periapsis) / (apoapsis + periapsis);
-
         Self {
             eccentricity,
             periapsis,
@@ -503,13 +464,10 @@ impl Orbit {
             long_asc_node: 0.0,
             mean_anomaly,
             mu,
-            cache: OrbitCachedCalculations {
-                transformation_matrix: matrix,
-            },
         }
     }
 
-    /// Creates a new circular `Orbit` instance parallel to
+    /// Creates a new circular `CompactOrbit` instance parallel to
     /// the XY plane with the given parameters.
     ///
     /// # Parameters
@@ -519,33 +477,29 @@ impl Orbit {
     ///
     /// # Example
     /// ```
-    /// use keplerian_sim::{Orbit, OrbitTrait};
+    /// use keplerian_sim::{CompactOrbit, OrbitTrait};
     ///
     /// # fn main() {
     /// let radius = 90.0;
     /// let mean_anomaly_at_epoch = 0.5;
     /// let gravitational_parameter = 6.0;
     ///
-    /// let orbit = Orbit::new_flat_circular(
+    /// let orbit = CompactOrbit::new_flat_circular(
     ///     radius,
     ///     mean_anomaly_at_epoch,
     ///     gravitational_parameter
     /// );
     ///
-    /// assert_eq!(orbit.get_eccentricity(), 0.0);
-    /// assert_eq!(orbit.get_periapsis(), radius);
-    /// assert_eq!(orbit.get_inclination(), 0.0);
-    /// assert_eq!(orbit.get_arg_pe(), 0.0);
-    /// assert_eq!(orbit.get_long_asc_node(), 0.0);
-    /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), mean_anomaly_at_epoch);
-    /// assert_eq!(orbit.get_gravitational_parameter(), gravitational_parameter);
+    /// assert_eq!(orbit.eccentricity, 0.0);
+    /// assert_eq!(orbit.periapsis, radius);
+    /// assert_eq!(orbit.inclination, 0.0);
+    /// assert_eq!(orbit.arg_pe, 0.0);
+    /// assert_eq!(orbit.long_asc_node, 0.0);
+    /// assert_eq!(orbit.mean_anomaly, mean_anomaly_at_epoch);
+    /// assert_eq!(orbit.mu, gravitational_parameter);
     /// # }
     /// ```
     pub fn new_flat_circular(radius: f64, mean_anomaly: f64, mu: f64) -> Self {
-        let matrix = Matrix3x2::IDENTITY;
-
-        debug_assert_eq!(matrix, Self::get_transformation_matrix(0.0, 0.0, 0.0));
-
         Self {
             eccentricity: 0.0,
             periapsis: radius,
@@ -554,59 +508,11 @@ impl Orbit {
             long_asc_node: 0.0,
             mean_anomaly,
             mu,
-            cache: OrbitCachedCalculations {
-                transformation_matrix: matrix,
-            },
         }
-    }
-
-    /// Updates the cached values in the orbit struct.
-    ///
-    /// Should only be called when the following things change:
-    /// 1. Inclination
-    /// 2. Argument of Periapsis
-    /// 3. Longitude of Ascending Node
-    fn update_cache(&mut self) {
-        self.cache =
-            Self::get_cached_calculations(self.inclination, self.arg_pe, self.long_asc_node);
-    }
-
-    fn get_cached_calculations(
-        inclination: f64,
-        arg_pe: f64,
-        long_asc_node: f64,
-    ) -> OrbitCachedCalculations {
-        let transformation_matrix =
-            Self::get_transformation_matrix(inclination, arg_pe, long_asc_node);
-
-        OrbitCachedCalculations {
-            transformation_matrix,
-        }
-    }
-
-    fn get_transformation_matrix(inclination: f64, arg_pe: f64, long_asc_node: f64) -> Matrix3x2 {
-        let mut matrix = Matrix3x2::default();
-
-        let (sin_inc, cos_inc) = inclination.sin_cos();
-        let (sin_arg_pe, cos_arg_pe) = arg_pe.sin_cos();
-        let (sin_lan, cos_lan) = long_asc_node.sin_cos();
-
-        // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
-        matrix.e11 = cos_arg_pe * cos_lan - sin_arg_pe * cos_inc * sin_lan;
-        matrix.e12 = -(sin_arg_pe * cos_lan + cos_arg_pe * cos_inc * sin_lan);
-
-        matrix.e21 = cos_arg_pe * sin_lan + sin_arg_pe * cos_inc * cos_lan;
-        matrix.e22 = cos_arg_pe * cos_inc * cos_lan - sin_arg_pe * sin_lan;
-
-        matrix.e31 = sin_arg_pe * sin_inc;
-        matrix.e32 = cos_arg_pe * sin_inc;
-
-        matrix
     }
 }
 
-// The actual orbit position calculations
-impl OrbitTrait for Orbit {
+impl OrbitTrait for CompactOrbit {
     fn set_apoapsis(&mut self, apoapsis: f64) -> Result<(), ApoapsisSetterError> {
         if apoapsis < 0.0 {
             Err(ApoapsisSetterError::ApoapsisNegative)
@@ -625,7 +531,6 @@ impl OrbitTrait for Orbit {
             (apoapsis, self.periapsis) = (self.periapsis, apoapsis);
             self.arg_pe = (self.arg_pe + PI).rem_euclid(TAU);
             self.mean_anomaly = (self.mean_anomaly + PI).rem_euclid(TAU);
-            self.update_cache();
         }
 
         if apoapsis < 0.0 && apoapsis > -self.periapsis {
@@ -637,29 +542,79 @@ impl OrbitTrait for Orbit {
         }
     }
 
-    #[inline]
     fn get_transformation_matrix(&self) -> Matrix3x2 {
-        self.cache.transformation_matrix
+        let mut matrix = Matrix3x2::default();
+
+        let (sin_inc, cos_inc) = self.inclination.sin_cos();
+        let (sin_arg_pe, cos_arg_pe) = self.arg_pe.sin_cos();
+        let (sin_lan, cos_lan) = self.long_asc_node.sin_cos();
+
+        // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+        matrix.e11 = cos_arg_pe * cos_lan - sin_arg_pe * cos_inc * sin_lan;
+        matrix.e12 = -(sin_arg_pe * cos_lan + cos_arg_pe * cos_inc * sin_lan);
+
+        matrix.e21 = cos_arg_pe * sin_lan + sin_arg_pe * cos_inc * cos_lan;
+        matrix.e22 = cos_arg_pe * cos_inc * cos_lan - sin_arg_pe * sin_lan;
+
+        matrix.e31 = sin_arg_pe * sin_inc;
+        matrix.e32 = cos_arg_pe * sin_inc;
+
+        matrix
     }
 
-    #[inline]
     fn get_pqw_basis_vector_p(&self) -> DVec3 {
-        let m = self.cache.transformation_matrix;
-        DVec3::new(m.e11, m.e21, m.e31)
+        let (sin_inc, cos_inc) = self.inclination.sin_cos();
+        let (sin_arg_pe, cos_arg_pe) = self.arg_pe.sin_cos();
+        let (sin_lan, cos_lan) = self.long_asc_node.sin_cos();
+
+        // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+        // We use element e11, e21, and e31 for the P basis vector.
+
+        let x = cos_arg_pe * cos_lan - sin_arg_pe * cos_inc * sin_lan;
+        let y = cos_arg_pe * sin_lan + sin_arg_pe * cos_inc * cos_lan;
+        let z = sin_arg_pe * sin_inc;
+
+        DVec3::new(x, y, z)
     }
 
-    #[inline]
     fn get_pqw_basis_vector_q(&self) -> DVec3 {
-        let m = self.cache.transformation_matrix;
-        DVec3::new(m.e12, m.e22, m.e32)
+        let (sin_inc, cos_inc) = self.inclination.sin_cos();
+        let (sin_arg_pe, cos_arg_pe) = self.arg_pe.sin_cos();
+        let (sin_lan, cos_lan) = self.long_asc_node.sin_cos();
+
+        // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+        // We use element e12, e22, and e32 for the Q basis vector.
+
+        let x = -(sin_arg_pe * cos_lan + cos_arg_pe * cos_inc * sin_lan);
+        let y = cos_arg_pe * cos_inc * cos_lan - sin_arg_pe * sin_lan;
+        let z = cos_arg_pe * sin_inc;
+
+        DVec3::new(x, y, z)
     }
 
-    #[inline]
     fn get_pqw_basis_vector_w(&self) -> DVec3 {
-        let m = self.cache.transformation_matrix;
+        let (sin_inc, cos_inc) = self.inclination.sin_cos();
+        let (sin_arg_pe, cos_arg_pe) = self.arg_pe.sin_cos();
+        let (sin_lan, cos_lan) = self.long_asc_node.sin_cos();
 
-        let p = DVec3::new(m.e11, m.e21, m.e31);
-        let q = DVec3::new(m.e12, m.e22, m.e32);
+        // https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+        // We use element e11, e21, and e31 for the P basis vector,
+        // and e12, e22, and e32 for the Q basis vector.
+
+        let p = {
+            let x = cos_arg_pe * cos_lan - sin_arg_pe * cos_inc * sin_lan;
+            let y = cos_arg_pe * sin_lan + sin_arg_pe * cos_inc * cos_lan;
+            let z = sin_arg_pe * sin_inc;
+
+            DVec3::new(x, y, z)
+        };
+        let q = {
+            let x = -(sin_arg_pe * cos_lan + cos_arg_pe * cos_inc * sin_lan);
+            let y = cos_arg_pe * cos_inc * cos_lan - sin_arg_pe * sin_lan;
+            let z = cos_arg_pe * sin_inc;
+
+            DVec3::new(x, y, z)
+        };
         p.cross(q)
     }
 
@@ -698,29 +653,23 @@ impl OrbitTrait for Orbit {
         self.mu
     }
 
-    #[inline]
     fn set_eccentricity(&mut self, value: f64) {
-        self.eccentricity = value;
+        self.eccentricity = value
     }
-    #[inline]
     fn set_periapsis(&mut self, value: f64) {
-        self.periapsis = value;
+        self.periapsis = value
     }
     fn set_inclination(&mut self, value: f64) {
-        self.inclination = value;
-        self.update_cache();
+        self.inclination = value
     }
     fn set_arg_pe(&mut self, value: f64) {
-        self.arg_pe = value;
-        self.update_cache();
+        self.arg_pe = value
     }
     fn set_long_asc_node(&mut self, value: f64) {
-        self.long_asc_node = value;
-        self.update_cache();
+        self.long_asc_node = value
     }
-    #[inline]
     fn set_mean_anomaly_at_epoch(&mut self, value: f64) {
-        self.mean_anomaly = value;
+        self.mean_anomaly = value
     }
 
     fn set_gravitational_parameter(
@@ -762,38 +711,40 @@ impl OrbitTrait for Orbit {
                 state_vectors,
                 time,
             } => {
-                let new = state_vectors.to_cached_orbit(new_mu, time);
+                let new = state_vectors.to_compact_orbit(new_mu, time);
                 *self = new;
             }
             crate::MuSetterMode::KeepStateVectorsAtTime(time) => {
                 let ecc_anom = self.get_eccentric_anomaly_at_time(time);
                 let state_vectors = self.get_state_vectors_at_eccentric_anomaly(ecc_anom);
-                let new = state_vectors.to_cached_orbit(new_mu, time);
+                let new = state_vectors.to_compact_orbit(new_mu, time);
                 *self = new;
             }
         }
     }
 }
 
-impl From<CompactOrbit> for Orbit {
-    fn from(compact: CompactOrbit) -> Self {
-        Self::new(
-            compact.eccentricity,
-            compact.periapsis,
-            compact.inclination,
-            compact.arg_pe,
-            compact.long_asc_node,
-            compact.mean_anomaly,
-            compact.mu,
-        )
+impl From<Orbit> for CompactOrbit {
+    fn from(cached: Orbit) -> Self {
+        Self {
+            eccentricity: cached.get_eccentricity(),
+            periapsis: cached.get_periapsis(),
+            inclination: cached.get_inclination(),
+            arg_pe: cached.get_arg_pe(),
+            long_asc_node: cached.get_long_asc_node(),
+            mean_anomaly: cached.get_mean_anomaly_at_epoch(),
+            mu: cached.get_gravitational_parameter(),
+        }
     }
 }
 
-impl Default for Orbit {
+impl Default for CompactOrbit {
     /// Creates a unit orbit.
     ///
     /// The unit orbit is a perfect circle of radius 1 and no "tilt".
-    fn default() -> Orbit {
-        Self::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
+    ///
+    /// It also uses a gravitational parameter of 1.
+    fn default() -> Self {
+        Self::new_flat_circular(1.0, 0.0, 1.0)
     }
 }
