@@ -2,17 +2,17 @@ use core::f64::consts::{PI, TAU};
 
 use glam::{DMat2, DVec2};
 
-use crate::{sinhcosh, solvers, ApoapsisSetterError};
-
 pub mod cached_orbit;
 pub mod compact_orbit;
-
-pub use cached_orbit::Orbit2D;
-pub use compact_orbit::CompactOrbit2D;
 
 #[cfg(feature = "libm")]
 #[allow(unused_imports)]
 use crate::math::F64Math;
+use crate::{sinhcosh, solvers, ApoapsisSetterError};
+pub use cached_orbit::Orbit2D;
+pub use compact_orbit::CompactOrbit2D;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// A trait that defines the methods that a 2D-constrained Keplerian
 /// orbit must implement.
@@ -3958,7 +3958,8 @@ pub trait OrbitTrait2D {
 /// meters per second.
 ///
 /// State vectors can be used to form an orbit using
-/// [`to_orbit`][Self::to_orbit].
+/// [`to_cached_orbit`][Self::to_cached_orbit] or
+/// [`to_compact_orbit`][Self::to_compact_orbit].
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct StateVectors2D {
@@ -4427,7 +4428,7 @@ impl StateVectors2D {
     /// This function is not too performant as it uses several trigonometric operations.
     ///
     /// The performance also depends on how fast the specified orbit type can convert
-    /// between the [`CompactOrbit`] form into itself, and so we cannot guarantee any
+    /// between the [`CompactOrbit2D`] form into itself, and so we cannot guarantee any
     /// performance behaviors.
     ///
     /// # Reference Frame

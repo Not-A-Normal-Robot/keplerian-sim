@@ -1,9 +1,10 @@
-use core::f64::consts::{PI, TAU};
-
+#[cfg(feature = "libm")]
+use crate::math::F64Math;
 use crate::{
     keplers_equation, keplers_equation_derivative, keplers_equation_second_derivative, sinhcosh,
     solve_monotone_cubic, B, NUMERIC_MAX_ITERS, N_F64, N_U32,
 };
+use core::f64::consts::{PI, TAU};
 
 /// Get an initial guess for the hyperbolic eccentric anomaly of an orbit.
 ///

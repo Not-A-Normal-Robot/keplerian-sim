@@ -122,7 +122,7 @@ impl CompactOrbit2D {
     ///
     /// Note: This function uses eccentricity instead of apoapsis.
     /// If you want to provide an apoapsis instead, consider using the
-    /// [`CompactOrbit::with_apoapsis`] function instead.
+    /// [`CompactOrbit2D::with_apoapsis`] function instead.
     ///
     /// # Parameters
     /// - `eccentricity`: The eccentricity of the orbit.
@@ -171,7 +171,7 @@ impl CompactOrbit2D {
     /// Because of this, it's not recommended to create
     /// parabolic or hyperbolic trajectories with this function.  
     /// If you're looking to initialize a parabolic or hyperbolic
-    /// trajectory, consider using the [`CompactOrbit::new`] function instead.
+    /// trajectory, consider using the [`CompactOrbit2D::new`] function instead.
     ///
     /// # Parameters
     /// - `apoapsis`: The apoapsis of the orbit, in meters.

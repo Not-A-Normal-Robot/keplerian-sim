@@ -3,15 +3,15 @@ pub mod compact_orbit;
 
 use core::f64::consts::{PI, TAU};
 
-pub use cached_orbit::Orbit;
-pub use compact_orbit::CompactOrbit;
-use glam::{DVec2, DVec3};
-
-use crate::{sinhcosh, solvers, ApoapsisSetterError, Matrix3x2};
-
 #[cfg(feature = "libm")]
 #[allow(unused_imports)]
 use crate::math::F64Math;
+use crate::{sinhcosh, solvers, ApoapsisSetterError, Matrix3x2};
+pub use cached_orbit::Orbit;
+pub use compact_orbit::CompactOrbit;
+use glam::{DVec2, DVec3};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// A trait that defines the methods that a Keplerian orbit must implement.
 ///
