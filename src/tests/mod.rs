@@ -7,7 +7,7 @@ use glam::{DVec2, DVec3};
 
 use crate::{
     CompactOrbit, CompactOrbit2D, Matrix3x2, MuSetterMode, Orbit, Orbit2D, OrbitTrait,
-    OrbitTrait2D, StateVectors,
+    OrbitTrait2D, StateVectors, StateVectors2D,
 };
 use std::{
     f64::consts::{PI, TAU},
@@ -1130,6 +1130,17 @@ fn orbit_dim_parity_base_test(orbit2: &Orbit2D) {
     );
 
     {
+        let mat2 = orbit2.get_transformation_matrix();
+        let mat3 = orbit3.get_transformation_matrix();
+
+        assert_eq!(mat2.x_axis.x, mat3.e11);
+        assert_eq!(mat2.x_axis.y, mat3.e21);
+        assert_eq!(mat2.y_axis.x, mat3.e12);
+        assert_eq!(mat2.y_axis.y, mat3.e22);
+        assert_eq!(0.0, mat3.e31);
+        assert_eq!(0.0, mat3.e32);
+    }
+    {
         let tf2 = poll_transform2d(orbit2);
         let tf3 = poll_transform(&orbit3);
 
@@ -1168,14 +1179,9 @@ fn orbit_dim_parity_base_test(orbit2: &Orbit2D) {
 
             vec
         };
-        assert_eq!(true2, true3);
-    }
-    {
-        let pos2 = poll_orbit2d(orbit2);
-        let pos3 = poll_orbit(&orbit3);
 
-        for i in 0..pos2.len() {
-            assert_eq!(pos2[i].extend(0.0), pos3[i])
+        for i in 0..true2.len() {
+            assert_eq!(true2[i].to_bits(), true3[i].to_bits());
         }
     }
     {
@@ -1237,21 +1243,10 @@ fn orbit_dim_parity_base_test(orbit2: &Orbit2D) {
         let vel3 = poll_vel(&orbit3);
 
         for i in 0..vel2.len() {
-            assert_eq!(vel2[i].extend(0.0), vel3[i]);
-        }
-    }
-    {
-        let sv2 = poll_sv2d(orbit2);
-        let sv3 = poll_sv(&orbit3);
-
-        for i in 0..sv2.len() {
-            let sv2_element = sv2[i];
-            let sv2_extended = StateVectors {
-                position: sv2_element.position.extend(0.0),
-                velocity: sv2_element.velocity.extend(0.0),
-            };
-
-            assert_eq!(sv2_extended, sv3[i]);
+            assert_eq!(
+                vel2[i].to_array().map(f64::to_bits),
+                vel3[i].truncate().to_array().map(f64::to_bits)
+            );
         }
     }
     {
@@ -1260,6 +1255,43 @@ fn orbit_dim_parity_base_test(orbit2: &Orbit2D) {
 
         assert_eq!(pqw2.0.extend(0.0), pqw3.0);
         assert_eq!(pqw2.1.extend(0.0), pqw3.1);
+    }
+    {
+        let pos2 = poll_orbit2d(orbit2);
+        let pos3 = poll_orbit(&orbit3);
+
+        for i in 0..pos2.len() {
+            assert_eq!(
+                pos2[i].to_array().map(f64::to_bits),
+                pos3[i].truncate().to_array().map(f64::to_bits),
+                "Position at i={i} for {orbit2:?}"
+            )
+        }
+    }
+    {
+        let sv2 = poll_sv2d(orbit2);
+        let sv3 = poll_sv(&orbit3);
+
+        for i in 0..sv2.len() {
+            let sv3_element = sv3[i];
+
+            let sv3_truncated = StateVectors2D {
+                position: sv3_element.position.truncate(),
+                velocity: sv3_element.velocity.truncate(),
+            };
+
+            let sv2_element = sv2[i];
+            let sv2_arr = [
+                sv2_element.position.to_array().map(f64::to_bits),
+                sv2_element.velocity.to_array().map(f64::to_bits),
+            ];
+            let sv3_arr = [
+                sv3_truncated.position.to_array().map(f64::to_bits),
+                sv3_truncated.velocity.to_array().map(f64::to_bits),
+            ];
+
+            assert_eq!(sv2_arr, sv3_arr);
+        }
     }
 }
 

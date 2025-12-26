@@ -24,8 +24,12 @@ pub fn poll_orbit(orbit: &impl OrbitTrait) -> Vec<DVec3> {
 pub fn poll_orbit2d(orbit: &impl OrbitTrait2D) -> Vec<DVec2> {
     (0..ORBIT_POLL_ANGLES)
         .map(|i| {
-            let angle = (i as f64) * TAU / (ORBIT_POLL_ANGLES as f64);
-            orbit.get_position_at_true_anomaly(angle)
+            let time = if orbit.get_eccentricity() < 1.0 {
+                (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64)
+            } else {
+                (i as f64) * TAU / (ORBIT_POLL_ANGLES as f64)
+            };
+            orbit.get_position_at_time(time)
         })
         .collect()
 }

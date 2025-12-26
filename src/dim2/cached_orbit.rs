@@ -262,7 +262,7 @@ impl Orbit2D {
     pub fn new_circular(radius: f64, mean_anomaly: f64, mu: f64) -> Self {
         let matrix = DMat2::IDENTITY;
 
-        debug_assert_eq!(matrix, Self::get_transformation_matrix(0.0),);
+        debug_assert_eq!(matrix, Self::get_transformation_matrix(0.0));
 
         Self {
             eccentricity: 0.0,
@@ -308,10 +308,12 @@ impl Orbit2D {
         // matrix.e12 = -sin_arg_pe;
         // matrix.e21 = sin_arg_pe;
         // matrix.e22 = cos_arg_pe;
+        //
+        // e11 = x.x, e12 = y.x, e21 = x.y, e22 = y.y
 
         DMat2 {
-            x_axis: DVec2::new(cos_arg_pe, -sin_arg_pe),
-            y_axis: DVec2::new(sin_arg_pe, cos_arg_pe),
+            x_axis: DVec2::new(cos_arg_pe, sin_arg_pe),
+            y_axis: DVec2::new(-sin_arg_pe, cos_arg_pe),
         }
     }
 }

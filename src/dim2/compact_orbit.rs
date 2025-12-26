@@ -309,10 +309,12 @@ impl OrbitTrait2D for CompactOrbit2D {
         // matrix.e12 = -sin_arg_pe;
         // matrix.e21 = sin_arg_pe;
         // matrix.e22 = cos_arg_pe;
+        //
+        // e11 = x.x, e12 = y.x, e21 = x.y, e22 = y.y
 
         DMat2 {
-            x_axis: DVec2::new(cos_arg_pe, -sin_arg_pe),
-            y_axis: DVec2::new(sin_arg_pe, cos_arg_pe),
+            x_axis: DVec2::new(cos_arg_pe, sin_arg_pe),
+            y_axis: DVec2::new(-sin_arg_pe, cos_arg_pe),
         }
     }
 
