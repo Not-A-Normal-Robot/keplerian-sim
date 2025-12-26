@@ -976,6 +976,10 @@ pub trait OrbitTrait {
     /// For [`Orbit`], this will only need to access the cache, and
     /// therefore is much more performant.
     ///
+    /// If you want to get multiple basis vectors, use
+    /// [`get_pqw_basis_vectors`][OrbitTrait::get_pqw_basis_vectors]
+    /// instead, as that skips some duplicated work.
+    ///
     /// # Example
     /// ```
     /// use keplerian_sim::{Orbit, CompactOrbit, OrbitTrait};
@@ -1018,6 +1022,10 @@ pub trait OrbitTrait {
     /// For [`Orbit`], this will only need to access the cache, and
     /// therefore is much more performant.
     ///
+    /// If you want to get multiple basis vectors, use
+    /// [`get_pqw_basis_vectors`][OrbitTrait::get_pqw_basis_vectors]
+    /// instead, as that skips some duplicated work.
+    ///
     /// # Example
     /// ```
     /// use keplerian_sim::{Orbit, CompactOrbit, OrbitTrait};
@@ -1057,6 +1065,10 @@ pub trait OrbitTrait {
     ///
     /// For [`Orbit`], this will only need to compute a cross product, and
     /// therefore is much more performant.
+    ///
+    /// If you want to get multiple basis vectors, use
+    /// [`get_pqw_basis_vectors`][OrbitTrait::get_pqw_basis_vectors]
+    /// instead, as that skips some duplicated work.
     ///
     /// # Example
     /// ```
