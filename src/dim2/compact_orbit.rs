@@ -320,16 +320,12 @@ impl OrbitTrait2D for CompactOrbit2D {
 
     #[inline]
     fn get_pqw_basis_vector_p(&self) -> DVec2 {
-        let (s, c) = self.arg_pe.sin_cos();
-
-        DVec2::new(c, -s)
+        self.get_transformation_matrix().x_axis
     }
 
     #[inline]
     fn get_pqw_basis_vector_q(&self) -> DVec2 {
-        let (s, c) = self.arg_pe.sin_cos();
-
-        DVec2::new(s, c)
+        self.get_transformation_matrix().y_axis
     }
 
     #[inline]
