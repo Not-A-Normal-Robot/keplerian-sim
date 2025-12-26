@@ -248,6 +248,30 @@ fn orbit2d_conversion_base_test(orbit: Orbit2D, what: &str) {
     let reexpanded_message = format!("Compact / Reexpanded ({what})");
 
     {
+        let original_vectors = orbit.get_pqw_basis_vectors();
+        let compact_vectors = compact_orbit.get_pqw_basis_vectors();
+        let reexpanded_vectors = reexpanded_orbit.get_pqw_basis_vectors();
+
+        let original_separate = (
+            orbit.get_pqw_basis_vector_p(),
+            orbit.get_pqw_basis_vector_q(),
+        );
+        let compact_separate = (
+            compact_orbit.get_pqw_basis_vector_p(),
+            compact_orbit.get_pqw_basis_vector_q(),
+        );
+        let reexpanded_separate = (
+            reexpanded_orbit.get_pqw_basis_vector_p(),
+            reexpanded_orbit.get_pqw_basis_vector_q(),
+        );
+
+        assert_eq!(original_vectors, compact_vectors);
+        assert_eq!(compact_vectors, reexpanded_vectors);
+        assert_eq!(original_vectors, original_separate);
+        assert_eq!(compact_vectors, compact_separate);
+        assert_eq!(reexpanded_vectors, reexpanded_separate);
+    }
+    {
         let original_transforms = poll_transform2d(&orbit);
         let compact_transforms = poll_transform2d(&compact_orbit);
         let reexpanded_transforms = poll_transform2d(&reexpanded_orbit);
@@ -615,6 +639,39 @@ fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
     let compact_message = format!("Original / Compact ({what})");
     let reexpanded_message = format!("Compact /  Reexpanded ({what})");
 
+    {
+        let original_vectors = orbit.get_pqw_basis_vectors();
+        let compact_vectors = compact_orbit.get_pqw_basis_vectors();
+        let reexpanded_vectors = reexpanded_orbit.get_pqw_basis_vectors();
+
+        assert_eq!(original_vectors, compact_vectors, "{compact_message}");
+        assert_eq!(compact_vectors, reexpanded_vectors, "{reexpanded_message}");
+
+        assert_eq!(
+            original_vectors,
+            (
+                orbit.get_pqw_basis_vector_p(),
+                orbit.get_pqw_basis_vector_q(),
+                orbit.get_pqw_basis_vector_w()
+            ),
+        );
+        assert_eq!(
+            compact_vectors,
+            (
+                compact_orbit.get_pqw_basis_vector_p(),
+                compact_orbit.get_pqw_basis_vector_q(),
+                compact_orbit.get_pqw_basis_vector_w()
+            ),
+        );
+        assert_eq!(
+            reexpanded_vectors,
+            (
+                reexpanded_orbit.get_pqw_basis_vector_p(),
+                reexpanded_orbit.get_pqw_basis_vector_q(),
+                reexpanded_orbit.get_pqw_basis_vector_w()
+            ),
+        );
+    }
     {
         let original_transforms = poll_transform(&orbit);
         let compact_transforms = poll_transform(&compact_orbit);
@@ -1139,6 +1196,14 @@ fn orbit_dim_parity_base_test(orbit2: &Orbit2D) {
         assert_eq!(mat2.y_axis.y, mat3.e22);
         assert_eq!(0.0, mat3.e31);
         assert_eq!(0.0, mat3.e32);
+    }
+    {
+        let (p2, q2) = orbit2.get_pqw_basis_vectors();
+        let (p3, q3, w3) = orbit3.get_pqw_basis_vectors();
+
+        assert_eq!(p2, p3.truncate());
+        assert_eq!(q2, q3.truncate());
+        assert_eq!(w3.truncate(), DVec2::ZERO);
     }
     {
         let tf2 = poll_transform2d(orbit2);
