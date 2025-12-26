@@ -9,6 +9,10 @@ use glam::{DVec2, DVec3};
 
 use crate::{sinhcosh, solvers, ApoapsisSetterError, Matrix3x2};
 
+#[cfg(feature = "libm")]
+#[allow(unused_imports)]
+use crate::math::F64Math;
+
 /// A trait that defines the methods that a Keplerian orbit must implement.
 ///
 /// This trait is implemented by both [`Orbit`] and [`CompactOrbit`].

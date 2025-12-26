@@ -10,6 +10,10 @@ pub mod compact_orbit;
 pub use cached_orbit::Orbit2D;
 pub use compact_orbit::CompactOrbit2D;
 
+#[cfg(feature = "libm")]
+#[allow(unused_imports)]
+use crate::math::F64Math;
+
 /// A trait that defines the methods that a 2D-constrained Keplerian
 /// orbit must implement.
 ///
