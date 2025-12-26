@@ -1,7 +1,7 @@
 pub mod cached_orbit;
 pub mod compact_orbit;
 
-use std::f64::consts::{PI, TAU};
+use core::f64::consts::{PI, TAU};
 
 pub use cached_orbit::Orbit;
 pub use compact_orbit::CompactOrbit;
@@ -1445,7 +1445,7 @@ pub trait OrbitTrait {
     /// # Example
     /// ```
     /// use keplerian_sim::{Orbit, OrbitTrait};
-    /// use std::f64::consts::{PI, TAU};
+    /// use core::f64::consts::{PI, TAU};
     ///
     /// fn assert_almost_eq(a: f64, b: f64) {
     ///     assert!((a - b).abs() < 1e-13, "{a} != {b}");
@@ -1667,7 +1667,7 @@ pub trait OrbitTrait {
     /// # Example
     /// ```
     /// use keplerian_sim::{Orbit, OrbitTrait};
-    /// use std::f64::consts::{PI, TAU};
+    /// use core::f64::consts::{PI, TAU};
     ///
     /// fn assert_almost_eq(a: f64, b: f64) {
     ///     assert!((a - b).abs() < 1e-13, "{a} != {b}");

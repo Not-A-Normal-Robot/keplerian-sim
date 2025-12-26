@@ -1,4 +1,4 @@
-use std::f64::consts::{PI, TAU};
+use core::f64::consts::{PI, TAU};
 
 use glam::{DMat2, DVec2};
 
