@@ -261,7 +261,7 @@ impl Orbit2D {
     /// assert_eq!(orbit.get_mean_anomaly_at_epoch(), mean_anomaly_at_epoch);
     /// assert_eq!(orbit.get_gravitational_parameter(), gravitational_parameter);
     /// ```
-    #[must_use] 
+    #[must_use]
     pub fn new_circular(radius: f64, mean_anomaly: f64, mu: f64) -> Self {
         let matrix = DMat2::IDENTITY;
 

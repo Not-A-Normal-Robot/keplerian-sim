@@ -3509,7 +3509,7 @@ pub trait OrbitTrait2D {
     /// sine and **hyperbolic** cosine values of the eccentric anomaly, respectively.
     ///
     /// ## `sincos_angle`
-    /// This parameter should be calculated by passing the true anomaly into [`f64::sin_cos()`]:
+    /// This parameter should be calculated by passing the true anomaly into `f64::sin_cos()`:
     /// ```
     /// let true_anomaly: f64 = 1.25; // Example value
     /// let sincos_angle = true_anomaly.sin_cos();
