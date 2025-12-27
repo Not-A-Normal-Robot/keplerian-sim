@@ -703,10 +703,10 @@ pub trait OrbitTrait2D {
     /// in joules per kilogram (J/kg, equiv. to m^2 ⋅ s^-2).
     ///
     /// For closed orbits (eccentricity < 0), ε < 0.\
-    /// When eccentricity equals 1 (parabolic), ε equals 0,
-    /// and when eccentricity exceeds 1 (hyperbolic), ε is positive.
+    /// When eccentricity equals 1 (parabolic), `ε` equals 0,
+    /// and when eccentricity exceeds 1 (hyperbolic), `ε` is positive.
     ///
-    /// The specific orbital energy ε of two orbiting bodies is
+    /// The specific orbital energy `ε` of two orbiting bodies is
     /// the constant quotient of their mechanical energy
     /// (the sum of their mutual potential energy, `ε_p`, and their
     /// kinetic energy, `ε_k`) to their reduced mass.

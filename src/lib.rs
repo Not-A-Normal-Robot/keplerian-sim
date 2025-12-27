@@ -293,6 +293,7 @@ fn keplers_equation_second_derivative(eccentric_anomaly: f64, eccentricity: f64)
 /// Returns a tuple which contains:
 /// - 0: The hyperbolic sine of the number.
 /// - 1: The hyperbolic cosine of the number.
+#[must_use]
 pub fn sinhcosh(x: f64) -> (f64, f64) {
     let e_x = x.exp();
     let e_neg_x = e_x.recip();
