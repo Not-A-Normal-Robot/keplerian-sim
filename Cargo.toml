@@ -35,14 +35,6 @@ serde = { version = "1", optional = true, features = [
 mint = { version = "0.5.9", optional = true, default-features = false }
 libm = { version = "0.2.15", optional = true }
 
-[lints.clippy]
-std_instead_of_core = "deny"
-alloc_instead_of_core = "deny"
-arithmetic_side_effects = "deny"
-all = { level = "deny", priority = -2 }
-pedantic = { level = "deny", priority = -1 }
-float-cmp = "allow"
-
 [features]
 default = ["std"]
 std = []

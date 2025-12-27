@@ -14,7 +14,7 @@ fn main() {
     }
 }
 
-fn generate_solar_system<'a>() -> Universe {
+fn generate_solar_system() -> Universe {
     let mut universe = Universe::default();
 
     let sun = the_sun(None);
@@ -82,7 +82,7 @@ fn generate_solar_system<'a>() -> Universe {
     let dysnomia = dysnomia(Some(eris_mu));
     universe.add_body(dysnomia, Some(eris_idx)).unwrap();
 
-    return universe;
+    universe
 }
 
 fn describe_universe(universe: &Universe) {

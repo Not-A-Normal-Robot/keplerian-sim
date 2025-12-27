@@ -48,8 +48,14 @@
 //! #
 //! ```
 
-#![warn(missing_docs)]
 #![forbid(unsafe_code)]
+#![deny(clippy::all)]
+#![deny(clippy::pedantic)]
+#![allow(clippy::float_cmp)]
+#![deny(clippy::std_instead_of_core)]
+#![deny(clippy::alloc_instead_of_core)]
+#![deny(clippy::arithmetic_side_effects)]
+#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(not(any(feature = "std", feature = "libm")))]
