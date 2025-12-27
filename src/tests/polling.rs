@@ -18,7 +18,7 @@ pub fn poll_orbit(orbit: &impl OrbitTrait) -> Vec<DVec3> {
         vec.push(orbit.get_position_at_time(time));
     }
 
-    return vec;
+    vec
 }
 
 pub fn poll_orbit2d(orbit: &impl OrbitTrait2D) -> Vec<DVec2> {
@@ -42,7 +42,7 @@ pub fn poll_flat(orbit: &impl OrbitTrait) -> Vec<DVec2> {
         vec.push(orbit.get_pqw_position_at_true_anomaly(angle));
     }
 
-    return vec;
+    vec
 }
 
 pub fn poll_transform(orbit: &impl OrbitTrait) -> Vec<DVec3> {
@@ -53,7 +53,7 @@ pub fn poll_transform(orbit: &impl OrbitTrait) -> Vec<DVec3> {
         vec.push(orbit.transform_pqw_vector(DVec2::new(1.0 * angle.cos(), 1.0 * angle.sin())));
     }
 
-    return vec;
+    vec
 }
 
 pub fn poll_transform2d(orbit: &impl OrbitTrait2D) -> Vec<DVec2> {
@@ -78,7 +78,7 @@ pub fn poll_eccentric_anomaly(orbit: &impl OrbitTrait) -> Vec<f64> {
         vec.push(orbit.get_eccentric_anomaly_at_time(time));
     }
 
-    return vec;
+    vec
 }
 
 pub fn poll_eccentric_anomaly2d(orbit: &impl OrbitTrait2D) -> Vec<f64> {
@@ -94,12 +94,11 @@ pub fn poll_eccentric_anomaly2d(orbit: &impl OrbitTrait2D) -> Vec<f64> {
         vec.push(orbit.get_eccentric_anomaly_at_time(time));
     }
 
-    return vec;
+    vec
 }
 
 pub fn poll_speed(orbit: &impl OrbitTrait) -> Vec<f64> {
     (0..ORBIT_POLL_ANGLES)
-        .into_iter()
         .map(|i| {
             if orbit.get_eccentricity() < 1.0 {
                 (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64)
@@ -126,7 +125,6 @@ pub fn poll_speed2d(orbit: &impl OrbitTrait2D) -> Vec<f64> {
 
 pub fn poll_flat_vel(orbit: &impl OrbitTrait) -> Vec<DVec2> {
     (0..ORBIT_POLL_ANGLES)
-        .into_iter()
         .map(|i| {
             if orbit.get_eccentricity() < 1.0 {
                 (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64)
@@ -140,7 +138,6 @@ pub fn poll_flat_vel(orbit: &impl OrbitTrait) -> Vec<DVec2> {
 
 pub fn poll_vel(orbit: &impl OrbitTrait) -> Vec<DVec3> {
     (0..ORBIT_POLL_ANGLES)
-        .into_iter()
         .map(|i| {
             if orbit.get_eccentricity() < 1.0 {
                 (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64)
@@ -167,7 +164,6 @@ pub fn poll_vel2d(orbit: &impl OrbitTrait2D) -> Vec<DVec2> {
 
 pub fn poll_sv(orbit: &impl OrbitTrait) -> Vec<StateVectors> {
     (0..ORBIT_POLL_ANGLES)
-        .into_iter()
         .map(|i| {
             if orbit.get_eccentricity() < 1.0 {
                 (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64)

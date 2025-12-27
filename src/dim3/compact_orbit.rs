@@ -10,8 +10,8 @@ use crate::{ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait};
 
 /// A minimal struct representing a Keplerian orbit.
 ///
-/// This struct minimizes memory footprint by not caching variables.  
-/// Because of this, calculations can be slower than caching those variables.  
+/// This struct minimizes memory footprint by not caching variables.\
+/// Because of this, calculations can be slower than caching those variables.\
 /// For this reason, you might consider using the `Orbit` struct instead.
 ///
 /// # Example
@@ -70,13 +70,13 @@ use crate::{ApoapsisSetterError, Matrix3x2, Orbit, OrbitTrait};
 ///     1.0,
 /// );
 /// ```
-/// See [CompactOrbit::new] and [CompactOrbit::with_apoapsis] for more information.
+/// See [`CompactOrbit::new`] and [`CompactOrbit::with_apoapsis`] for more information.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CompactOrbit {
-    /// The eccentricity of the orbit.  
-    /// e < 1: ellipse  
-    /// e = 1: parabola  
+    /// The eccentricity of the orbit.\
+    /// e < 1: ellipse\
+    /// e = 1: parabola\
     /// e > 1: hyperbola  
     ///
     /// See more: <https://en.wikipedia.org/wiki/Orbital_eccentricity>
@@ -99,10 +99,10 @@ pub struct CompactOrbit {
 
     /// The argument of periapsis of the orbit, in radians.
     ///
-    /// Wikipedia:  
+    /// Wikipedia:\
     /// The argument of periapsis is the angle from the body's
     /// ascending node to its periapsis, measured in the direction of
-    /// motion.  
+    /// motion.\
     /// <https://en.wikipedia.org/wiki/Argument_of_periapsis>
     ///
     /// In simple terms, it tells you how, and in which direction,
@@ -111,10 +111,10 @@ pub struct CompactOrbit {
 
     /// The longitude of ascending node of the orbit, in radians.
     ///
-    /// Wikipedia:  
+    /// Wikipedia:\
     /// The longitude of ascending node is the angle from a specified
     /// reference direction, called the origin of longitude, to the direction
-    /// of the ascending node, as measured in a specified reference plane.  
+    /// of the ascending node, as measured in a specified reference plane.\
     /// <https://en.wikipedia.org/wiki/Longitude_of_the_ascending_node>
     ///
     /// In simple terms, it tells you how, and in which direction,
@@ -124,12 +124,12 @@ pub struct CompactOrbit {
     /// The mean anomaly at orbit epoch, in radians.
     ///
     /// For elliptic orbits, it's measured in radians and so are bounded
-    /// between 0 and tau; anything out of range will get wrapped around.  
+    /// between 0 and tau; anything out of range will get wrapped around.\
     /// For hyperbolic orbits, it's unbounded.
     ///
-    /// Wikipedia:  
+    /// Wikipedia:\
     /// The mean anomaly at epoch, `M_0`, is defined as the instantaneous mean
-    /// anomaly at a given epoch, `t_0`.  
+    /// anomaly at a given epoch, `t_0`.\
     /// <https://en.wikipedia.org/wiki/Mean_anomaly#Mean_anomaly_at_epoch>
     ///
     /// In simple terms, this modifies the "offset" of the orbit progression.
@@ -148,7 +148,7 @@ pub struct CompactOrbit {
 impl CompactOrbit {
     /// Creates a new [`CompactOrbit`] instance with the given parameters.
     ///
-    /// Note: This function uses eccentricity instead of apoapsis.  
+    /// Note: This function uses eccentricity instead of apoapsis.\
     /// If you want to provide an apoapsis instead, consider using the
     /// [`CompactOrbit::with_apoapsis`] function instead.
     ///
@@ -193,6 +193,7 @@ impl CompactOrbit {
     /// assert_eq!(orbit.mu, gravitational_parameter);
     /// # }
     /// ```
+    #[must_use]
     pub fn new(
         eccentricity: f64,
         periapsis: f64,
@@ -215,9 +216,9 @@ impl CompactOrbit {
 
     /// Creates a new [`CompactOrbit`] instance with the given parameters.
     ///
-    /// Note: This function uses apoapsis instead of eccentricity.  
+    /// Note: This function uses apoapsis instead of eccentricity.\
     /// Because of this, it's not recommended to create
-    /// parabolic or hyperbolic trajectories with this function.  
+    /// parabolic or hyperbolic trajectories with this function.\
     /// If you're looking to initialize a parabolic or hyperbolic
     /// trajectory, consider using the [`CompactOrbit::new`] function instead.
     ///
@@ -265,6 +266,7 @@ impl CompactOrbit {
     /// assert_eq!(orbit.mu, gravitational_parameter);
     /// # }
     /// ```
+    #[must_use]
     pub fn with_apoapsis(
         apoapsis: f64,
         periapsis: f64,
@@ -324,6 +326,7 @@ impl CompactOrbit {
     /// assert_eq!(orbit.mu, gravitational_parameter);
     /// # }
     /// ```
+    #[must_use]
     pub fn new_circular(
         radius: f64,
         inclination: f64,
@@ -345,7 +348,7 @@ impl CompactOrbit {
     /// Creates a new `CompactOrbit` instance parallel to
     /// the XY plane with the given parameters.
     ///
-    /// Note: This function uses eccentricity instead of apoapsis.  
+    /// Note: This function uses eccentricity instead of apoapsis.\
     /// If you want to provide an apoapsis instead, consider using the
     /// [`CompactOrbit::new_flat_with_apoapsis`] function instead.
     ///
@@ -384,6 +387,7 @@ impl CompactOrbit {
     /// assert_eq!(orbit.mu, gravitational_parameter);
     /// # }
     /// ```
+    #[must_use]
     pub fn new_flat(
         eccentricity: f64,
         periapsis: f64,
@@ -405,9 +409,9 @@ impl CompactOrbit {
     /// Creates a new `CompactOrbit` instance parallel to
     /// the XY plane with the given parameters.
     ///
-    /// Note: This function uses apoapsis instead of eccentricity.  
+    /// Note: This function uses apoapsis instead of eccentricity.\
     /// Because of this, it's not recommended to create
-    /// parabolic or hyperbolic trajectories with this function.  
+    /// parabolic or hyperbolic trajectories with this function.\
     /// If you're looking to initialize a parabolic or hyperbolic
     /// trajectory, consider using the [`CompactOrbit::new_flat`] function instead.
     ///
@@ -448,6 +452,7 @@ impl CompactOrbit {
     /// assert_eq!(orbit.mu, gravitational_parameter);
     /// # }
     /// ```
+    #[must_use]
     pub fn new_flat_with_apoapsis(
         apoapsis: f64,
         periapsis: f64,
@@ -499,6 +504,7 @@ impl CompactOrbit {
     /// assert_eq!(orbit.mu, gravitational_parameter);
     /// # }
     /// ```
+    #[must_use]
     pub fn new_flat_circular(radius: f64, mean_anomaly: f64, mu: f64) -> Self {
         Self {
             eccentricity: 0.0,
@@ -654,22 +660,22 @@ impl OrbitTrait for CompactOrbit {
     }
 
     fn set_eccentricity(&mut self, value: f64) {
-        self.eccentricity = value
+        self.eccentricity = value;
     }
     fn set_periapsis(&mut self, value: f64) {
-        self.periapsis = value
+        self.periapsis = value;
     }
     fn set_inclination(&mut self, value: f64) {
-        self.inclination = value
+        self.inclination = value;
     }
     fn set_arg_pe(&mut self, value: f64) {
-        self.arg_pe = value
+        self.arg_pe = value;
     }
     fn set_long_asc_node(&mut self, value: f64) {
-        self.long_asc_node = value
+        self.long_asc_node = value;
     }
     fn set_mean_anomaly_at_epoch(&mut self, value: f64) {
-        self.mean_anomaly = value
+        self.mean_anomaly = value;
     }
 
     fn set_gravitational_parameter(

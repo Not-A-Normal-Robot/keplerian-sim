@@ -1,4 +1,3 @@
-use core::f64::NAN;
 use glam::{DVec2, DVec3};
 use keplerian_sim::{Orbit, OrbitTrait};
 use std::{env::args, fs, process::exit};
@@ -18,7 +17,7 @@ fn get_sim_ticks() -> usize {
         }
 
         if cur_val_is_ticks {
-            ticks = match usize::from_str_radix(&arg, 10) {
+            ticks = match str::parse(&arg) {
                 Ok(n) => n,
                 Err(_) => {
                     println!(
@@ -228,7 +227,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!(">> All done!");
 
-    return Ok(());
+    Ok(())
 }
 
 fn create_csv(logs: &Vec<OrbitLog>) -> String {
@@ -258,7 +257,7 @@ fn create_csv(logs: &Vec<OrbitLog>) -> String {
 
         let prev_flat_position = prev_flat_pos.unwrap_or(DVec2::NAN);
         let prev_position = prev_pos.unwrap_or(DVec3::NAN);
-        let prev_altitude_unwrapped = prev_altitude.unwrap_or(NAN);
+        let prev_altitude_unwrapped = prev_altitude.unwrap_or(f64::NAN);
 
         let d = log.position - prev_position;
 
@@ -267,7 +266,7 @@ fn create_csv(logs: &Vec<OrbitLog>) -> String {
         let d_altitude = altitude - prev_altitude_unwrapped;
 
         let speed = df.length();
-        let accel = speed - prev_speed.unwrap_or(NAN);
+        let accel = speed - prev_speed.unwrap_or(f64::NAN);
 
         string += &format!(
             "{orbit},{iter},{time},{mean_anom},{ecc_anom},{angle},{flat_x},{flat_y},{dfx},{dfy},{x},{y},{z},{dx},{dy},{dz},{altitude},{d_altitude},{speed},{accel},{expected_speed},{real_speed},{real_dfx},{real_dfy},{real_dx},{real_dy},{real_dz}\n",

@@ -99,16 +99,16 @@ impl F64Math for f64 {
         sin_cos/sincos -> 2,
     );
 
-    #[inline(always)]
+    /// This custom version of powi only supports values of 2 or 3.
+    #[inline]
     fn powi(self, i: i32) -> Self {
-        if i == 2 {
-            self * self
-        } else if i == 3 {
-            self * self * self
-        } else if cfg!(debug_assertions) {
-            panic!("powi only supports up to 3 in no_std environments");
-        } else {
-            0.0
+        let square = self * self;
+
+        match i {
+            2 => square,
+            3 => square * self,
+            _ if cfg!(debug_assertions) => panic!("F64Math::powi only supports i values of 2 or 3"),
+            _ => square,
         }
     }
 

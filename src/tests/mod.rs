@@ -1,18 +1,16 @@
-#![cfg(test)]
-
+#![allow(clippy::pedantic)]
+#![allow(clippy::arithmetic_side_effects)]
 extern crate std;
-use std::{eprintln, format, println, string::String, vec::Vec};
-
-use glam::{DVec2, DVec3};
-
 use crate::{
     CompactOrbit, CompactOrbit2D, Matrix3x2, MuSetterMode, Orbit, Orbit2D, OrbitTrait,
     OrbitTrait2D, StateVectors, StateVectors2D,
 };
-use std::{
+use core::{
     f64::consts::{PI, TAU},
     fmt::Debug,
 };
+use glam::{DVec2, DVec3};
+use std::{eprintln, format, println, string::String, vec::Vec};
 
 const ORBIT_POLL_ANGLES: usize = 4096;
 
@@ -28,7 +26,7 @@ fn dvec3_to_bits(v: DVec3) -> (u64, u64, u64) {
     (v.x.to_bits(), v.y.to_bits(), v.z.to_bits())
 }
 fn unit_orbit() -> Orbit {
-    return Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    Orbit::new(0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
 }
 
 #[test]
@@ -1437,8 +1435,6 @@ mod mu_setter {
         }
     }
 
-    use std::fmt::Debug;
-
     fn keep_position_time_base_test(orbit: &(impl OrbitTrait + Clone + Debug)) {
         for i in 0..1024 {
             let time = i as f64 * 0.15f64;
@@ -1841,7 +1837,7 @@ fn keplers_equation_hyperbolic(
     eccentric_anomaly: f64,
     eccentricity: f64,
 ) -> f64 {
-    return eccentricity * eccentric_anomaly.sinh() - eccentric_anomaly - mean_anomaly;
+    eccentricity * eccentric_anomaly.sinh() - eccentric_anomaly - mean_anomaly
 }
 
 /// Use binary search to get the real hyperbolic eccentric anomaly instead of Newton's method.
@@ -2355,7 +2351,7 @@ fn test_sv_to_orbit() {
     ];
 
     for orbit in known_problematic {
-        let iter = (0..ORBIT_POLL_ANGLES).into_iter().map(|i| {
+        let iter = (0..ORBIT_POLL_ANGLES).map(|i| {
             if orbit.get_eccentricity() < 1.0 {
                 (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64)
             } else {
@@ -2383,7 +2379,7 @@ fn test_sv_to_orbit() {
             rand::random_range(0.1..10.0),
             crate::MuSetterMode::KeepElements,
         );
-        let iter = (0..ORBIT_POLL_ANGLES).into_iter().map(|i| {
+        let iter = (0..ORBIT_POLL_ANGLES).map(|i| {
             if orbit.get_eccentricity() < 1.0 {
                 (i as f64) * orbit.get_orbital_period() / (ORBIT_POLL_ANGLES as f64)
             } else {
@@ -2409,7 +2405,7 @@ fn test_sv_to_orbit() {
     }
 }
 
-fn test_alt_to_true_anom_base(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
+fn test_alt_to_true_anom_base(orbit: &(impl OrbitTrait + Debug)) {
     if orbit.get_eccentricity() == 0.0 {
         assert!(
             orbit
@@ -2688,7 +2684,7 @@ fn test_alt_to_true_anom() {
     }
 }
 
-fn z_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
+fn z_an_dn_base_test(orbit: &(impl OrbitTrait + Debug)) {
     let f_an = orbit.get_true_anomaly_at_asc_node();
     let f_dn = orbit.get_true_anomaly_at_desc_node();
 
@@ -2757,7 +2753,7 @@ fn test_orbital_plane_normal_getter() {
     }
 }
 
-fn orbit_plane_an_dn_base_test(orbit: &(impl OrbitTrait + std::fmt::Debug)) {
+fn orbit_plane_an_dn_base_test(orbit: &(impl OrbitTrait + Debug)) {
     let other_random = random_any();
     let other_flat = {
         let mut orbit = other_random.clone();
@@ -2915,13 +2911,13 @@ fn focal_parameter_base_test(orbit: &impl OrbitTrait) {
     // Use Wikipedia's equations:
     // https://en.wikipedia.org/wiki/Conic_section#Conic_parameters
     let expected_focal_param = match orbit.get_eccentricity() {
-        e if e == 0.0 => f64::INFINITY,
+        0.0 => f64::INFINITY,
         e if e < 1.0 => {
             let b = orbit.get_semi_minor_axis();
             let a = orbit.get_semi_major_axis();
             b.powi(2) / (a.powi(2) - b.powi(2)).sqrt()
         }
-        e if e == 1.0 => orbit.get_periapsis() * 2.0,
+        1.0 => orbit.get_periapsis() * 2.0,
         e if e > 1.0 => {
             let b = orbit.get_semi_minor_axis();
             let a = orbit.get_semi_major_axis();
@@ -3259,7 +3255,7 @@ mod monotone_cubic_solver {
 mod sinh_approx {
     use super::*;
     use crate::generated_sinh_approximator::sinh_approx_lt5;
-    use std::hint::black_box;
+    use core::hint::black_box;
     use std::time::Instant;
 
     // Run this benchmark:

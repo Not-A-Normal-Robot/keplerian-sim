@@ -211,7 +211,7 @@ pub(super) fn random_nonparabolic() -> CompactOrbit {
 }
 
 pub(super) fn random_nonparabolic_iter(iters: usize) -> impl Iterator<Item = CompactOrbit> {
-    (0..iters).into_iter().map(|_| random_nonparabolic())
+    (0..iters).map(|_| random_nonparabolic())
 }
 
 pub(super) fn random_any() -> CompactOrbit {
@@ -231,7 +231,7 @@ pub(super) fn random_any() -> CompactOrbit {
 }
 
 pub(super) fn random_any_iter(iters: usize) -> impl Iterator<Item = CompactOrbit> {
-    (0..iters).into_iter().map(|_| random_any())
+    (0..iters).map(|_| random_any())
 }
 
 pub(super) fn random_any_2d() -> CompactOrbit2D {
