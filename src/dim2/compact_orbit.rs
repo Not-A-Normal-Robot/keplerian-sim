@@ -208,6 +208,7 @@ impl CompactOrbit2D {
     /// assert_eq!(orbit.mean_anomaly, mean_anomaly_at_epoch);
     /// assert_eq!(orbit.mu, gravitational_parameter);
     /// ```
+    #[must_use]
     pub fn with_apoapsis(
         apoapsis: f64,
         periapsis: f64,
@@ -252,6 +253,7 @@ impl CompactOrbit2D {
     /// assert_eq!(orbit.mean_anomaly, mean_anomaly_at_epoch);
     /// assert_eq!(orbit.mu, gravitational_parameter);
     /// ```
+    #[must_use]
     pub fn new_circular(radius: f64, mean_anomaly: f64, mu: f64) -> Self {
         Self {
             eccentricity: 0.0,
