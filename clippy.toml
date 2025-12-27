@@ -1,1 +1,8 @@
 allow-panic-in-tests = true
+arithmetic-side-effects-allowed = [
+    "crate::Matrix3x2",
+    "libm::DMat2",
+    "libm::DVec2",
+    "libm::DVec3",
+    "f64",
+]

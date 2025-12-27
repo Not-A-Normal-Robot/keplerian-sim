@@ -58,7 +58,7 @@ pub trait OrbitTrait2D {
     /// Gets the semi-major axis of the orbit.
     ///
     /// In an elliptic orbit, the semi-major axis is the
-    /// average of the apoapsis and periapsis.  
+    /// average of the apoapsis and periapsis.\
     /// This function uses a generalization which uses
     /// eccentricity instead.
     ///
@@ -103,7 +103,7 @@ pub trait OrbitTrait2D {
 
     /// Gets the semi-latus rectum of the orbit, in meters.
     ///
-    /// Learn more: <https://en.wikipedia.org/wiki/Ellipse#Semi-latus_rectum>  
+    /// Learn more: <https://en.wikipedia.org/wiki/Ellipse#Semi-latus_rectum>\
     /// <https://en.wikipedia.org/wiki/Conic_section#Conic_parameters>
     ///
     /// # Performance
@@ -158,7 +158,7 @@ pub trait OrbitTrait2D {
     /// trajectories, and NaN for closed orbits.
     ///
     /// This can be used to get the range of possible true anomalies that
-    /// a hyperbolic trajectory can be in.  
+    /// a hyperbolic trajectory can be in.\
     /// This function returns the maximum true anomaly, and the minimum
     /// true anomaly can be derived simply by negating the result:
     /// ```text
@@ -422,8 +422,8 @@ pub trait OrbitTrait2D {
         -self.get_apoapsis() * p_vector
     }
 
-    /// Gets the apoapsis of the orbit.  
-    /// Returns infinity for parabolic orbits.  
+    /// Gets the apoapsis of the orbit.\
+    /// Returns infinity for parabolic orbits.\
     /// Returns negative values for hyperbolic orbits.  
     ///
     /// # Performance
@@ -453,8 +453,11 @@ pub trait OrbitTrait2D {
         }
     }
 
-    /// Sets the apoapsis of the orbit.  
-    /// Errors when the apoapsis is less than the periapsis, or less than zero.  
+    /// Sets the apoapsis of the orbit.\
+    ///
+    /// # Errors
+    ///
+    /// Errors when the apoapsis is less than the periapsis, or less than zero.\
     /// If you want a setter that does not error, use `set_apoapsis_force`, which will
     /// try its best to interpret what you might have meant, but may have
     /// undesirable behavior.
@@ -488,7 +491,7 @@ pub trait OrbitTrait2D {
     fn set_apoapsis(&mut self, apoapsis: f64) -> Result<(), ApoapsisSetterError>;
 
     /// Sets the apoapsis of the orbit, with a best-effort attempt at interpreting
-    /// possibly-invalid values.  
+    /// possibly-invalid values.\
     /// This function will not error, but may have undesirable behavior:
     /// - If the given apoapsis is less than the periapsis but more than zero,
     ///   the orbit will be flipped and the periapsis will be set to the given apoapsis.
@@ -699,14 +702,14 @@ pub trait OrbitTrait2D {
     /// Gets the specific orbital energy `ε` of the orbit,
     /// in joules per kilogram (J/kg, equiv. to m^2 ⋅ s^-2).
     ///
-    /// For closed orbits (eccentricity < 0), ε < 0.  
+    /// For closed orbits (eccentricity < 0), ε < 0.\
     /// When eccentricity equals 1 (parabolic), ε equals 0,
     /// and when eccentricity exceeds 1 (hyperbolic), ε is positive.
     ///
     /// The specific orbital energy ε of two orbiting bodies is
     /// the constant quotient of their mechanical energy
-    /// (the sum of their mutual potential energy, ε_p, and their
-    /// kinetic energy, ε_k) to their reduced mass.
+    /// (the sum of their mutual potential energy, `ε_p`, and their
+    /// kinetic energy, `ε_k`) to their reduced mass.
     ///
     /// \- [Wikipedia](https://en.wikipedia.org/wiki/Specific_orbital_energy)
     ///
@@ -791,14 +794,14 @@ pub trait OrbitTrait2D {
     // TODO: PARABOLIC SUPPORT: This function returns NaN on parabolic
     /// Gets the time when the orbit is in periapsis, in seconds since epoch.
     ///
-    /// This returns the time when mean anomaly equals zero.  
+    /// This returns the time when mean anomaly equals zero.\
     /// This means although it will represent a time of periapsis,
     /// it doesn't mean "next periapsis" nor "previous periapsis",
     /// it just means "a periapsis", at least for closed orbits
     /// (e < 1).
     ///
     /// # Parabolic Support
-    /// This function does not support parabolic trajectories yet.  
+    /// This function does not support parabolic trajectories yet.\
     /// Calling this function on a parabolic trajectory results in a
     /// non-finite number.
     ///

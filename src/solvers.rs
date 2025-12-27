@@ -1,8 +1,9 @@
 #[cfg(feature = "libm")]
 use crate::math::F64Math;
 use crate::{
-    keplers_equation, keplers_equation_derivative, keplers_equation_second_derivative, sinhcosh,
-    solve_monotone_cubic, B, NUMERIC_MAX_ITERS, N_F64, N_U32,
+    generated_sinh_approximator::SINH_5, keplers_equation, keplers_equation_derivative,
+    keplers_equation_second_derivative, sinhcosh, solve_monotone_cubic, B, NUMERIC_MAX_ITERS,
+    N_F64, N_U32,
 };
 use core::f64::consts::{PI, TAU};
 
@@ -36,7 +37,6 @@ use core::f64::consts::{PI, TAU};
 pub(crate) fn get_approx_hyperbolic_eccentric_anomaly(eccentricity: f64, mean_anomaly: f64) -> f64 {
     let sign = mean_anomaly.signum();
     let mean_anomaly = mean_anomaly.abs();
-    const SINH_5: f64 = 74.20321057778875;
 
     // (Paragraph after Eq. 5 in the aforementioned paper)
     //   The [mean anomaly] interval [0, e_c sinh(5) - 5) can
