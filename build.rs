@@ -5,6 +5,7 @@ fn main() {
 }
 
 mod sinh_approx {
+    use core::fmt::Write as _;
     use std::{
         fs,
         io::{stderr, stdout, Write},
@@ -59,7 +60,7 @@ mod sinh_approx {
     /// Returns a string containing Rust code.
     ///
     /// From the paper "A new method for solving the hyperbolic Kepler equation"
-    /// (https://doi.org/10.1016/j.apm.2023.12.017)
+    /// (<https://doi.org/10.1016/j.apm.2023.12.017>)
     /// Section: "Initial approximation for the F-interval [0, 5)"
     /// Equation 4
     fn generate_file_contents() -> String {
@@ -182,7 +183,7 @@ mod sinh_approx {
             }\n
         }";
 
-        code += &format!("pub const SINH_5: f64 = {};", libm::sinh(5.0));
+        write!(code, "pub const SINH_5: f64 = {};", libm::sinh(5.0)).unwrap();
 
         code
     }
