@@ -62,13 +62,13 @@ use crate::{ApoapsisSetterError, MuSetterMode2D, Orbit2D, OrbitTrait2D};
 ///     1.0,
 /// );
 /// ```
-/// See [CompactOrbit2D::new] and [CompactOrbit2D::with_apoapsis] for more information.
+/// See [`CompactOrbit2D::new`] and [`CompactOrbit2D::with_apoapsis`] for more information.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CompactOrbit2D {
-    /// The eccentricity of the orbit.  
-    /// e < 1: ellipse  
-    /// e = 1: parabola  
+    /// The eccentricity of the orbit.\
+    /// e < 1: ellipse\
+    /// e = 1: parabola\
     /// e > 1: hyperbola  
     ///
     /// See more: <https://en.wikipedia.org/wiki/Orbital_eccentricity>
@@ -84,10 +84,10 @@ pub struct CompactOrbit2D {
 
     /// The argument of periapsis of the orbit, in radians.
     ///
-    /// Wikipedia:  
+    /// Wikipedia:\
     /// The argument of periapsis is the angle from the body's
     /// ascending node to its periapsis, measured in the direction of
-    /// motion.  
+    /// motion.\
     /// <https://en.wikipedia.org/wiki/Argument_of_periapsis>
     ///
     /// In simple terms, it tells you how, and in which direction,
@@ -97,12 +97,12 @@ pub struct CompactOrbit2D {
     /// The mean anomaly at orbit epoch, in radians.
     ///
     /// For elliptic orbits, it's measured in radians and so are bounded
-    /// between 0 and tau; anything out of range will get wrapped around.  
+    /// between 0 and tau; anything out of range will get wrapped around.\
     /// For hyperbolic orbits, it's unbounded.
     ///
-    /// Wikipedia:  
+    /// Wikipedia:\
     /// The mean anomaly at epoch, `M_0`, is defined as the instantaneous mean
-    /// anomaly at a given epoch, `t_0`.  
+    /// anomaly at a given epoch, `t_0`.\
     /// <https://en.wikipedia.org/wiki/Mean_anomaly#Mean_anomaly_at_epoch>
     ///
     /// In simple terms, this modifies the "offset" of the orbit progression.
@@ -155,6 +155,7 @@ impl CompactOrbit2D {
     /// assert_eq!(orbit.mean_anomaly, mean_anomaly_at_epoch);
     /// assert_eq!(orbit.mu, gravitational_parameter);
     /// ```
+    #[must_use]
     pub fn new(eccentricity: f64, periapsis: f64, arg_pe: f64, mean_anomaly: f64, mu: f64) -> Self {
         Self {
             eccentricity,
@@ -167,9 +168,9 @@ impl CompactOrbit2D {
 
     /// Creates a new [`CompactOrbit2D`] instance with the given parameters.
     ///
-    /// Note: This function uses apoapsis instead of eccentricity.  
+    /// Note: This function uses apoapsis instead of eccentricity.\
     /// Because of this, it's not recommended to create
-    /// parabolic or hyperbolic trajectories with this function.  
+    /// parabolic or hyperbolic trajectories with this function.\
     /// If you're looking to initialize a parabolic or hyperbolic
     /// trajectory, consider using the [`CompactOrbit2D::new`] function instead.
     ///

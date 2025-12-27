@@ -20,14 +20,14 @@ use core::f64::consts::{PI, TAU};
 /// invalid values may be returned.
 ///
 /// # Approximate Guess
-/// This function returns a "good" initial guess for the hyperbolic eccentric anomaly.  
+/// This function returns a "good" initial guess for the hyperbolic eccentric anomaly.\
 /// There are no constraints on the accuracy of the guess, and users may not
 /// rely on this value being very accurate, especially in some edge cases.
 ///
 /// # Source
-/// From the paper:  
-/// "A new method for solving the hyperbolic Kepler equation"  
-/// by Baisheng Wu et al.  
+/// From the paper:\
+/// "A new method for solving the hyperbolic Kepler equation"\
+/// by Baisheng Wu et al.\
 /// Quote:
 /// "we divide the hyperbolic eccentric anomaly interval into two parts:
 /// a finite interval and an infinite interval. For the finite interval,
@@ -173,7 +173,7 @@ pub(crate) fn get_approx_hyperbolic_eccentric_anomaly(eccentricity: f64, mean_an
 /// Gets the hyperbolic eccentric anomaly of the orbit.
 ///
 /// # Unchecked Operation
-/// This function does not check whether or not the orbit is actually hyperbolic.  
+/// This function does not check whether or not the orbit is actually hyperbolic.\
 /// Nonsensical output may be produced if the orbit is not hyperbolic, but rather
 /// elliptic or parabolic.
 ///
@@ -182,8 +182,8 @@ pub(crate) fn get_approx_hyperbolic_eccentric_anomaly(eccentricity: f64, mean_an
 /// is not performant. It is recommended to cache this value if you can.
 ///
 /// # Source
-/// From the paper:  
-/// "A new method for solving the hyperbolic Kepler equation"  
+/// From the paper:\
+/// "A new method for solving the hyperbolic Kepler equation"\
 /// by Baisheng Wu et al.  
 pub(crate) fn get_hyperbolic_eccentric_anomaly(eccentricity: f64, mean_anomaly: f64) -> f64 {
     let mut ecc_anom = get_approx_hyperbolic_eccentric_anomaly(eccentricity, mean_anomaly);
@@ -270,7 +270,7 @@ pub(crate) fn get_hyperbolic_eccentric_anomaly(eccentricity: f64, mean_anomaly: 
 /// Gets the elliptic eccentric anomaly of the orbit.
 ///
 /// # Unchecked Operation
-/// This function does not check whether or not the orbit is actually elliptic (e < 1).  
+/// This function does not check whether or not the orbit is actually elliptic (e < 1).\
 /// Nonsensical output may be produced if the orbit is not elliptic, but rather
 /// hyperbolic or parabolic.
 ///
@@ -279,9 +279,9 @@ pub(crate) fn get_hyperbolic_eccentric_anomaly(eccentricity: f64, mean_anomaly: 
 /// is not performant. It is recommended to cache this value if you can.
 ///
 /// # Source
-/// From the paper  
-/// "An improved algorithm due to laguerre for the solution of Kepler's equation."  
-/// by Bruce A. Conway  
+/// From the paper\
+/// "An improved algorithm due to laguerre for the solution of Kepler's equation."\
+/// by Bruce A. Conway\
 /// <https://doi.org/10.1007/bf01230852>
 pub(crate) fn get_elliptic_eccentric_anomaly(eccentricity: f64, mut mean_anomaly: f64) -> f64 {
     let mut sign = 1.0;
