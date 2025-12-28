@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 #[cfg(feature = "libm")]
 use crate::math::F64Math;
 use crate::{
