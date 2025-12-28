@@ -5,7 +5,7 @@
 //! Keplerian orbits are special in that they are more stable and predictable than
 //! Newtonian orbits. In fact, unlike Newtonian orbits, Keplerian orbits don't use
 //! time steps to calculate the next position of an object. Keplerian orbits use
-//! state vectors to determine the object's *full trajectory* at any given time.  
+//! state vectors to determine the object's *full trajectory* at any given time.\
 //! This way, you don't need to worry about lag destabilizing Keplerian orbits.  
 //!
 //! However, Keplerian orbits are significantly more complex to calculate than
@@ -48,8 +48,14 @@
 //! #
 //! ```
 
-#![warn(missing_docs)]
 #![forbid(unsafe_code)]
+#![deny(clippy::all)]
+#![deny(clippy::pedantic)]
+#![allow(clippy::float_cmp)]
+#![deny(clippy::std_instead_of_core)]
+#![deny(clippy::alloc_instead_of_core)]
+#![deny(clippy::arithmetic_side_effects)]
+#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(not(any(feature = "std", feature = "libm")))]
@@ -87,7 +93,7 @@ pub use dim3::{CompactOrbit, MuSetterMode, Orbit, OrbitTrait, StateVectors};
 /// section 2.1.2, 'The "rational seed"'
 ///
 /// <https://doi.org/10.1051/0004-6361/202141423>
-const B: f64 = 0.999999;
+const B: f64 = 0.999_999;
 
 /// A constant used for the Laguerre method.
 ///
@@ -205,6 +211,7 @@ impl Matrix3x2 {
     ///
     /// assert_eq!(result, DVec3::new(1.0, 2.0, 3.0));
     /// ```
+    #[must_use]
     pub fn dot_vec(&self, vec: DVec2) -> DVec3 {
         DVec3::new(
             vec.x * self.e11 + vec.y * self.e12,
@@ -258,13 +265,13 @@ impl From<mint::RowMatrix3x2<f64>> for Matrix3x2 {
 pub enum ApoapsisSetterError {
     /// ### Attempt to set apoapsis to a value less than periapsis.
     /// By definition, an orbit's apoapsis is the highest point in the orbit,
-    /// and its periapsis is the lowest point in the orbit.  
+    /// and its periapsis is the lowest point in the orbit.\
     /// Therefore, it doesn't make sense for the apoapsis to be lower than the periapsis.
     ApoapsisLessThanPeriapsis,
 
     /// ### Attempt to set apoapsis to a negative value.
-    /// By definition, the apoapsis is the highest point in the orbit.  
-    /// You can't be a negative distance away from the center of mass of the parent body.  
+    /// By definition, the apoapsis is the highest point in the orbit.\
+    /// You can't be a negative distance away from the center of mass of the parent body.\
     /// Therefore, it doesn't make sense for the apoapsis to be lower than zero.
     ApoapsisNegative,
 }
@@ -292,6 +299,7 @@ fn keplers_equation_second_derivative(eccentric_anomaly: f64, eccentricity: f64)
 /// Returns a tuple which contains:
 /// - 0: The hyperbolic sine of the number.
 /// - 1: The hyperbolic cosine of the number.
+#[must_use]
 pub fn sinhcosh(x: f64) -> (f64, f64) {
     let e_x = x.exp();
     let e_neg_x = e_x.recip();
@@ -304,7 +312,7 @@ pub fn sinhcosh(x: f64) -> (f64, f64) {
 /// The cubic equation is in the form of:
 /// ax^3 + bx^2 + cx + d
 ///
-/// The cubic equation is assumed to be monotone.  
+/// The cubic equation is assumed to be monotone.\
 /// If it isn't monotone (i.e., the discriminant
 /// is negative), it may return an incorrect value
 /// or NaN.
@@ -313,6 +321,7 @@ pub fn sinhcosh(x: f64) -> (f64, f64) {
 /// This function involves several divisions,
 /// squareroots, and cuberoots, and therefore is not
 /// very performant. It is recommended to cache this value if you can.
+#[expect(clippy::many_single_char_names)]
 fn solve_monotone_cubic(a: f64, b: f64, c: f64, d: f64) -> f64 {
     // Normalize coefficients so that a = 1
     // ax^3 + bx^2 + cx + d
