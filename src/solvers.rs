@@ -184,7 +184,7 @@ pub(crate) fn get_approx_hyperbolic_eccentric_anomaly(eccentricity: f64, mean_an
 /// # Source
 /// From the paper:\
 /// "A new method for solving the hyperbolic Kepler equation"\
-/// by Baisheng Wu et al.  
+/// by Baisheng Wu et al.\
 pub(crate) fn get_hyperbolic_eccentric_anomaly(eccentricity: f64, mean_anomaly: f64) -> f64 {
     let mut ecc_anom = get_approx_hyperbolic_eccentric_anomaly(eccentricity, mean_anomaly);
 

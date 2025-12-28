@@ -424,7 +424,7 @@ pub trait OrbitTrait2D {
 
     /// Gets the apoapsis of the orbit.\
     /// Returns infinity for parabolic orbits.\
-    /// Returns negative values for hyperbolic orbits.  
+    /// Returns negative values for hyperbolic orbits.\
     ///
     /// # Performance
     /// This function is very performant and should not be the cause of any
@@ -497,7 +497,7 @@ pub trait OrbitTrait2D {
     ///   the orbit will be flipped and the periapsis will be set to the given apoapsis.
     /// - If the given apoapsis is negative but between zero and negative periapsis,
     ///   the apoapsis will get treated as infinity and the orbit will be parabolic.
-    ///   (This is because even in hyperbolic orbits, apoapsis cannot be between 0 and -periapsis)  
+    ///   (This is because even in hyperbolic orbits, apoapsis cannot be between 0 and -periapsis)\
     /// - If the given apoapsis is negative AND less than negative periapsis,
     ///   the orbit will be hyperbolic.
     ///
@@ -939,7 +939,7 @@ pub trait OrbitTrait2D {
     ///
     /// # Performance
     /// For [`CompactOrbit2D`], this will perform a few trigonometric operations
-    /// and therefore is not too performant.  
+    /// and therefore is not too performant.
     ///
     /// For [`Orbit2D`], this will only need to access the cache, and
     /// therefore is much more performant.
@@ -964,14 +964,14 @@ pub trait OrbitTrait2D {
     /// Gets the p basis vector for the perifocal coordinate (PQW)
     /// system.
     ///
-    /// The p basis vector is a unit vector that points to the periapsis.  
+    /// The p basis vector is a unit vector that points to the periapsis.
     ///
     /// For more information about the PQW system, visit the
     /// [Wikipedia article](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
     ///
     /// # Performance
     /// For [`CompactOrbit2D`], this will perform a few trigonometric operations
-    /// and multiplications, and therefore is not too performant.  
+    /// and multiplications, and therefore is not too performant.
     ///
     /// For [`Orbit2D`], this will only need to access the cache, and
     /// therefore is much more performant.
@@ -1006,14 +1006,14 @@ pub trait OrbitTrait2D {
     ///
     /// The q basis vector is orthogonal to the p basis vector
     /// and points 90° counterclockwise from the periapsis on the
-    /// orbital plane.  
+    /// orbital plane.
     ///
     /// For more information about the PQW system, visit the
     /// [Wikipedia article](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
     ///
     /// # Performance
     /// For [`CompactOrbit2D`], this will perform a few trigonometric operations
-    /// and multiplications, and therefore is not too performant.  
+    /// and multiplications, and therefore is not too performant.
     ///
     /// For [`Orbit2D`], this will only need to access the cache, and
     /// therefore is much more performant.
@@ -1223,7 +1223,7 @@ pub trait OrbitTrait2D {
     /// # Source
     /// From the paper:\
     /// "A new method for solving the hyperbolic Kepler equation"\
-    /// by Baisheng Wu et al.  
+    /// by Baisheng Wu et al.
     fn get_hyperbolic_eccentric_anomaly(&self, mean_anomaly: f64) -> f64 {
         solvers::get_hyperbolic_eccentric_anomaly(self.get_eccentricity(), mean_anomaly)
     }
@@ -1344,7 +1344,7 @@ pub trait OrbitTrait2D {
     ///
     /// — [Wikipedia](https://en.wikipedia.org/wiki/True_anomaly)
     ///
-    /// # Performance  
+    /// # Performance
     /// This function is faster than the function which takes mean anomaly as input,
     /// as the eccentric anomaly is hard to calculate.\
     /// However, this function still uses a few trigonometric functions, so it is
@@ -1595,7 +1595,7 @@ pub trait OrbitTrait2D {
     }
 
     /// Gets the mean anomaly at a given eccentric anomaly in the orbit and
-    /// its precomputed sine.  
+    /// its precomputed sine.
     ///
     /// The mean anomaly is the fraction of an elliptical orbit's period
     /// that has elapsed since the orbiting body passed periapsis,
@@ -1607,7 +1607,7 @@ pub trait OrbitTrait2D {
     /// # Unchecked Operation
     /// This function does no checks on the validity of the value given
     /// as `sin_eccentric_anomaly`. It also doesn't check if the orbit is elliptic.\
-    /// If invalid values are passed in, you will receive a possibly-nonsensical value as output.  
+    /// If invalid values are passed in, you will receive a possibly-nonsensical value as output.
     ///
     /// # Performance
     /// This function is performant and is unlikely to be the culprit of
@@ -1629,7 +1629,7 @@ pub trait OrbitTrait2D {
     }
 
     /// Gets the mean anomaly at a given eccentric anomaly in the orbit and
-    /// its precomputed sine.  
+    /// its precomputed sine.
     ///
     /// The mean anomaly is the fraction of an elliptical orbit's period
     /// that has elapsed since the orbiting body passed periapsis,
@@ -1641,7 +1641,7 @@ pub trait OrbitTrait2D {
     /// # Unchecked Operation
     /// This function does no checks on the validity of the value given
     /// as `sinh_eccentric_anomaly`. It also doesn't check if the orbit is hyperbolic.\
-    /// If invalid values are passed in, you will receive a possibly-nonsensical value as output.  
+    /// If invalid values are passed in, you will receive a possibly-nonsensical value as output.
     ///
     /// # Performance
     /// This function is performant and is unlikely to be the culprit of
@@ -1697,7 +1697,7 @@ pub trait OrbitTrait2D {
     /// This function is somewhat performant.
     ///
     /// This function benefits significantly from being in the
-    /// [cached version of the orbit struct][crate::Orbit2D].  
+    /// [cached version of the orbit struct][crate::Orbit2D].
     ///
     /// If you want to get both the position and velocity vectors, you can
     /// use the
@@ -2107,7 +2107,7 @@ pub trait OrbitTrait2D {
     /// # Performance
     /// This function is not too performant as it uses a few trigonometric
     /// operations.\
-    /// It is recommended to cache this value if you can.  
+    /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you already know the true anomaly,
     /// then you should use the
@@ -2209,7 +2209,7 @@ pub trait OrbitTrait2D {
     /// performance issues.
     ///
     /// Alternatively, if you only want to know the speed, use
-    /// [`get_speed_at_periapsis`][OrbitTrait2D::get_speed_at_periapsis] instead.  
+    /// [`get_speed_at_periapsis`][OrbitTrait2D::get_speed_at_periapsis] instead.
     ///
     /// # Example
     /// ```
@@ -2262,7 +2262,7 @@ pub trait OrbitTrait2D {
     /// performance issues.
     ///
     /// Alternatively, if you only want to know the speed, use
-    /// [`get_speed_at_apoapsis`][OrbitTrait2D::get_speed_at_apoapsis] instead.  
+    /// [`get_speed_at_apoapsis`][OrbitTrait2D::get_speed_at_apoapsis] instead.
     ///
     /// # Example
     /// ```
@@ -2313,7 +2313,7 @@ pub trait OrbitTrait2D {
     /// performance issues.
     ///
     /// Alternatively, if you only want to know the speed, use
-    /// [`get_speed_at_infinity`][OrbitTrait2D::get_speed_at_infinity] instead.  
+    /// [`get_speed_at_infinity`][OrbitTrait2D::get_speed_at_infinity] instead.
     ///
     /// # Example
     /// ```
@@ -2364,7 +2364,7 @@ pub trait OrbitTrait2D {
     /// performance issues.
     ///
     /// Alternatively, if you only want to know the speed, use
-    /// [`get_speed_at_infinity`][OrbitTrait2D::get_speed_at_infinity] instead.  
+    /// [`get_speed_at_infinity`][OrbitTrait2D::get_speed_at_infinity] instead.
     ///
     /// # Example
     /// ```
@@ -2875,7 +2875,7 @@ pub trait OrbitTrait2D {
     /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you only want to know the speed, use
-    /// [`get_speed_at_periapsis`][OrbitTrait2D::get_speed_at_periapsis] instead.  
+    /// [`get_speed_at_periapsis`][OrbitTrait2D::get_speed_at_periapsis] instead.
     ///
     /// # Example
     /// ```
@@ -2906,7 +2906,7 @@ pub trait OrbitTrait2D {
     /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you only want to know the speed, use
-    /// [`get_speed_at_apoapsis`][OrbitTrait2D::get_speed_at_apoapsis] instead.  
+    /// [`get_speed_at_apoapsis`][OrbitTrait2D::get_speed_at_apoapsis] instead.
     ///
     /// # Open orbits (eccentricity >= 1)
     /// This function does not handle open orbits specially, and will return
@@ -2944,7 +2944,7 @@ pub trait OrbitTrait2D {
     /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you only want to know the speed, use
-    /// [`get_speed_at_infinity`][OrbitTrait2D::get_speed_at_infinity] instead.  
+    /// [`get_speed_at_infinity`][OrbitTrait2D::get_speed_at_infinity] instead.
     ///
     /// # Unchecked Operation
     /// This function does not check that the orbit is open.\
@@ -2979,7 +2979,7 @@ pub trait OrbitTrait2D {
     /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you only want to know the speed, use
-    /// [`get_speed_at_infinity`][OrbitTrait2D::get_speed_at_infinity] instead.  
+    /// [`get_speed_at_infinity`][OrbitTrait2D::get_speed_at_infinity] instead.
     ///
     /// # Unchecked Operation
     /// This function does not check that the orbit is open.\
@@ -3123,7 +3123,7 @@ pub trait OrbitTrait2D {
     }
 
     /// Gets the altitude of the body from its parent given the
-    /// cosine of the true anomaly.  
+    /// cosine of the true anomaly.
     ///
     /// This function should only be used if you already know the semi-latus
     /// rectum or `cos(true_anomaly)` beforehand, and want to minimize
@@ -3271,7 +3271,7 @@ pub trait OrbitTrait2D {
     /// It is recommended to cache this value when possible.
     ///
     /// This function benefits significantly from being in the
-    /// [cached version of the orbit struct][crate::Orbit2D].  
+    /// [cached version of the orbit struct][crate::Orbit2D].
     ///
     /// Alternatively, if you already know the true anomaly,
     /// consider using the
@@ -3305,7 +3305,7 @@ pub trait OrbitTrait2D {
     /// If you need *only one* of the vectors, though, you should instead call the dedicated
     /// getters:\
     /// [`get_velocity_at_eccentric_anomaly`][OrbitTrait2D::get_velocity_at_eccentric_anomaly]\
-    /// [`get_position_at_eccentric_anomaly`][OrbitTrait2D::get_position_at_eccentric_anomaly]  
+    /// [`get_position_at_eccentric_anomaly`][OrbitTrait2D::get_position_at_eccentric_anomaly]
     ///
     /// This function should give similar performance to the getter from the true anomaly:\
     /// [`get_state_vectors_at_true_anomaly`][OrbitTrait2D::get_state_vectors_at_true_anomaly]
@@ -3412,7 +3412,7 @@ pub trait OrbitTrait2D {
     /// # Performance
     /// This function involves converting the mean anomaly to an eccentric anomaly,
     /// which involves numerical approach methods and are therefore not performant.\
-    /// It is recommended to cache this value if you can.  
+    /// It is recommended to cache this value if you can.
     ///
     /// Alternatively, if you already know the eccentric anomaly or true anomaly,
     /// use the following functions instead, which do not use numerical methods and
@@ -3998,7 +3998,7 @@ impl StateVectors2D {
     /// The time passed into the function is measured in seconds.
     ///
     /// # Performance
-    /// This function is not too performant as it uses several trigonometric operations.  
+    /// This function is not too performant as it uses several trigonometric operations.
     ///
     /// For single conversions, this is faster than
     /// [the cached orbit converter][Self::to_cached_orbit].\
@@ -4337,7 +4337,7 @@ impl StateVectors2D {
     /// The time passed into the function is measured in seconds.
     ///
     /// # Performance
-    /// This function is not too performant as it uses several trigonometric operations.  
+    /// This function is not too performant as it uses several trigonometric operations.
     ///
     /// For single conversions, this is slower than
     /// [the compact orbit converter][Self::to_compact_orbit], as there are some extra
@@ -4566,7 +4566,7 @@ pub enum MuSetterMode2D {
     ///
     /// # Performance
     /// This mode uses some trigonometry, and therefore is not very performant.\
-    /// Consider using another mode if performance is an issue.  
+    /// Consider using another mode if performance is an issue.
     ///
     /// This is, however, significantly more performant than the numerical approach
     /// used in the [`KeepStateVectorsAtTime`][MuSetterMode2D::KeepStateVectorsAtTime]
@@ -4626,7 +4626,7 @@ pub enum MuSetterMode2D {
     ///
     /// # Performance
     /// This mode uses numerical approach methods, and therefore is not performant.\
-    /// Consider using another mode if performance is an issue.  
+    /// Consider using another mode if performance is an issue.
     ///
     /// Alternatively, if you already know the state vectors (position and velocity)
     /// of the point you want to keep, use the

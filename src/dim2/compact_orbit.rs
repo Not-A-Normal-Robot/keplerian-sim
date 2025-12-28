@@ -69,7 +69,7 @@ pub struct CompactOrbit2D {
     /// The eccentricity of the orbit.\
     /// e < 1: ellipse\
     /// e = 1: parabola\
-    /// e > 1: hyperbola  
+    /// e > 1: hyperbola\
     ///
     /// See more: <https://en.wikipedia.org/wiki/Orbital_eccentricity>
     pub eccentricity: f64,

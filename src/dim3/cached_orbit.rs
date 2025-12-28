@@ -12,7 +12,7 @@ use crate::{ApoapsisSetterError, CompactOrbit, Matrix3x2, OrbitTrait};
 ///
 /// This struct consumes significantly more memory because of the cache.\
 /// However, this will speed up orbital calculations.\
-/// If memory efficiency is your goal, you may consider using the [`CompactOrbit`] struct instead.  
+/// If memory efficiency is your goal, you may consider using the [`CompactOrbit`] struct instead.
 ///
 /// # Example
 /// ```
@@ -47,7 +47,7 @@ use crate::{ApoapsisSetterError, CompactOrbit, Matrix3x2, OrbitTrait};
 ///
 /// let orbit = Orbit::with_apoapsis(
 ///     // Initialize using apoapsis in place of eccentricity
-///     
+///
 ///     // Apoapsis
 ///     2.0,
 ///
@@ -77,7 +77,7 @@ pub struct Orbit {
     /// The eccentricity of the orbit.\
     /// e < 1: ellipse\
     /// e = 1: parabola\
-    /// e > 1: hyperbola  
+    /// e > 1: hyperbola
     ///
     /// See more: <https://en.wikipedia.org/wiki/Orbital_eccentricity>
     eccentricity: f64,
