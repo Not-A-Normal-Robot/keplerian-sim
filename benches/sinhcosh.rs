@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion, Throughput};
 use keplerian_sim::sinhcosh;
 use std::{hint::black_box, time::Duration};
 
@@ -14,6 +14,10 @@ fn benchmark(c: &mut Criterion) {
         .sample_size(1000)
         .warm_up_time(Duration::from_secs(8))
         .measurement_time(Duration::from_secs(20));
+
+    group.throughput(Throughput::Elements(
+        ((MAX_RANGE - MIN_RANGE) / STEP_SIZE) as u64,
+    ));
 
     group.bench_function("sinhcosh naive", |b| {
         b.iter(|| {

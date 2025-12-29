@@ -1,8 +1,8 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, Throughput, criterion_group, criterion_main};
 use keplerian_sim::{CompactOrbit, CompactOrbit2D, Orbit, Orbit2D, OrbitTrait, OrbitTrait2D};
 use std::hint::black_box;
 
-const POLL_ITERS: usize = 1024;
+const POLL_ITERS: u64 = 1024;
 const MULTIPLIER: f64 = std::f64::consts::TAU / POLL_ITERS as f64;
 
 #[inline(always)]
@@ -33,6 +33,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let compact_hyperbolic2d = CompactOrbit2D::from(hyperbolic2d.clone());
 
     let mut group = c.benchmark_group("eccentric_anomaly@mean_anomaly");
+    group.throughput(Throughput::Elements(POLL_ITERS))
 
     group.bench_function("3d elliptic cached", |b| {
         b.iter(|| poll_ea_3d(black_box(&orbit)))
