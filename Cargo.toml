@@ -60,7 +60,7 @@ fast-math = ["glam/fast-math"]
 libm = "0.2.13"
 
 [dev-dependencies]
-criterion = "0.8"
+criterion = "0.7"
 rand = "0.9.1"
 
 [[bench]]
