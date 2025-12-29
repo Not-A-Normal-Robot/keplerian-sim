@@ -37,18 +37,30 @@ libm = { version = "0.2.15", optional = true }
 
 [features]
 default = ["std"]
+# Use std's math functions. Requires std to be available.
+# In a no_std environment, use libm instead of std.
 std = []
+# Use libm's math functions.
+# Will not override the `std` feature.
 libm = ["dep:libm"]
+# Enables serde Serialize and Deserialize support on structs.
 serde = ["dep:serde"]
+# Enables inter-crate interoperability for `Matrix3x2` using the `mint` crate.
 mint = ["dep:mint"]
+# Enables mint and mint's `serde` feature.
 mint-serde = ["mint", "serde", "mint/serde"]
+# Enable glam's `fast-math` feature flag.
+# glam docs:
+# > Enables platform specific optimizations that might speed-up certain operations.
+# > This will cause APIs to output different results depending on the platform used and will likely break cross-platform determinism.
+# > This should NOT be enabled by intermediate libraries, deferring the decision to the end binary build instead.
 fast-math = ["glam/fast-math"]
 
 [build-dependencies]
 libm = "0.2.13"
 
 [dev-dependencies]
-criterion = "0.7"
+criterion = "0.8"
 rand = "0.9.1"
 
 [[bench]]

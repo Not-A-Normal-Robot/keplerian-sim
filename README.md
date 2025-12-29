@@ -19,8 +19,12 @@ You should not need to install `rustfmt` if you are a user of this library and o
 
 ## Feature flags
 The crate has the following feature flags:
-- `serde`: Enables serialization and deserialization of the structs in this crate using Serde. Disabled by default.
-- `mint`: Enables interoperability across math libraries using the `mint` crate. Disabled by default. Note that this only applies to the `Matrix3x2` struct used internally.
+- `serde`: Derives `Serialize` and `Deserialize` on public structs. Disabled by default.
+- `mint`: Enables interoperability across math libraries using the `mint` crate. Disabled by default. Note that this only applies to the `Matrix3x2` struct.
+- `std`: Use `std` for math float operations.
+- `libm`: Use `libm` for math float operations. Useful for `no_std` environments. Will not override the `std` feature flag.
+- `mint-serde`: `mint` and `serde` feature flags, and enables the `serde` feature flag on `mint`.
+- `fast-math`: Enables `libm`'s `fast-math` feature flag.
 
 ## Minimum Supported Rust Version (MSRV)
 <!-- When changing the MSRV, don't forget to change `Cargo.toml`! -->
