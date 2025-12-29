@@ -46,7 +46,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.bench_function("2d cached", |b| {
         b.iter(|| poll_tf_2d(black_box(&orbit2d), black_box(&points)))
     });
-    group.bench_function("3d compact", |b| {
+    group.bench_function("2d compact", |b| {
         b.iter(|| poll_tf_2d(black_box(&compact2d), black_box(&points)))
     });
 
