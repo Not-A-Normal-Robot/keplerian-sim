@@ -72,7 +72,7 @@ name = "true_anomaly"
 harness = false
 
 [[bench]]
-name = "tilting"
+name = "transformations"
 harness = false
 
 [[bench]]
@@ -80,15 +80,7 @@ name = "position"
 harness = false
 
 [[bench]]
-name = "position_time"
-harness = false
-
-[[bench]]
 name = "velocity"
-harness = false
-
-[[bench]]
-name = "velocity_time"
 harness = false
 
 [[bench]]
@@ -96,7 +88,7 @@ name = "state_vectors"
 harness = false
 
 [[bench]]
-name = "state_vectors_time"
+name = "speed"
 harness = false
 
 [[bench]]

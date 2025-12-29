@@ -11,9 +11,8 @@ fn poll_ma_3d(orbit: &impl OrbitTrait) {
         let angle = i as f64 * MULTIPLIER;
         // TODO: Refactor after implementing `get_speed_at_mean_anomaly``
         black_box(
-            orbit.get_velocity_at_eccentric_anomaly(
-                orbit.get_eccentric_anomaly_at_mean_anomaly(angle),
-            ),
+            orbit
+                .get_speed_at_eccentric_anomaly(orbit.get_eccentric_anomaly_at_mean_anomaly(angle)),
         );
     }
 }
@@ -22,7 +21,7 @@ fn poll_ma_3d(orbit: &impl OrbitTrait) {
 fn poll_ea_3d(orbit: &impl OrbitTrait) {
     for i in 0..POLL_ITERS {
         let angle = i as f64 * MULTIPLIER;
-        black_box(orbit.get_velocity_at_eccentric_anomaly(black_box(angle)));
+        black_box(orbit.get_speed_at_eccentric_anomaly(black_box(angle)));
     }
 }
 
@@ -30,7 +29,7 @@ fn poll_ea_3d(orbit: &impl OrbitTrait) {
 fn poll_ta_3d(orbit: &impl OrbitTrait) {
     for i in 0..POLL_ITERS {
         let angle = i as f64 * MULTIPLIER;
-        black_box(orbit.get_velocity_at_true_anomaly(black_box(angle)));
+        black_box(orbit.get_speed_at_true_anomaly(black_box(angle)));
     }
 }
 
@@ -40,9 +39,8 @@ fn poll_ma_2d(orbit: &impl OrbitTrait2D) {
         let angle = i as f64 * MULTIPLIER;
         // TODO: Refactor after implementing `get_speed_at_mean_anomaly``
         black_box(
-            orbit.get_velocity_at_eccentric_anomaly(
-                orbit.get_eccentric_anomaly_at_mean_anomaly(angle),
-            ),
+            orbit
+                .get_speed_at_eccentric_anomaly(orbit.get_eccentric_anomaly_at_mean_anomaly(angle)),
         );
     }
 }
@@ -51,7 +49,7 @@ fn poll_ma_2d(orbit: &impl OrbitTrait2D) {
 fn poll_ea_2d(orbit: &impl OrbitTrait2D) {
     for i in 0..POLL_ITERS {
         let angle = i as f64 * MULTIPLIER;
-        black_box(orbit.get_velocity_at_eccentric_anomaly(black_box(angle)));
+        black_box(orbit.get_speed_at_eccentric_anomaly(black_box(angle)));
     }
 }
 
@@ -59,7 +57,7 @@ fn poll_ea_2d(orbit: &impl OrbitTrait2D) {
 fn poll_ta_2d(orbit: &impl OrbitTrait2D) {
     for i in 0..POLL_ITERS {
         let angle = i as f64 * MULTIPLIER;
-        black_box(orbit.get_velocity_at_true_anomaly(black_box(angle)));
+        black_box(orbit.get_speed_at_true_anomaly(black_box(angle)));
     }
 }
 
@@ -104,7 +102,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     );
     let compact_hyperbolic2d = CompactOrbit2D::from(hyperbolic2d.clone());
 
-    let mut group = c.benchmark_group("velocity@mean_anomaly");
+    let mut group = c.benchmark_group("speed@mean_anomaly");
     group.throughput(Throughput::Elements(POLL_ITERS));
 
     group.bench_function("3d elliptic cached", |b| {
@@ -134,7 +132,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     });
     group.finish();
 
-    let mut group = c.benchmark_group("velocity@eccentric_anomaly");
+    let mut group = c.benchmark_group("speed@eccentric_anomaly");
     group.throughput(Throughput::Elements(POLL_ITERS));
 
     group.bench_function("3d elliptic cached", |b| {
@@ -165,7 +163,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     group.finish();
 
-    let mut group = c.benchmark_group("velocity@true_anomaly");
+    let mut group = c.benchmark_group("speed@true_anomaly");
     group.throughput(Throughput::Elements(POLL_ITERS));
 
     group.bench_function("3d elliptic cached", |b| {
