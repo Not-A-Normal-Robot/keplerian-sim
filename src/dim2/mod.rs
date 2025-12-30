@@ -1060,12 +1060,11 @@ pub trait OrbitTrait2D {
     /// the periapsis unit vector, use the unchecked version:
     /// [`get_eccentricity_vector_unchecked`][OrbitTrait2D::get_eccentricity_vector_unchecked]
     ///
-    /// The cached version only needs to do a multiplication, and therefore is
+    /// The cached version only needs to do a lookup, and therefore is
     /// very performant.
     ///
-    /// The compact version additionally has to compute many multiplications,
-    /// additions, and several trig operations.
-    /// // TODO: Check if this is also true for 2D orbits
+    /// The compact version computes one trig operation, and therefore is
+    /// slightly less performant.
     ///
     /// # Example
     /// ```
