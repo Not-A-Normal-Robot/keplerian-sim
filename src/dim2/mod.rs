@@ -1686,7 +1686,7 @@ pub trait OrbitTrait2D {
         self.get_mean_anomaly_at_eccentric_anomaly(ecc_anom)
     }
 
-    /// Gets the 3D position at a given angle (true anomaly) in the orbit.
+    /// Gets the position at a given angle (true anomaly) in the orbit.
     ///
     /// # Angle
     /// The angle is expressed in radians, and ranges from 0 to tau.\
@@ -1731,7 +1731,7 @@ pub trait OrbitTrait2D {
         self.transform_pqw_vector(self.get_pqw_position_at_true_anomaly(angle))
     }
 
-    /// Gets the 3D position at a given eccentric anomaly in the orbit.
+    /// Gets the position at a given eccentric anomaly in the orbit.
     ///
     /// # Performance
     /// This function benefits significantly from being in the
@@ -2554,7 +2554,7 @@ pub trait OrbitTrait2D {
     ///
     /// Learn more about the PQW system: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
     ///
-    /// You can convert from the PQW system to the regular 3D space using
+    /// You can convert from the PQW system to the regular 2D space using
     /// [`transform_pqw_vector`][OrbitTrait2D::transform_pqw_vector].
     ///
     /// # Speed vs. Velocity
@@ -2766,7 +2766,7 @@ pub trait OrbitTrait2D {
     ///
     /// Learn more about the PQW system: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
     ///
-    /// To convert from the PQW coordinates to regular 3D space, use the
+    /// To convert from the PQW coordinates to regular 2D space, use the
     /// [`transform_pqw_vector`][OrbitTrait2D::transform_pqw_vector] function.
     ///
     /// # Angle
@@ -3359,7 +3359,7 @@ pub trait OrbitTrait2D {
     }
 
     // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
-    /// Gets the 3D position at a given time in the orbit.
+    /// Gets the position at a given time in the orbit.
     ///
     /// # Time
     /// The time is expressed in seconds.
@@ -3392,7 +3392,37 @@ pub trait OrbitTrait2D {
     }
 
     // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
-    /// Gets the 3D position and velocity at a given eccentric anomaly in the orbit.
+    /// Gets the position at a given mean anomaly in the orbit.
+    ///
+    /// # Performance
+    /// This involves calculating the true anomaly at a given time,
+    /// and so is not very performant.\
+    /// It is recommended to cache this value when possible.
+    ///
+    /// This function benefits significantly from being in the
+    /// [cached version of the orbit struct][crate::Orbit].
+    ///
+    /// Alternatively, if you already know the true anomaly,
+    /// consider using the
+    /// [`get_position_at_true_anomaly`][OrbitTrait2D::get_position_at_true_anomaly]
+    /// function instead.\
+    /// That does not use numerical methods and therefore is a lot faster.
+    ///
+    /// If you want to get both the position and velocity vectors, you can
+    /// use the
+    /// [`get_state_vectors_at_mean_anomaly`][OrbitTrait2D::get_state_vectors_at_mean_anomaly]
+    /// function instead. It prevents redundant calculations and is therefore
+    /// faster than calling the position and velocity functions separately.
+    ///
+    /// # Parabolic Support
+    /// **This function returns non-finite numbers for parabolic orbits**
+    /// due to how the equation for true anomaly works.
+    fn get_position_at_mean_anomaly(&self, mean_anomaly: f64) -> DVec2 {
+        self.get_position_at_true_anomaly(self.get_true_anomaly_at_mean_anomaly(mean_anomaly))
+    }
+
+    // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
+    /// Gets the position and velocity at a given eccentric anomaly in the orbit.
     ///
     /// # Performance
     /// This function uses several trigonometric functions, and so it is not too performant.\
@@ -3447,7 +3477,7 @@ pub trait OrbitTrait2D {
         )
     }
 
-    /// Gets the 3D position and velocity at a given angle (true anomaly) in the orbit.
+    /// Gets the position and velocity at a given angle (true anomaly) in the orbit.
     ///
     /// # Angle
     /// The angle is expressed in radians, and ranges from 0 to tau.\
@@ -3506,7 +3536,7 @@ pub trait OrbitTrait2D {
         )
     }
 
-    /// Gets the 3D position and velocity at a given mean anomaly in the orbit.
+    /// Gets the position and velocity at a given mean anomaly in the orbit.
     ///
     /// # Performance
     /// This function involves converting the mean anomaly to an eccentric anomaly,
@@ -3531,7 +3561,7 @@ pub trait OrbitTrait2D {
         )
     }
 
-    /// Gets the 3D position and velocity at a given time in the orbit.
+    /// Gets the position and velocity at a given time in the orbit.
     ///
     /// # Time
     /// The time is measured in seconds.
@@ -3568,7 +3598,7 @@ pub trait OrbitTrait2D {
         self.get_state_vectors_at_mean_anomaly(self.get_mean_anomaly_at_time(time))
     }
 
-    /// Gets the 3D position and velocity at a certain point in the orbit.
+    /// Gets the position and velocity at a certain point in the orbit.
     ///
     /// # Unchecked Operation
     /// This function does not check the validity of the inputs.\
@@ -3805,7 +3835,7 @@ pub trait OrbitTrait2D {
     }
 
     /// Transforms a position from the perifocal coordinate (PQW) system into
-    /// 3D, using the orbital parameters.
+    /// world space, using the orbital parameters.
     ///
     /// # Perifocal Coordinate (PQW) System
     /// The perifocal coordinate (PQW) system is a frame of reference using

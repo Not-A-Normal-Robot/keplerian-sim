@@ -4093,6 +4093,36 @@ pub trait OrbitTrait {
     }
 
     // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
+    /// Gets the 3D position at a given mean anomaly in the orbit.
+    ///
+    /// # Performance
+    /// This involves calculating the true anomaly at a given time,
+    /// and so is not very performant.\
+    /// It is recommended to cache this value when possible.
+    ///
+    /// This function benefits significantly from being in the
+    /// [cached version of the orbit struct][crate::Orbit].
+    ///
+    /// Alternatively, if you already know the true anomaly,
+    /// consider using the
+    /// [`get_position_at_true_anomaly`][OrbitTrait::get_position_at_true_anomaly]
+    /// function instead.\
+    /// That does not use numerical methods and therefore is a lot faster.
+    ///
+    /// If you want to get both the position and velocity vectors, you can
+    /// use the
+    /// [`get_state_vectors_at_mean_anomaly`][OrbitTrait::get_state_vectors_at_mean_anomaly]
+    /// function instead. It prevents redundant calculations and is therefore
+    /// faster than calling the position and velocity functions separately.
+    ///
+    /// # Parabolic Support
+    /// **This function returns non-finite numbers for parabolic orbits**
+    /// due to how the equation for true anomaly works.
+    fn get_position_at_mean_anomaly(&self, mean_anomaly: f64) -> DVec3 {
+        self.get_position_at_true_anomaly(self.get_true_anomaly_at_mean_anomaly(mean_anomaly))
+    }
+
+    // TODO: DOC: POST-PARABOLIC SUPPORT: Update doc
     /// Gets the 3D position and velocity at a given eccentric anomaly in the orbit.
     ///
     /// # Performance
