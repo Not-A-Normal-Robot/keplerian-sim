@@ -9,12 +9,7 @@ const MULTIPLIER: f64 = std::f64::consts::TAU / POLL_ITERS as f64;
 fn poll_ma_3d(orbit: &impl OrbitTrait) {
     for i in 0..POLL_ITERS {
         let angle = i as f64 * MULTIPLIER;
-        // TODO: Refactor after implementing `get_speed_at_mean_anomaly``
-        black_box(
-            orbit.get_velocity_at_eccentric_anomaly(
-                orbit.get_eccentric_anomaly_at_mean_anomaly(angle),
-            ),
-        );
+        black_box(orbit.get_velocity_at_mean_anomaly(black_box(angle)));
     }
 }
 
@@ -38,12 +33,7 @@ fn poll_ta_3d(orbit: &impl OrbitTrait) {
 fn poll_ma_2d(orbit: &impl OrbitTrait2D) {
     for i in 0..POLL_ITERS {
         let angle = i as f64 * MULTIPLIER;
-        // TODO: Refactor after implementing `get_speed_at_mean_anomaly``
-        black_box(
-            orbit.get_velocity_at_eccentric_anomaly(
-                orbit.get_eccentric_anomaly_at_mean_anomaly(angle),
-            ),
-        );
+        black_box(orbit.get_velocity_at_mean_anomaly(black_box(angle)));
     }
 }
 
