@@ -2458,8 +2458,8 @@ pub trait OrbitTrait {
 
     /// Gets the speed at a given angle (true anomaly) in the orbit.
     ///
-    /// The speed is derived from the vis-viva equation, and so is
-    /// a lot faster than the velocity calculation.
+    /// The speed is derived from the vis-viva equation, and so the calculation
+    /// is a lot faster than the velocity calculation.
     ///
     /// # Speed vs. Velocity
     /// Speed is not to be confused with velocity.\
@@ -2495,8 +2495,8 @@ pub trait OrbitTrait {
 
     /// Gets the speed at a given altitude in the orbit.
     ///
-    /// The speed is derived from the vis-viva equation, and so is
-    /// a lot faster than the velocity calculation.
+    /// The speed is derived from the vis-viva equation, and so the calculation
+    /// is a lot faster than the velocity calculation.
     ///
     /// # Speed vs. Velocity
     /// Speed is not to be confused with velocity.\
@@ -2552,8 +2552,8 @@ pub trait OrbitTrait {
 
     /// Gets the speed at the periapsis of the orbit.
     ///
-    /// The speed is derived from the vis-viva equation, and so is
-    /// a lot faster than the velocity calculation.
+    /// The speed is derived from the vis-viva equation, and so the calculation
+    /// is a lot faster than the velocity calculation.
     ///
     /// # Speed vs. Velocity
     /// Speed is not to be confused with velocity.\
@@ -2611,8 +2611,8 @@ pub trait OrbitTrait {
 
     /// Gets the speed at the apoapsis of the orbit.
     ///
-    /// The speed is derived from the vis-viva equation, and so is
-    /// a lot faster than the velocity calculation.
+    /// The speed is derived from the vis-viva equation, and so the calculation
+    /// is a lot faster than the velocity calculation.
     ///
     /// # Speed vs. Velocity
     /// Speed is not to be confused with velocity.\
@@ -2796,8 +2796,8 @@ pub trait OrbitTrait {
 
     /// Gets the speed at a given eccentric anomaly in the orbit.
     ///
-    /// The speed is derived from the vis-viva equation, and so is
-    /// a lot faster than the velocity calculation.
+    /// The speed is derived from the vis-viva equation, and so the calculation
+    /// is a lot faster than the velocity calculation.
     ///
     /// # Speed vs. Velocity
     /// Speed is not to be confused with velocity.\
@@ -2817,6 +2817,29 @@ pub trait OrbitTrait {
         self.get_speed_at_true_anomaly(
             self.get_true_anomaly_at_eccentric_anomaly(eccentric_anomaly),
         )
+    }
+
+    /// Gets the speed at a given mean anomaly in the orbit.
+    ///
+    /// # Performance
+    /// The time will be converted into an eccentric anomaly, which uses
+    /// numerical methods and so is not very performant.
+    /// It is recommended to cache this value if you can.
+    ///
+    /// Alternatively, if you know the eccentric anomaly or the true anomaly,
+    /// then you should use the
+    /// [`get_speed_at_eccentric_anomaly`][OrbitTrait::get_speed_at_eccentric_anomaly]
+    /// and
+    /// [`get_speed_at_true_anomaly`][OrbitTrait::get_speed_at_true_anomaly]
+    /// functions instead.\
+    /// Those do not use numerical methods and therefore are a lot faster.
+    ///
+    /// # Speed vs. Velocity
+    /// Speed is not to be confused with velocity.\
+    /// Speed tells you how fast something is moving,
+    /// while velocity tells you how fast *and in what direction* it's moving in.
+    fn get_speed_at_mean_anomaly(&self, mean_anomaly: f64) -> f64 {
+        self.get_speed_at_true_anomaly(self.get_true_anomaly_at_mean_anomaly(mean_anomaly))
     }
 
     /// Gets the velocity at a given angle (true anomaly) in the orbit
@@ -3327,6 +3350,51 @@ pub trait OrbitTrait {
         self.get_pqw_velocity_at_eccentric_anomaly(self.get_eccentric_anomaly_at_time(time))
     }
 
+    /// Gets the velocity at a given mean anomaly in the orbit
+    /// in the [perifocal coordinate system](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
+    ///
+    /// # Perifocal Coordinate System
+    /// This function returns a vector in the perifocal coordinate (PQW) system, where
+    /// the first element points to the periapsis, and the second element has a
+    /// true anomaly 90 degrees past the periapsis. The third element points perpendicular
+    /// to the orbital plane, and is always zero in this case, and so it is omitted.
+    ///
+    /// Learn more about the PQW system: <https://en.wikipedia.org/wiki/Perifocal_coordinate_system>
+    ///
+    /// If you want to get the vector in the regular coordinate system instead, use
+    /// [`get_velocity_at_eccentric_anomaly`][OrbitTrait::get_velocity_at_eccentric_anomaly] instead.
+    ///
+    /// # Speed vs. Velocity
+    /// Speed is not to be confused with velocity.\
+    /// Speed tells you how fast something is moving,
+    /// while velocity tells you how fast *and in what direction* it's moving in.
+    ///
+    /// # Parabolic Support
+    /// This function doesn't consider parabolic trajectories yet.\
+    /// `NaN`s or parabolic trajectories may be returned.
+    ///
+    /// # Performance
+    /// This method involves converting the mean anomaly into an eccentric anomaly,
+    /// which uses numerical methods and so is not performant.\
+    /// It is recommended to cache this value if you can.
+    /// If you want to just get the speed, consider using the
+    /// [`get_speed_at_mean_anomaly`][OrbitTrait::get_speed_at_mean_anomaly]
+    /// function instead.
+    ///
+    /// Alternatively, if you already know the eccentric anomaly or true anomaly values,
+    /// use the
+    /// [`get_pqw_velocity_at_eccentric_anomaly`][OrbitTrait::get_pqw_velocity_at_eccentric_anomaly]
+    /// and
+    /// [`get_pqw_velocity_at_true_anomaly`][OrbitTrait::get_pqw_velocity_at_true_anomaly]
+    /// functions instead.\
+    /// Those functions do not use numerical methods and are therefore a lot faster.
+    #[doc(alias = "get_flat_velocity_at_mean_anomaly")]
+    fn get_pqw_velocity_at_mean_anomaly(&self, mean_anomaly: f64) -> DVec2 {
+        self.get_pqw_velocity_at_eccentric_anomaly(
+            self.get_eccentric_anomaly_at_mean_anomaly(mean_anomaly),
+        )
+    }
+
     /// Gets the position at a given angle (true anomaly) in the orbit
     /// in the [perifocal coordinate system](https://en.wikipedia.org/wiki/Perifocal_coordinate_system).
     ///
@@ -3778,6 +3846,38 @@ pub trait OrbitTrait {
     /// while velocity tells you how fast *and in what direction* it's moving in.
     fn get_velocity_at_time(&self, time: f64) -> DVec3 {
         self.get_velocity_at_eccentric_anomaly(self.get_eccentric_anomaly_at_time(time))
+    }
+
+    /// Gets the velocity at a given mean anomaly in the orbit.
+    ///
+    /// # Speed vs. Velocity
+    /// Speed is not to be confused with velocity.\
+    /// Speed tells you how fast something is moving,
+    /// while velocity tells you how fast *and in what direction* it's moving in.
+    ///
+    /// # Parabolic Support
+    /// This function doesn't consider parabolic trajectories yet.\
+    /// `NaN`s or parabolic trajectories may be returned.
+    ///
+    /// # Performance
+    /// This method involves converting the mean anomaly into an eccentric anomaly,
+    /// which uses numerical methods and so is not performant.\
+    /// It is recommended to cache this value if you can.
+    /// If you want to just get the speed, consider using the
+    /// [`get_speed_at_mean_anomaly`][OrbitTrait::get_speed_at_mean_anomaly]
+    /// function instead.
+    ///
+    /// Alternatively, if you already know the eccentric anomaly or true anomaly values,
+    /// use the
+    /// [`get_velocity_at_eccentric_anomaly`][OrbitTrait::get_velocity_at_eccentric_anomaly]
+    /// and
+    /// [`get_velocity_at_true_anomaly`][OrbitTrait::get_velocity_at_true_anomaly]
+    /// functions instead.\
+    /// Those functions do not use numerical methods and are therefore a lot faster.
+    fn get_velocity_at_mean_anomaly(&self, mean_anomaly: f64) -> DVec3 {
+        self.get_velocity_at_eccentric_anomaly(
+            self.get_eccentric_anomaly_at_mean_anomaly(mean_anomaly),
+        )
     }
 
     /// Gets the altitude of the body from its parent at a given angle (true anomaly) in the orbit.
