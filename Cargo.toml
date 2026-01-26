@@ -55,6 +55,12 @@ mint-serde = ["mint", "serde", "mint/serde"]
 # > This will cause APIs to output different results depending on the platform used and will likely break cross-platform determinism.
 # > This should NOT be enabled by intermediate libraries, deferring the decision to the end binary build instead.
 fast-math = ["glam/fast-math"]
+# Derives Copy for orbit and orbit-related structs.
+# This makes it easier to do certain things at compile-time.
+# Note however that some of the structs are moderately large and
+# can take around a dozen clock cycles to memcpy, depending on
+# architecture and compiler flags.
+copy = []
 
 [build-dependencies]
 libm = "0.2.13"

@@ -4607,7 +4607,7 @@ impl StateVectors2D {
 /// If you want to keep the current position and velocity, you can use either
 /// the `KeepKnownStateVectors` or `KeepStateVectorsAtTime` modes, the former
 /// being more performant if you already know the state vectors beforehand.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum MuSetterMode2D {
     /// Keep all the other orbital parameters the same.
     ///

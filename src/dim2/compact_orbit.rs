@@ -64,6 +64,7 @@ use crate::{ApoapsisSetterError, MuSetterMode2D, Orbit2D, OrbitTrait2D};
 /// ```
 /// See [`CompactOrbit2D::new`] and [`CompactOrbit2D::with_apoapsis`] for more information.
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "copy", derive(Copy))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CompactOrbit2D {
     /// The eccentricity of the orbit.\

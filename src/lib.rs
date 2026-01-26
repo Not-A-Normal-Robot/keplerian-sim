@@ -155,7 +155,7 @@ const NUMERIC_MAX_ITERS: u32 = 1000;
 /// assert_eq!(result, DVec3::new(1.0, 2.0, 0.0));
 /// ```
 #[allow(missing_docs)]
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Matrix3x2 {
     // Element XY
@@ -261,7 +261,7 @@ impl From<mint::RowMatrix3x2<f64>> for Matrix3x2 {
 }
 
 /// An error to describe why setting the periapsis of an orbit failed.
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ApoapsisSetterError {
     /// ### Attempt to set apoapsis to a value less than periapsis.
     /// By definition, an orbit's apoapsis is the highest point in the orbit,

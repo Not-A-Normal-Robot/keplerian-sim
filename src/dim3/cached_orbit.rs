@@ -72,6 +72,7 @@ use crate::{ApoapsisSetterError, CompactOrbit, Matrix3x2, OrbitTrait};
 /// ```
 /// See [`Orbit::new`] and [`Orbit::with_apoapsis`] for more information.
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "copy", derive(Copy))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Orbit {
     /// The eccentricity of the orbit.\
@@ -151,6 +152,7 @@ pub struct Orbit {
 // `Orbit::get_cached_calculations()`
 // `<Orbit as OrbitTrait>::set_*()`
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "copy", derive(Copy))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 struct OrbitCachedCalculations {
     /// The transformation matrix to transform from the 2D PQW space into 3D space.

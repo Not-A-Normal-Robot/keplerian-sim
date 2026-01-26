@@ -62,6 +62,7 @@ use crate::{ApoapsisSetterError, CompactOrbit2D, MuSetterMode2D, OrbitTrait2D};
 ///
 /// See [`Orbit2D::new`] and [`Orbit2D::with_apoapsis`] for more information.
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "copy", derive(Copy))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Orbit2D {
     /// The eccentricity of the orbit.\
@@ -122,6 +123,7 @@ pub struct Orbit2D {
 // `Orbit2D::get_cached_calculations()`
 // `<Orbit2D as OrbitTrait2D>::set_*()`
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "copy", derive(Copy))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 struct OrbitCachedCalculations {
     /// The transformation matrix to transform from the 2D PQW space into 3D space.
