@@ -239,8 +239,8 @@ fn parabolic() {
 }
 
 fn orbit2d_conversion_base_test(orbit: Orbit2D, what: &str) {
-    let compact_orbit = CompactOrbit2D::from(orbit.clone());
-    let reexpanded_orbit = Orbit2D::from(compact_orbit.clone());
+    let compact_orbit = CompactOrbit2D::from(orbit);
+    let reexpanded_orbit = Orbit2D::from(compact_orbit);
 
     let compact_message = format!("Original / Compact ({what})");
     let reexpanded_message = format!("Compact / Reexpanded ({what})");
@@ -631,8 +631,8 @@ fn orbit2d_conversion_base_test(orbit: Orbit2D, what: &str) {
 }
 
 fn orbit_conversion_base_test(orbit: Orbit, what: &str) {
-    let compact_orbit = CompactOrbit::from(orbit.clone());
-    let reexpanded_orbit = Orbit::from(compact_orbit.clone());
+    let compact_orbit = CompactOrbit::from(orbit);
+    let reexpanded_orbit = Orbit::from(compact_orbit);
 
     let compact_message = format!("Original / Compact ({what})");
     let reexpanded_message = format!("Compact /  Reexpanded ({what})");
@@ -1743,7 +1743,7 @@ fn orbit_conversions() {
     ];
 
     for (what, orbit) in orbits.iter() {
-        orbit_conversion_base_test(orbit.clone(), what);
+        orbit_conversion_base_test(*orbit, what);
     }
 
     for orbit in random_any_iter(1000) {
@@ -2756,7 +2756,7 @@ fn test_orbital_plane_normal_getter() {
 fn orbit_plane_an_dn_base_test(orbit: &(impl OrbitTrait + Debug)) {
     let other_random = random_any();
     let other_flat = {
-        let mut orbit = other_random.clone();
+        let mut orbit = other_random;
         orbit.set_inclination(0.0);
         orbit.set_arg_pe(0.0);
         orbit.set_long_asc_node(0.0);
@@ -3190,7 +3190,7 @@ impl OrbitMutation {
 fn cache_coherency_base_test(compact_orbit: &mut CompactOrbit) {
     const CACHE_COHERENCY_ITERS: usize = 128;
     // let mut compact_orbit: CompactOrbit = cached_orbit.clone().into();
-    let mut cached_orbit: Orbit = compact_orbit.clone().into();
+    let mut cached_orbit: Orbit = (*compact_orbit).into();
 
     for _ in 0..CACHE_COHERENCY_ITERS {
         let mutation = OrbitMutation::new_random();

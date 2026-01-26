@@ -21,9 +21,9 @@ fn poll_tf_2d(orbit: &impl OrbitTrait2D, points: &[DVec2]) {
 
 fn criterion_benchmark(c: &mut Criterion) {
     let orbit = Orbit::default();
-    let compact = CompactOrbit::from(orbit.clone());
+    let compact = CompactOrbit::from(orbit);
     let orbit2d = Orbit2D::default();
-    let compact2d = CompactOrbit2D::from(orbit2d.clone());
+    let compact2d = CompactOrbit2D::from(orbit2d);
 
     let points = (0..POLL_ITERS)
         .map(|i| {
