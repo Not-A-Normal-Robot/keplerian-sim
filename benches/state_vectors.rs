@@ -47,7 +47,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         358.617_f64.to_radians(),
         1.0,
     );
-    let compact: CompactOrbit = orbit.into();
+    let compact: CompactOrbit = orbit.clone().into();
 
     let orbit2d = Orbit2D::with_apoapsis(
         1.52097597e11,
@@ -56,7 +56,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         358.617_f64.to_radians(),
         1.0,
     );
-    let compact2d: CompactOrbit2D = orbit2d.into();
+    let compact2d: CompactOrbit2D = orbit2d.clone().into();
 
     let hyperbolic_orbit = Orbit::new(
         2.0,
@@ -67,7 +67,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         358.617_f64.to_radians(),
         1.0,
     );
-    let hyperbolic_compact: CompactOrbit = hyperbolic_orbit.into();
+    let hyperbolic_compact: CompactOrbit = hyperbolic_orbit.clone().into();
 
     let hyperbolic_orbit2d = Orbit2D::new(
         2.0,
@@ -76,7 +76,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         358.617_f64.to_radians(),
         1.0,
     );
-    let hyperbolic_compact2d: CompactOrbit2D = hyperbolic_orbit2d.into();
+    let hyperbolic_compact2d: CompactOrbit2D = hyperbolic_orbit2d.clone().into();
 
     let mut group = c.benchmark_group("state_vectors@time");
     group.throughput(Throughput::Elements(POLL_ITERS));

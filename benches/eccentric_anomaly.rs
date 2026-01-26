@@ -24,13 +24,13 @@ fn poll_ea_2d(orbit: &impl OrbitTrait2D) {
 fn criterion_benchmark(c: &mut Criterion) {
     let orbit = Orbit::default();
     let orbit2d = Orbit2D::default();
-    let compact = CompactOrbit::from(orbit);
-    let compact2d = CompactOrbit2D::from(orbit2d);
+    let compact = CompactOrbit::from(orbit.clone());
+    let compact2d = CompactOrbit2D::from(orbit2d.clone());
 
     let hyperbolic = Orbit::new(2.9, 1.0, 2.19, 0.44, 0.61, 0.98, 1.0);
     let hyperbolic2d = Orbit2D::new(2.9, 1.0, 0.44, 0.98, 1.0);
-    let compact_hyperbolic = CompactOrbit::from(hyperbolic);
-    let compact_hyperbolic2d = CompactOrbit2D::from(hyperbolic2d);
+    let compact_hyperbolic = CompactOrbit::from(hyperbolic.clone());
+    let compact_hyperbolic2d = CompactOrbit2D::from(hyperbolic2d.clone());
 
     let mut group = c.benchmark_group("eccentric_anomaly@mean_anomaly");
     group.throughput(Throughput::Elements(POLL_ITERS));
