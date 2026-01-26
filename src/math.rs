@@ -107,13 +107,12 @@ impl F64Math for f64 {
         match i {
             2 => square,
             3 => square * self,
-            _ if cfg!(debug_assertions) => panic!("F64Math::powi only supports i values of 2 or 3"),
-            _ => square,
+            _ => unreachable!("F64Math::powi only supports exp values of 2 or 3"),
         }
     }
 
+    /// Copied from source of [`core::f64::math::rem_euclid`]
     fn rem_euclid(self, rhs: f64) -> Self {
-        // Copied from source of core::f64::math::rem_euclid
         let r = self % rhs;
         if r < 0.0 {
             r + rhs.abs()
