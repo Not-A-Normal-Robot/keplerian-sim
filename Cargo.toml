@@ -21,7 +21,7 @@ include = [
     "CREDITS.md",
 ]
 repository = "https://github.com/Not-A-Normal-Robot/keplerian-sim"
-authors = ["Not-A-Normal-Robot (GitHub)", "alters-mit (GitHub)"]
+authors = ["Not-A-Normal-Robot (GitHub)", "subalterngames (GitHub)"]
 # When changing MSRV below, don't forget to change the README!
 rust-version = "1.81.0"
 
