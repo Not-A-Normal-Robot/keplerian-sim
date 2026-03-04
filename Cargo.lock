@@ -183,9 +183,9 @@ dependencies = [
 
 [[package]]
 name = "glam"
-version = "0.30.9"
+version = "0.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd47b05dddf0005d850e5644cae7f2b14ac3df487979dbfff3b56f20b1a6ae46"
+checksum = "34627c5158214743a374170fed714833fdf4e4b0cbcc1ea98417866a4c5d4441"
 dependencies = [
  "libm",
  "serde_core",
@@ -229,7 +229,7 @@ dependencies = [
 
 [[package]]
 name = "keplerian_sim"
-version = "0.7.3"
+version = "0.8.0"
 dependencies = [
  "criterion",
  "glam",

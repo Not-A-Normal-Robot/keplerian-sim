@@ -2,7 +2,7 @@
 name = "keplerian_sim"
 description = "A Keplerian orbit library"
 license = "GPL-3.0-or-later"
-version = "0.7.3"
+version = "0.8.0"
 edition = "2021"
 keywords = [
     "kepler",
@@ -29,7 +29,7 @@ rust-version = "1.81.0"
 clone-on-copy = "allow"
 
 [dependencies]
-glam = { version = "0.30.1", features = [
+glam = { version = "0.32", features = [
     "serde",
     "nostd-libm",
 ], default-features = false }
